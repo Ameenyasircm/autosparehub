@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Auto Spare Hub (User) - Debug",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--flavor",
+        "user"
+      ]
+    },
+    {
+      "name": "Auto Spare Hub (Admin) - Debug",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--flavor",
+        "admin"
+      ]
+    },
+    {
+      "name": "Auto Spare Hub (User) - Release",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "args": [
+        "--flavor",
+        "user"
+      ]
+    },
+    {
+      "name": "Auto Spare Hub (Admin) - Release",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "args": [
+        "--flavor",
+        "admin"
+      ]
+    }
+  ]
+}

@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -23,6 +24,22 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
+        manifestPlaceholders["appName"] = "Auto Spare Hub"
+    }
+
+    flavorDimensions += "default"
+    productFlavors {
+        create("user") {
+            dimension = "default"
+            applicationId = "com.codemates.auto_spare_hub"
+            manifestPlaceholders["appName"] = "Auto Spare Hub"
+        }
+        create("admin") {
+            dimension = "default"
+            applicationId = "com.codemates.auto_spare_hub_admin"
+            manifestPlaceholders["appName"] = "Auto Spare Hub Admin"
+        }
     }
 
     buildTypes {
@@ -42,4 +59,12 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+tasks.matching { it.name.contains("GlobalSynthetics") }.configureEach {
+    doFirst {
+        outputs.files.files.forEach { file ->
+            file.mkdirs()
+        }
+    }
 }

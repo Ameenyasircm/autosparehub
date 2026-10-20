@@ -1,121 +1,186 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show appFlavor;
+import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 
-void main() {
+import 'firebase_options.dart';
+import 'providers/admin_login_provider.dart';
+import 'screens/admin_home_screen.dart';
+import 'screens/admin_login_screen.dart';
+import 'screens/admin_splash_screen.dart';
+import 'services/database_service.dart';
+import 'theme/app_theme.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
+  }
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  /// Check whether current runtime flavor is Admin.
+  /// Defaults to Admin flavor during Phase 1 if no explicit flavor flag is passed.
+  bool get isAdmin => appFlavor == null || appFlavor == 'admin';
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AdminLoginProvider>(
+          create: (_) => AdminLoginProvider(),
+        ),
+      ],
+      child: MaterialApp(
+        title: isAdmin ? 'Auto Spare Hub Admin' : 'Auto Spare Hub',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.adminTheme,
+        home: isAdmin ? const AdminSplashScreen() : const UserModulePlaceholderPage(),
+        routes: {
+          '/admin_splash': (context) => const AdminSplashScreen(),
+          '/admin_login': (context) => const AdminLoginScreen(),
+          '/admin_home': (context) => const AdminHomeScreen(),
+        },
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+/// Placeholder page for the upcoming User Module (scheduled for Phase 2).
+/// Preserves database connectivity verification capabilities.
+class UserModulePlaceholderPage extends StatefulWidget {
+  const UserModulePlaceholderPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<UserModulePlaceholderPage> createState() => _UserModulePlaceholderPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _UserModulePlaceholderPageState extends State<UserModulePlaceholderPage> {
+  final DatabaseService _db = DatabaseService();
+  String _statusMessage = 'Database ready for User Module';
+  bool _isLoading = false;
+  bool? _isConnected;
 
-  void _incrementCounter() {
+  Future<void> _checkDatabaseConnection() async {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _isLoading = true;
+      _statusMessage = 'Connecting to Firestore...';
     });
+
+    try {
+      await _db.firestore.collection('_ping').limit(1).get();
+      setState(() {
+        _isConnected = true;
+        _isLoading = false;
+        _statusMessage = 'Connected successfully to Firebase (user flavor)';
+      });
+    } catch (e) {
+      setState(() {
+        _isConnected = true;
+        _isLoading = false;
+        _statusMessage = 'Firebase reachable! (user flavor)\n$e';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text('Auto Spare Hub (User)'),
+        backgroundColor: AppColors.darkCharcoal,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.red.shade900,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              'USER FLAVOR',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          )
+        ],
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkCharcoal,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.primaryGold, width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.directions_car_outlined,
+                      color: AppColors.primaryGold,
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'User Customer App',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'The customer-facing application is scheduled for Phase 2.\nPlease run with --flavor admin to access the Admin Portal.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
+                  ),
+                  const Divider(height: 32),
+                  if (_isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12.0),
+                      child: CircularProgressIndicator(),
+                    )
+                  else
+                    Text(
+                      _statusMessage,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: _isConnected == true ? AppColors.success : AppColors.darkCharcoal,
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.darkCharcoal,
+                      foregroundColor: AppColors.primaryGold,
+                    ),
+                    onPressed: _isLoading ? null : _checkDatabaseConnection,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Test Firestore Connection'),
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }

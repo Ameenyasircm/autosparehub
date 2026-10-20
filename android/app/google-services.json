@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "157612280338",
+    "project_id": "autosparehub-ce005",
+    "storage_bucket": "autosparehub-ce005.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:157612280338:android:c7008abb9704a33e9fa6cb",
+        "android_client_info": {
+          "package_name": "com.codemates.auto_spare_hub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUF9djASHGex4l_vIfd6aCHN1sa_lzzRo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:157612280338:android:3f4f0b84042bd5d79fa6cb",
+        "android_client_info": {
+          "package_name": "com.codemates.auto_spare_hub_admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUF9djASHGex4l_vIfd6aCHN1sa_lzzRo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
