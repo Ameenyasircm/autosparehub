@@ -131,9 +131,11 @@ class CategoryProvider extends ChangeNotifier {
         return false;
       }
 
-      // 3. Save to Firestore
-      final docRef = _firestore.collection(collectionName).doc();
+      // 3. Save to Firestore with custom doc ID: "CAT" + timestamp in milliseconds
+      final categoryDocId = 'CAT${DateTime.now().millisecondsSinceEpoch}';
+      final docRef = _firestore.collection(collectionName).doc(categoryDocId);
       final data = {
+        'ID': categoryDocId,
         'NAME': cleanName,
         'IMAGE_URL': uploadedUrl,
         'DESCRIPTION': description?.trim() ?? '',

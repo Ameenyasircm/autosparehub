@@ -21,16 +21,23 @@ class DatabaseService {
     return _firestore.collection(path);
   }
 
-  /// Example: Add a new spare part or item
+  /// Add a new item with custom timestamp-based document ID
   Future<DocumentReference<Map<String, dynamic>>> addItem({
     required String collectionName,
     required Map<String, dynamic> data,
+    String? idPrefix,
   }) async {
-    return await _firestore.collection(collectionName).add({
+    final prefix = idPrefix ??
+        (collectionName.length >= 2 ? collectionName.substring(0, 2).toUpperCase() : 'DOC');
+    final docId = '$prefix${DateTime.now().millisecondsSinceEpoch}';
+    final docRef = _firestore.collection(collectionName).doc(docId);
+    await docRef.set({
+      'ID': docId,
       ...data,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    return docRef;
   }
 
   /// Example: Stream collection data in real-time

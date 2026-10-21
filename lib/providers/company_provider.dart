@@ -131,9 +131,11 @@ class CompanyProvider extends ChangeNotifier {
         return false;
       }
 
-      // 3. Save to Firestore
-      final docRef = _firestore.collection(collectionName).doc();
+      // 3. Save to Firestore with custom doc ID: "CO" + timestamp in milliseconds
+      final companyDocId = 'CO${DateTime.now().millisecondsSinceEpoch}';
+      final docRef = _firestore.collection(collectionName).doc(companyDocId);
       final data = {
+        'ID': companyDocId,
         'NAME': cleanName,
         'LOGO_URL': uploadedUrl,
         'DESCRIPTION': description?.trim() ?? '',

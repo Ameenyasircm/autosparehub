@@ -151,10 +151,12 @@ class AdminManagementProvider extends ChangeNotifier {
         return false;
       }
 
-      // 2. Generate unique document ID
-      final docRef = _firestore.collection(collectionName).doc();
+      // 2. Generate unique document ID: "AD" + timestamp in milliseconds
+      final adminDocId = 'AD${DateTime.now().millisecondsSinceEpoch}';
+      final docRef = _firestore.collection(collectionName).doc(adminDocId);
 
       final data = {
+        'ID': adminDocId,
         'NAME': cleanName,
         'PHONE_NUMBER': cleanPhone,
         'TYPE': type.trim().toUpperCase(),
