@@ -17,6 +17,9 @@ class AdminModel {
     required this.isActive,
   });
 
+  /// Check whether the administrator holds the MANAGER role
+  bool get isManager => type.toUpperCase() == 'MANAGER';
+
   /// Factory constructor to safely parse Firestore document snapshots
   factory AdminModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};

@@ -56,12 +56,12 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       // Clear form inputs
       _passwordController.clear();
 
-      // Navigate to Admin Home Screen and remove Login from backstack
+      // Navigate to Admin Shell Screen (Home + Menu tabs) and remove Login from backstack
       Navigator.of(context).pushAndRemoveUntil(
         PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 500),
           pageBuilder: (context, animation, secondaryAnimation) =>
-              const AdminHomeScreen(),
+              const AdminShellScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },

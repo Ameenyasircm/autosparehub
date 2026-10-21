@@ -9,7 +9,7 @@ class AppColors {
   static const Color lightGold = Color(0xFFE5C063);
 
   // Suggested UI & background colors
-  static const Color backgroundLight = Color(0xFFF7F7F5);
+  static const Color backgroundLight = Color(0xFFF5F6F8);
   static const Color cardLight = Color(0xFFFFFFFF);
   static const Color primaryText = Color(0xFF25282D);
   static const Color secondaryText = Color(0xFF777777);

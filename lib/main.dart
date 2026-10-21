@@ -1,11 +1,19 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show appFlavor;
-import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
+import 'providers/admin_dashboard_provider.dart';
 import 'providers/admin_login_provider.dart';
-import 'screens/admin_home_screen.dart';
+import 'providers/admin_management_provider.dart';
+import 'providers/category_provider.dart';
+import 'providers/company_provider.dart';
+import 'screens/admin/admin_management_screen.dart';
+import 'screens/admin/admin_shell_screen.dart';
+import 'screens/admin/categories_screen.dart';
+import 'screens/admin/companies_screen.dart';
 import 'screens/admin_login_screen.dart';
 import 'screens/admin_splash_screen.dart';
 import 'services/database_service.dart';
@@ -17,6 +25,10 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
   }
@@ -27,7 +39,7 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   /// Check whether current runtime flavor is Admin.
-  /// Defaults to Admin flavor during Phase 1 if no explicit flavor flag is passed.
+  /// Defaults to Admin flavor during Phase 1 & 2 if no explicit flavor flag is passed.
   bool get isAdmin => appFlavor == null || appFlavor == 'admin';
 
   @override
@@ -36,6 +48,18 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<AdminLoginProvider>(
           create: (_) => AdminLoginProvider(),
+        ),
+        ChangeNotifierProvider<AdminDashboardProvider>(
+          create: (_) => AdminDashboardProvider(),
+        ),
+        ChangeNotifierProvider<AdminManagementProvider>(
+          create: (_) => AdminManagementProvider(),
+        ),
+        ChangeNotifierProvider<CompanyProvider>(
+          create: (_) => CompanyProvider(),
+        ),
+        ChangeNotifierProvider<CategoryProvider>(
+          create: (_) => CategoryProvider(),
         ),
       ],
       child: MaterialApp(
@@ -46,7 +70,10 @@ class MyApp extends StatelessWidget {
         routes: {
           '/admin_splash': (context) => const AdminSplashScreen(),
           '/admin_login': (context) => const AdminLoginScreen(),
-          '/admin_home': (context) => const AdminHomeScreen(),
+          '/admin_home': (context) => const AdminShellScreen(),
+          '/admin_management': (context) => const AdminManagementScreen(),
+          '/companies': (context) => const CompaniesScreen(),
+          '/categories': (context) => const CategoriesScreen(),
         },
       ),
     );

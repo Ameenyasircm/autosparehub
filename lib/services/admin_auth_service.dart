@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/admin_model.dart';
@@ -49,7 +50,8 @@ class AdminAuthService {
           .collection(adminsCollection)
           .where('PHONE_NUMBER', isEqualTo: cleanPhone)
           .limit(1)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 10));
 
       if (querySnapshot.docs.isEmpty) {
         debugPrint('AdminAuthService: No matching record found for $cleanPhone');
@@ -86,6 +88,11 @@ class AdminAuthService {
       debugPrint('AdminAuthService: Admin authenticated successfully: ${admin.name} (${admin.type})');
       return AdminAuthResult.success(admin);
 
+    } on TimeoutException {
+      debugPrint('AdminAuthService: Authentication request timed out');
+      return const AdminAuthResult.failure(
+        'Connection timed out. Please check your internet connection.',
+      );
     } on FirebaseException catch (e) {
       debugPrint('AdminAuthService FirebaseException [${e.code}]: ${e.message}');
       if (e.code == 'permission-denied') {
