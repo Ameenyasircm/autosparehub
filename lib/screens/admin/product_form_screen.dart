@@ -8,7 +8,8 @@ import '../../providers/company_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../theme/app_theme.dart';
 
-/// Form screen for adding or editing an automotive spare part product.
+/// Professional automotive spare parts product studio form with modern e-commerce UX,
+/// dedicated photography studio uploader, live stock preview, and organized specification cards.
 class ProductFormScreen extends StatefulWidget {
   final ProductModel? productToEdit;
 
@@ -79,17 +80,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _existingImageUrl = p?.imageUrl;
     _isActive = p?.isActive ?? true;
 
-    // Ensure company and category catalogs are loaded for dropdown selection
+    // Ensure company and category catalogs are loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final compProvider = context.read<CompanyProvider>();
-      if (compProvider.companies.isEmpty) {
-        compProvider.fetchCompanies();
-      }
+      if (compProvider.companies.isEmpty) compProvider.fetchCompanies();
 
       final catProvider = context.read<CategoryProvider>();
-      if (catProvider.categories.isEmpty) {
-        catProvider.fetchCategories();
-      }
+      if (catProvider.categories.isEmpty) catProvider.fetchCategories();
     });
   }
 
@@ -133,68 +130,22 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
   }
 
-  void _showImageSourceDialog() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const Text(
-                'Select Product Photo',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.darkCharcoal,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primaryGold),
-                title: const Text('Take a photo with Camera'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined, color: AppColors.primaryGold),
-                title: const Text('Choose from Gallery'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all required fields correctly.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     // Image validation (mandatory on create)
     if (!widget.isEditing && _pickedImageFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a product photo.'),
+          content: Text('Please upload a product photo for the catalog.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -204,7 +155,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     if (_selectedCompanyId == null || _selectedCompanyId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a vehicle manufacturer/company.'),
+          content: Text('Please select a vehicle manufacturer / brand.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -224,7 +175,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     final provider = context.read<ProductProvider>();
     provider.clearError();
 
-    final price = double.tryParse(_priceController.text.trim());
+    final cleanPriceStr = _priceController.text.trim().replaceAll(',', '');
+    final price = cleanPriceStr.isNotEmpty ? double.tryParse(cleanPriceStr) : null;
     final stock = int.tryParse(_stockController.text.trim());
 
     bool success = false;
@@ -301,551 +253,819 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.darkCharcoal,
         elevation: 0,
-        title: Text(
-          widget.isEditing ? 'Edit Spare Part' : 'Add New Spare Part',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 17,
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.isEditing ? 'Edit Spare Part' : 'Add New Spare Part',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 17,
+              ),
+            ),
+            Text(
+              widget.isEditing ? 'ID: ${widget.productToEdit!.id}' : 'E-Commerce Product Studio',
+              style: TextStyle(
+                color: AppColors.lightGold.withValues(alpha: 0.9),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
+      bottomNavigationBar: _buildBottomActionBar(provider),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         physics: const BouncingScrollPhysics(),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Error Banner
-              if (provider.errorMessage != null) ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: 18),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+              // --- 1. PHOTOGRAPHY STUDIO HERO ---
+              _buildPhotographyStudio(),
+
+              const SizedBox(height: 20),
+
+              // --- 2. GENERAL PRODUCT INFORMATION ---
+              _buildSectionHeader('General Information', Icons.info_outline, isMandatory: true),
+              const SizedBox(height: 10),
+              _buildGeneralInfoCard(companyProvider, categoryProvider, provider),
+
+              const SizedBox(height: 20),
+
+              // --- 3. COMMERCIAL PRICING & INVENTORY ---
+              _buildSectionHeader('Pricing & Inventory', Icons.payments_outlined, isMandatory: false),
+              const SizedBox(height: 10),
+              _buildPricingAndInventoryCard(provider),
+
+              const SizedBox(height: 20),
+
+              // --- 4. VEHICLE APPLICATION & FITMENT ---
+              _buildSectionHeader('Vehicle Application & Compatibility', Icons.directions_car_outlined, isMandatory: true),
+              const SizedBox(height: 10),
+              _buildFitmentCard(provider),
+
+              const SizedBox(height: 20),
+
+              // --- 5. TECHNICAL SPECIFICATIONS (OEM) ---
+              _buildSectionHeader('Technical Specifications', Icons.tune_outlined, isMandatory: false),
+              const SizedBox(height: 10),
+              _buildTechnicalSpecsCard(provider),
+
+              const SizedBox(height: 20),
+
+              // --- 6. DESCRIPTION & REVIEWS ---
+              _buildSectionHeader('Description & Review Notes', Icons.notes_rounded, isMandatory: false),
+              const SizedBox(height: 10),
+              _buildDescriptionCard(provider),
+
+              const SizedBox(height: 20),
+
+              // --- 7. CATALOG VISIBILITY TOGGLE ---
+              _buildPublishingStatusCard(provider),
+
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- SECTION HEADER ---
+  Widget _buildSectionHeader(String title, IconData icon, {bool isMandatory = false}) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.primaryGold, size: 18),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14.5,
+            fontWeight: FontWeight.w800,
+            color: AppColors.darkCharcoal,
+          ),
+        ),
+        if (isMandatory) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.primaryGold.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'Required',
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
+                color: AppColors.darkCharcoal,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // --- 1. PHOTOGRAPHY STUDIO COMPONENT ---
+  Widget _buildPhotographyStudio() {
+    final hasImage = _pickedImageFile != null ||
+        (_existingImageUrl != null && _existingImageUrl!.isNotEmpty);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: hasImage ? AppColors.primaryGold.withValues(alpha: 0.4) : Colors.grey.shade300,
+          width: hasImage ? 1.5 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          if (hasImage) ...[
+            // Image Preview Stack
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
+                  child: SizedBox(
+                    height: 210,
+                    width: double.infinity,
+                    child: _pickedImageFile != null
+                        ? Image.file(_pickedImageFile!, fit: BoxFit.cover)
+                        : Image.network(
+                            _existingImageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: Colors.grey.shade100,
+                              child: const Center(
+                                child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey),
+                              ),
+                            ),
+                          ),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: AppColors.error, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          provider.errorMessage!,
-                          style: const TextStyle(color: AppColors.error, fontSize: 13),
+                ),
+                // Floating status badge
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkCharcoal.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.check_circle, color: AppColors.primaryGold, size: 14),
+                        SizedBox(width: 5),
+                        Text(
+                          'Photo Ready',
+                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
-
-              // --- 1. PHOTO PICKER CONTAINER ---
-              Center(
-                child: GestureDetector(
-                  onTap: provider.isSaving ? null : _showImageSourceDialog,
-                  child: Container(
-                    width: double.infinity,
-                    height: 190,
+            ),
+            // Bottom change/remove bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.darkCharcoal,
+                          side: BorderSide(color: Colors.grey.shade300),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        ),
+                        onPressed: () => _pickImage(ImageSource.camera),
+                        icon: const Icon(Icons.camera_alt_outlined, size: 16, color: AppColors.primaryGold),
+                        label: const Text('Camera', style: TextStyle(fontSize: 12)),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.darkCharcoal,
+                          side: BorderSide(color: Colors.grey.shade300),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        ),
+                        onPressed: () => _pickImage(ImageSource.gallery),
+                        icon: const Icon(Icons.photo_library_outlined, size: 16, color: AppColors.primaryGold),
+                        label: const Text('Gallery', style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                  if (_pickedImageFile != null)
+                    TextButton.icon(
+                      style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                      onPressed: () => setState(() => _pickedImageFile = null),
+                      icon: const Icon(Icons.close, size: 16),
+                      label: const Text('Reset', style: TextStyle(fontSize: 12)),
+                    ),
+                ],
+              ),
+            ),
+          ] else ...[
+            // Empty Photography Uploader
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _pickedImageFile != null || _existingImageUrl != null
-                            ? AppColors.primaryGold
-                            : Colors.grey.shade300,
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                      color: AppColors.primaryGold.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          if (_pickedImageFile != null)
-                            Image.file(
-                              _pickedImageFile!,
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                            )
-                          else if (_existingImageUrl != null && _existingImageUrl!.isNotEmpty)
-                            Image.network(
-                              _existingImageUrl!,
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => const Icon(
-                                Icons.broken_image_outlined,
-                                size: 50,
-                                color: Colors.grey,
-                              ),
-                            )
-                          else
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primaryGold.withValues(alpha: 0.15),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.add_a_photo_outlined,
-                                    size: 32,
-                                    color: AppColors.primaryGold,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                const Text(
-                                  'Upload Product Photo *',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.darkCharcoal,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  'Tap to choose from Camera or Gallery',
-                                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                                ),
-                              ],
-                            ),
+                    child: const Icon(
+                      Icons.add_a_photo_outlined,
+                      size: 38,
+                      color: AppColors.primaryGold,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Upload Product Photography *',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.darkCharcoal,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Capture clean, well-lit photos for maximum customer catalog conversion.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey, fontSize: 12.5),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.darkCharcoal,
+                          foregroundColor: AppColors.primaryGold,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () => _pickImage(ImageSource.camera),
+                        icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                        label: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.darkCharcoal,
+                          side: const BorderSide(color: AppColors.primaryGold, width: 1.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () => _pickImage(ImageSource.gallery),
+                        icon: const Icon(Icons.photo_library_outlined, size: 18, color: AppColors.primaryGold),
+                        label: const Text('From Gallery', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
-                          // Edit floating badge if image exists
-                          if (_pickedImageFile != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty))
-                            Positioned(
-                              bottom: 12,
-                              right: 12,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.darkCharcoal.withValues(alpha: 0.85),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Icon(Icons.edit, color: AppColors.primaryGold, size: 14),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Change Photo',
-                                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ],
+  // --- 2. GENERAL INFORMATION CARD ---
+  Widget _buildGeneralInfoCard(
+    CompanyProvider companyProvider,
+    CategoryProvider categoryProvider,
+    ProductProvider provider,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildFieldLabel('Product Title / Spare Part Name *'),
+          TextFormField(
+            controller: _nameController,
+            textCapitalization: TextCapitalization.words,
+            enabled: !provider.isSaving,
+            decoration: const InputDecoration(
+              hintText: 'e.g. Hydraulic Power Steering Pump',
+              prefixIcon: Icon(Icons.precision_manufacturing_outlined),
+            ),
+            validator: (val) {
+              if (val == null || val.trim().isEmpty) {
+                return 'Product name is required';
+              }
+              return null;
+            },
+          ),
+
+          const SizedBox(height: 16),
+
+          // Company Selector
+          _buildFieldLabel('Vehicle Manufacturer / Brand *'),
+          DropdownButtonFormField<String>(
+            isExpanded: true,
+            initialValue: _selectedCompanyId,
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.business_outlined),
+              hintText: 'Select vehicle company',
+            ),
+            items: companyProvider.companies.map((c) {
+              return DropdownMenuItem<String>(
+                value: c.id,
+                child: Text(
+                  c.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              );
+            }).toList(),
+            onChanged: provider.isSaving
+                ? null
+                : (val) {
+                    if (val != null) {
+                      final matched = companyProvider.companies.firstWhere((c) => c.id == val);
+                      setState(() {
+                        _selectedCompanyId = val;
+                        _selectedCompanyName = matched.name;
+                      });
+                    }
+                  },
+            validator: (val) => val == null || val.isEmpty ? 'Please select a company' : null,
+          ),
+
+          const SizedBox(height: 16),
+
+          // Category Selector
+          _buildFieldLabel('Spare Parts Category *'),
+          DropdownButtonFormField<String>(
+            isExpanded: true,
+            initialValue: _selectedCategoryId,
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.category_outlined),
+              hintText: 'Select part category',
+            ),
+            items: categoryProvider.categories.map((c) {
+              return DropdownMenuItem<String>(
+                value: c.id,
+                child: Text(
+                  c.name,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              );
+            }).toList(),
+            onChanged: provider.isSaving
+                ? null
+                : (val) {
+                    if (val != null) {
+                      final matched = categoryProvider.categories.firstWhere((c) => c.id == val);
+                      setState(() {
+                        _selectedCategoryId = val;
+                        _selectedCategoryName = matched.name;
+                      });
+                    }
+                  },
+            validator: (val) => val == null || val.isEmpty ? 'Please select a category' : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 3. COMMERCIAL PRICING & INVENTORY CARD ---
+  Widget _buildPricingAndInventoryCard(ProductProvider provider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              // Price Input
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFieldLabel('Selling Price (₹) *'),
+                    TextFormField(
+                      controller: _priceController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      enabled: !provider.isSaving,
+                      decoration: const InputDecoration(
+                        hintText: 'e.g. 2450.00',
+                        prefixIcon: Icon(Icons.currency_rupee_rounded),
+                      ),
+                      validator: (val) {
+                        if (val != null && val.trim().isNotEmpty) {
+                          final clean = val.trim().replaceAll(',', '');
+                          final parsed = double.tryParse(clean);
+                          if (parsed == null || parsed < 0) {
+                            return 'Enter valid price';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Stock Input
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFieldLabel('Stock Quantity'),
+                    TextFormField(
+                      controller: _stockController,
+                      keyboardType: TextInputType.number,
+                      enabled: !provider.isSaving,
+                      decoration: const InputDecoration(
+                        hintText: 'e.g. 10',
+                        prefixIcon: Icon(Icons.inventory_2_outlined),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Customer selling price displayed on catalog. Stock updates inventory automatically.',
+            style: TextStyle(color: Colors.grey, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 4. VEHICLE APPLICATION & FITMENT CARD ---
+  Widget _buildFitmentCard(ProductProvider provider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildFieldLabel('Application (Vehicle / Engine Compatibility) *'),
+          TextFormField(
+            controller: _applicationController,
+            maxLines: 2,
+            enabled: !provider.isSaving,
+            decoration: const InputDecoration(
+              hintText: 'e.g. Toyota Hilux Vigo 2.5/3.0 D-4D 2005-2015 / Fortuner 1KD/2KD',
+              prefixIcon: Icon(Icons.directions_car_outlined),
+            ),
+            validator: (val) {
+              if (val == null || val.trim().isEmpty) {
+                return 'Application details are required for part compatibility';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'List exact vehicle models, engine codes, and years to ensure buyer match accuracy.',
+            style: TextStyle(color: Colors.grey, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 5. TECHNICAL SPECIFICATIONS CARD ---
+  Widget _buildTechnicalSpecsCard(ProductProvider provider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Ref No
+          _buildFieldLabel('Part / OEM Reference No (Ref No)'),
+          TextFormField(
+            controller: _refNoController,
+            enabled: !provider.isSaving,
+            decoration: const InputDecoration(
+              hintText: 'e.g. 44310-0K040 / 44310-0K020',
+              prefixIcon: Icon(Icons.tag_rounded),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Displacement & Max Pressure
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFieldLabel('Displacement'),
+                    TextFormField(
+                      controller: _displacementController,
+                      enabled: !provider.isSaving,
+                      decoration: const InputDecoration(
+                        hintText: 'e.g. 16.0 ml/r',
+                        prefixIcon: Icon(Icons.speed_outlined),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFieldLabel('Max Pressure'),
+                    TextFormField(
+                      controller: _maxPressureController,
+                      enabled: !provider.isSaving,
+                      decoration: const InputDecoration(
+                        hintText: 'e.g. 120 bar',
+                        prefixIcon: Icon(Icons.compress_outlined),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // Controlled Flow & Speed Range
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFieldLabel('Controlled Flow'),
+                    TextFormField(
+                      controller: _controlledFlowController,
+                      enabled: !provider.isSaving,
+                      decoration: const InputDecoration(
+                        hintText: 'e.g. 9.0 L/min',
+                        prefixIcon: Icon(Icons.water_drop_outlined),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFieldLabel('Speed Range'),
+                    TextFormField(
+                      controller: _speedRangeController,
+                      enabled: !provider.isSaving,
+                      decoration: const InputDecoration(
+                        hintText: 'e.g. 600-4500 r/min',
+                        prefixIcon: Icon(Icons.av_timer_outlined),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // Rotation
+          _buildFieldLabel('Rotation Direction'),
+          DropdownButtonFormField<String>(
+            isExpanded: true,
+            initialValue: _selectedRotation,
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.rotate_right_rounded),
+              hintText: 'Select rotation direction',
+            ),
+            items: _rotationOptions.map((opt) {
+              return DropdownMenuItem<String>(
+                value: opt,
+                child: Text(opt, overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
+            onChanged: provider.isSaving
+                ? null
+                : (val) => setState(() => _selectedRotation = val),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Fuel Feed Hole
+          _buildFieldLabel('Fuel Feed Hole / Port Spec'),
+          TextFormField(
+            controller: _fuelFeedHoleController,
+            enabled: !provider.isSaving,
+            decoration: const InputDecoration(
+              hintText: 'e.g. M16 x 1.5 or 3/4"-16 UNF',
+              prefixIcon: Icon(Icons.radio_button_checked_rounded),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 6. DESCRIPTION & REVIEW NOTES CARD ---
+  Widget _buildDescriptionCard(ProductProvider provider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildFieldLabel('Detailed Description, Material Grade & Notes (Optional)'),
+          TextFormField(
+            controller: _descriptionController,
+            maxLines: 3,
+            enabled: !provider.isSaving,
+            decoration: const InputDecoration(
+              hintText: 'e.g. OEM grade alloy casting, 1-year warranty, includes mounting O-rings...',
+              prefixIcon: Icon(Icons.notes_rounded),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 7. CATALOG PUBLISHING STATUS TOGGLE ---
+  Widget _buildPublishingStatusCard(ProductProvider provider) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Storefront Publishing',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: (_isActive ? AppColors.success : AppColors.error).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      _isActive ? 'Live' : 'Draft',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: _isActive ? AppColors.success : AppColors.error,
                       ),
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                _isActive
+                    ? 'Visible to buyers on customer store'
+                    : 'Hidden from customer search (Draft mode)',
+                style: const TextStyle(color: Colors.grey, fontSize: 11),
+              ),
+            ],
+          ),
+          Switch(
+            value: _isActive,
+            activeThumbColor: AppColors.primaryGold,
+            activeTrackColor: AppColors.darkCharcoal,
+            onChanged: provider.isSaving
+                ? null
+                : (val) => setState(() => _isActive = val),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- STICKY BOTTOM ACTION BAR ---
+  Widget _buildBottomActionBar(ProductProvider provider) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            // Cancel
+            TextButton(
+              onPressed: provider.isSaving ? null : () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: AppColors.secondaryText,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              // --- 2. MANDATORY DETAILS CARD ---
-              _buildSectionHeader('Mandatory Information', Icons.info_outline),
-              const SizedBox(height: 12),
-
-              Container(
-                padding: const EdgeInsets.all(16),
+            ),
+            const SizedBox(width: 12),
+            // Submit
+            Expanded(
+              child: Container(
+                height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Product Name
-                    _buildFieldLabel('Product Name *'),
-                    TextFormField(
-                      controller: _nameController,
-                      textCapitalization: TextCapitalization.words,
-                      enabled: !provider.isSaving,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. Power Steering Pump',
-                        prefixIcon: Icon(Icons.precision_manufacturing_outlined),
-                      ),
-                      validator: (val) {
-                        if (val == null || val.trim().isEmpty) {
-                          return 'Product name is required';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Company Dropdown
-                    _buildFieldLabel('Vehicle Company / Brand *'),
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      initialValue: _selectedCompanyId,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.business_outlined),
-                        hintText: 'Select vehicle company',
-                      ),
-                      items: companyProvider.companies.map((c) {
-                        return DropdownMenuItem<String>(
-                          value: c.id,
-                          child: Text(
-                            c.name,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: provider.isSaving
-                          ? null
-                          : (val) {
-                              if (val != null) {
-                                final matched = companyProvider.companies.firstWhere((c) => c.id == val);
-                                setState(() {
-                                  _selectedCompanyId = val;
-                                  _selectedCompanyName = matched.name;
-                                });
-                              }
-                            },
-                      validator: (val) => val == null || val.isEmpty ? 'Please select a company' : null,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Category Dropdown
-                    _buildFieldLabel('Part Category *'),
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      initialValue: _selectedCategoryId,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.category_outlined),
-                        hintText: 'Select part category',
-                      ),
-                      items: categoryProvider.categories.map((c) {
-                        return DropdownMenuItem<String>(
-                          value: c.id,
-                          child: Text(
-                            c.name,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: provider.isSaving
-                          ? null
-                          : (val) {
-                              if (val != null) {
-                                final matched = categoryProvider.categories.firstWhere((c) => c.id == val);
-                                setState(() {
-                                  _selectedCategoryId = val;
-                                  _selectedCategoryName = matched.name;
-                                });
-                              }
-                            },
-                      validator: (val) => val == null || val.isEmpty ? 'Please select a category' : null,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Application Field
-                    _buildFieldLabel('Application (Vehicle / Engine Compatibility) *'),
-                    TextFormField(
-                      controller: _applicationController,
-                      maxLines: 2,
-                      enabled: !provider.isSaving,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. Toyota Hilux Vigo 2.5/3.0 D-4D 2005-2015 / Fortuner',
-                        prefixIcon: Icon(Icons.directions_car_outlined),
-                      ),
-                      validator: (val) {
-                        if (val == null || val.trim().isEmpty) {
-                          return 'Application details are required';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Description / Review Field
-                    _buildFieldLabel('Detailed Description / Review / Notes (Optional)'),
-                    TextFormField(
-                      controller: _descriptionController,
-                      maxLines: 3,
-                      enabled: !provider.isSaving,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. Detailed product review, material grade, installation tips, warranty notes...',
-                        prefixIcon: Icon(Icons.notes_rounded),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // --- 3. TECHNICAL SPECIFICATIONS (NON-MANDATORY) ---
-              _buildSectionHeader('Technical Specifications (Non-mandatory)', Icons.build_circle_outlined),
-              const SizedBox(height: 12),
-
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Ref No / OEM Part No
-                    _buildFieldLabel('Part / OEM Reference No (Ref No)'),
-                    TextFormField(
-                      controller: _refNoController,
-                      enabled: !provider.isSaving,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. 44310-0K040 / 44310-0K020',
-                        prefixIcon: Icon(Icons.tag_rounded),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Displacement & Max Pressure (Two per row)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFieldLabel('Displacement'),
-                              TextFormField(
-                                controller: _displacementController,
-                                enabled: !provider.isSaving,
-                                decoration: const InputDecoration(
-                                  hintText: 'e.g. 16.0 ml/r',
-                                  prefixIcon: Icon(Icons.speed_outlined),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFieldLabel('Max Pressure'),
-                              TextFormField(
-                                controller: _maxPressureController,
-                                enabled: !provider.isSaving,
-                                decoration: const InputDecoration(
-                                  hintText: 'e.g. 120 bar',
-                                  prefixIcon: Icon(Icons.compress_outlined),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Controlled Flow & Speed Range
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFieldLabel('Controlled Flow'),
-                              TextFormField(
-                                controller: _controlledFlowController,
-                                enabled: !provider.isSaving,
-                                decoration: const InputDecoration(
-                                  hintText: 'e.g. 9.0 L/min',
-                                  prefixIcon: Icon(Icons.water_drop_outlined),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildFieldLabel('Speed Range'),
-                              TextFormField(
-                                controller: _speedRangeController,
-                                enabled: !provider.isSaving,
-                                decoration: const InputDecoration(
-                                  hintText: 'e.g. 600-4500 r/min',
-                                  prefixIcon: Icon(Icons.av_timer_outlined),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Rotation Dropdown
-                    _buildFieldLabel('Rotation Direction'),
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      initialValue: _selectedRotation,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.rotate_right_rounded),
-                        hintText: 'Select rotation direction',
-                      ),
-                      items: _rotationOptions.map((opt) {
-                        return DropdownMenuItem<String>(
-                          value: opt,
-                          child: Text(opt, overflow: TextOverflow.ellipsis),
-                        );
-                      }).toList(),
-                      onChanged: provider.isSaving
-                          ? null
-                          : (val) => setState(() => _selectedRotation = val),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Fuel Feed Hole
-                    _buildFieldLabel('Fuel Feed Hole / Port Spec'),
-                    TextFormField(
-                      controller: _fuelFeedHoleController,
-                      enabled: !provider.isSaving,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. M16 x 1.5 or 3/4"-16 UNF',
-                        prefixIcon: Icon(Icons.radio_button_checked_rounded),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // --- 4. COMMERCIAL (PRICE & STOCK) ---
-              _buildSectionHeader('Inventory & Commercial (Optional)', Icons.payments_outlined),
-              const SizedBox(height: 12),
-
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildFieldLabel('Price (Optional)'),
-                          TextFormField(
-                            controller: _priceController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            enabled: !provider.isSaving,
-                            decoration: const InputDecoration(
-                              hintText: 'e.g. 250.00',
-                              prefixIcon: Icon(Icons.attach_money_rounded),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildFieldLabel('Stock Quantity'),
-                          TextFormField(
-                            controller: _stockController,
-                            keyboardType: TextInputType.number,
-                            enabled: !provider.isSaving,
-                            decoration: const InputDecoration(
-                              hintText: 'e.g. 10',
-                              prefixIcon: Icon(Icons.inventory_2_outlined),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // --- 5. AVAILABILITY STATUS TOGGLE ---
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primaryGold, AppColors.lightGold],
+                  ),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Catalog Status',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                        ),
-                        Text(
-                          _isActive ? 'Active (Visible in catalog)' : 'Inactive (Hidden from users)',
-                          style: TextStyle(
-                            color: _isActive ? AppColors.success : AppColors.error,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Switch(
-                      value: _isActive,
-                      activeThumbColor: AppColors.primaryGold,
-                      onChanged: provider.isSaving ? null : (val) => setState(() => _isActive = val),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryGold.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Submit Button
-              SizedBox(
-                height: 52,
                 child: ElevatedButton(
-                  onPressed: provider.isSaving ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGold,
-                    foregroundColor: AppColors.darkCharcoal,
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
+                  onPressed: provider.isSaving ? null : _submit,
                   child: provider.isSaving
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -854,42 +1074,47 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.darkCharcoal,
+                                strokeWidth: 2.2,
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.darkCharcoal),
                               ),
                             ),
-                            SizedBox(width: 12),
-                            Text('Saving Product...'),
+                            SizedBox(width: 10),
+                            Text(
+                              'Saving Part...',
+                              style: TextStyle(
+                                color: AppColors.darkCharcoal,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                              ),
+                            ),
                           ],
                         )
-                      : Text(
-                          widget.isEditing ? 'Update Product' : 'Add Product to Catalog',
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              widget.isEditing ? Icons.check_circle_outline : Icons.cloud_upload_outlined,
+                              color: AppColors.darkCharcoal,
+                              size: 19,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              widget.isEditing ? 'Update Spare Part' : 'Publish to Catalog',
+                              style: const TextStyle(
+                                color: AppColors.darkCharcoal,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
                         ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: AppColors.primaryGold),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            color: AppColors.darkCharcoal,
-            letterSpacing: 0.3,
-          ),
-        ),
-      ],
     );
   }
 
@@ -899,9 +1124,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       child: Text(
         label,
         style: const TextStyle(
-          color: AppColors.darkCharcoal,
-          fontSize: 13,
           fontWeight: FontWeight.w700,
+          fontSize: 12.5,
+          color: AppColors.darkCharcoal,
         ),
       ),
     );

@@ -5,6 +5,14 @@ import 'package:flutter/foundation.dart';
 import '../models/product_model.dart';
 import '../services/cloudinary_service.dart';
 
+enum ProductSortOption {
+  newest,
+  priceLowToHigh,
+  priceHighToLow,
+  nameAZ,
+  stockHighToLow,
+}
+
 /// Provider managing spare parts products catalog, technical specifications, and queries.
 class ProductProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore;
@@ -26,6 +34,7 @@ class ProductProvider extends ChangeNotifier {
   String _searchQuery = '';
   String _selectedCompanyId = 'ALL';
   String _selectedCategoryId = 'ALL';
+  ProductSortOption _sortOption = ProductSortOption.newest;
 
   // Getters
   List<ProductModel> get products => _products;
@@ -35,10 +44,11 @@ class ProductProvider extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   String get selectedCompanyId => _selectedCompanyId;
   String get selectedCategoryId => _selectedCategoryId;
+  ProductSortOption get sortOption => _sortOption;
 
-  /// Returns products matching active search query, company filter, and category filter
+  /// Returns products matching active search query, company filter, category filter, and sort order
   List<ProductModel> get filteredProducts {
-    return _products.where((product) {
+    final list = _products.where((product) {
       // Company Filter
       final matchesCompany = _selectedCompanyId == 'ALL' ||
           product.companyId == _selectedCompanyId;
@@ -59,6 +69,39 @@ class ProductProvider extends ChangeNotifier {
 
       return matchesCompany && matchesCategory && matchesSearch;
     }).toList();
+
+    // Apply sorting
+    switch (_sortOption) {
+      case ProductSortOption.newest:
+        list.sort((a, b) {
+          if (a.createdAt != null && b.createdAt != null) {
+            return b.createdAt!.compareTo(a.createdAt!);
+          }
+          return b.id.compareTo(a.id);
+        });
+        break;
+      case ProductSortOption.priceLowToHigh:
+        list.sort((a, b) => (a.price ?? double.infinity).compareTo(b.price ?? double.infinity));
+        break;
+      case ProductSortOption.priceHighToLow:
+        list.sort((a, b) => (b.price ?? -1.0).compareTo(a.price ?? -1.0));
+        break;
+      case ProductSortOption.nameAZ:
+        list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
+      case ProductSortOption.stockHighToLow:
+        list.sort((a, b) => (b.stockQuantity ?? -1).compareTo(a.stockQuantity ?? -1));
+        break;
+    }
+
+    return list;
+  }
+
+  void setSortOption(ProductSortOption option) {
+    if (_sortOption != option) {
+      _sortOption = option;
+      notifyListeners();
+    }
   }
 
   void setSearchQuery(String query) {
