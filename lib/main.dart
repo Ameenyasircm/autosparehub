@@ -10,7 +10,10 @@ import 'providers/admin_login_provider.dart';
 import 'providers/admin_management_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/company_provider.dart';
+import 'providers/customer_management_provider.dart';
+import 'providers/order_provider.dart';
 import 'providers/product_provider.dart';
+import 'providers/user_auth_provider.dart';
 import 'screens/admin/admin_management_screen.dart';
 import 'screens/admin/admin_shell_screen.dart';
 import 'screens/admin/categories_screen.dart';
@@ -18,6 +21,8 @@ import 'screens/admin/companies_screen.dart';
 import 'screens/admin/products_screen.dart';
 import 'screens/admin_login_screen.dart';
 import 'screens/admin_splash_screen.dart';
+import 'screens/user/user_home_screen.dart';
+import 'screens/user/user_orders_screen.dart';
 import 'services/database_service.dart';
 import 'theme/app_theme.dart';
 
@@ -66,12 +71,21 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<ProductProvider>(
           create: (_) => ProductProvider(),
         ),
+        ChangeNotifierProvider<UserAuthProvider>(
+          create: (_) => UserAuthProvider()..initSession(),
+        ),
+        ChangeNotifierProvider<OrderProvider>(
+          create: (_) => OrderProvider(),
+        ),
+        ChangeNotifierProvider<CustomerManagementProvider>(
+          create: (_) => CustomerManagementProvider(),
+        ),
       ],
       child: MaterialApp(
         title: isAdmin ? 'Auto Spare Hub Admin' : 'Auto Spare Hub',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.adminTheme,
-        home: isAdmin ? const AdminSplashScreen() : const UserModulePlaceholderPage(),
+        home: isAdmin ? const AdminSplashScreen() : const UserHomeScreen(),
         routes: {
           '/admin_splash': (context) => const AdminSplashScreen(),
           '/admin_login': (context) => const AdminLoginScreen(),
@@ -80,6 +94,8 @@ class MyApp extends StatelessWidget {
           '/companies': (context) => const CompaniesScreen(),
           '/categories': (context) => const CategoriesScreen(),
           '/products': (context) => const ProductsScreen(),
+          '/user_home': (context) => const UserHomeScreen(),
+          '/user_orders': (context) => const UserOrdersScreen(),
         },
       ),
     );

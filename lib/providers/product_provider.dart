@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/product_model.dart';
 import '../services/cloudinary_service.dart';
+import '../services/keyword_generator.dart';
 
 enum ProductSortOption {
   newest,
@@ -57,7 +58,7 @@ class ProductProvider extends ChangeNotifier {
       final matchesCategory = _selectedCategoryId == 'ALL' ||
           product.categoryId == _selectedCategoryId;
 
-      // Search Query Filter (Matches Name, Ref No, or Application)
+      // Search Query Filter (Matches Name, Ref No, Application, or Search Keywords)
       final query = _searchQuery.toLowerCase().trim();
       final matchesSearch = query.isEmpty ||
           product.name.toLowerCase().contains(query) ||
@@ -65,7 +66,8 @@ class ProductProvider extends ChangeNotifier {
           product.application.toLowerCase().contains(query) ||
           (product.description?.toLowerCase().contains(query) ?? false) ||
           product.companyName.toLowerCase().contains(query) ||
-          product.categoryName.toLowerCase().contains(query);
+          product.categoryName.toLowerCase().contains(query) ||
+          product.searchKeywords.any((k) => k.contains(query));
 
       return matchesCompany && matchesCategory && matchesSearch;
     }).toList();
@@ -240,7 +242,16 @@ class ProductProvider extends ChangeNotifier {
       final productDocId = 'PRD${DateTime.now().millisecondsSinceEpoch}';
       final docRef = _firestore.collection(collectionName).doc(productDocId);
 
-      // 3. Save flat Firestore document
+      // 3. Generate Search Keywords
+      final searchKeywords = KeywordGenerator.generateKeywords(
+        name: cleanName,
+        companyName: companyName,
+        categoryName: categoryName,
+        application: application,
+        refNo: refNo,
+      );
+
+      // 4. Save flat Firestore document
       final data = {
         'ID': productDocId,
         'NAME': cleanName,
@@ -260,6 +271,7 @@ class ProductProvider extends ChangeNotifier {
         'FUEL_FEED_HOLE': fuelFeedHole?.trim().isEmpty ?? true ? null : fuelFeedHole!.trim(),
         'PRICE': price,
         'STOCK_QUANTITY': stockQuantity,
+        'SEARCH_KEYWORDS': searchKeywords,
         'IS_ACTIVE': isActive,
         'CREATED_AT': FieldValue.serverTimestamp(),
         'UPDATED_AT': FieldValue.serverTimestamp(),
@@ -349,6 +361,14 @@ class ProductProvider extends ChangeNotifier {
         finalImageUrl = uploadedUrl;
       }
 
+      final searchKeywords = KeywordGenerator.generateKeywords(
+        name: cleanName,
+        companyName: companyName,
+        categoryName: categoryName,
+        application: application,
+        refNo: refNo,
+      );
+
       // Update Firestore document
       await _firestore.collection(collectionName).doc(id).update({
         'NAME': cleanName,
@@ -368,6 +388,7 @@ class ProductProvider extends ChangeNotifier {
         'FUEL_FEED_HOLE': fuelFeedHole?.trim().isEmpty ?? true ? null : fuelFeedHole!.trim(),
         'PRICE': price,
         'STOCK_QUANTITY': stockQuantity,
+        'SEARCH_KEYWORDS': searchKeywords,
         'IS_ACTIVE': isActive,
         'UPDATED_AT': FieldValue.serverTimestamp(),
       }).timeout(const Duration(seconds: 10));

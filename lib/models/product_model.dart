@@ -25,6 +25,9 @@ class ProductModel {
   final double? price;
   final int? stockQuantity;
 
+  // Search keywords for fast prefix and substring matching
+  final List<String> searchKeywords;
+
   // Audit and status
   final bool isActive;
   final DateTime? createdAt;
@@ -49,6 +52,7 @@ class ProductModel {
     this.fuelFeedHole,
     this.price,
     this.stockQuantity,
+    this.searchKeywords = const [],
     required this.isActive,
     this.createdAt,
     this.updatedAt,
@@ -98,6 +102,13 @@ class ProductModel {
       return str.isEmpty ? null : str;
     }
 
+    List<String> parseKeywords(dynamic value) {
+      if (value is List) {
+        return value.map((e) => e.toString().toLowerCase().trim()).where((e) => e.isNotEmpty).toList();
+      }
+      return [];
+    }
+
     return ProductModel(
       id: id,
       name: (data['NAME'] ?? data['name'] ?? '').toString().trim(),
@@ -117,6 +128,7 @@ class ProductModel {
       fuelFeedHole: parseOptionalString(data['FUEL_FEED_HOLE'] ?? data['fuelFeedHole']),
       price: parsePrice(data['PRICE'] ?? data['price']),
       stockQuantity: parseStock(data['STOCK_QUANTITY'] ?? data['stockQuantity']),
+      searchKeywords: parseKeywords(data['SEARCH_KEYWORDS'] ?? data['searchKeywords']),
       isActive: parseIsActive(data['IS_ACTIVE'] ?? data['isActive']),
       createdAt: parseTimestamp(data['CREATED_AT'] ?? data['createdAt']),
       updatedAt: parseTimestamp(data['UPDATED_AT'] ?? data['updatedAt']),
@@ -144,6 +156,7 @@ class ProductModel {
       'FUEL_FEED_HOLE': fuelFeedHole,
       'PRICE': price,
       'STOCK_QUANTITY': stockQuantity,
+      'SEARCH_KEYWORDS': searchKeywords,
       'IS_ACTIVE': isActive,
       'CREATED_AT': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
       'UPDATED_AT': FieldValue.serverTimestamp(),
@@ -170,6 +183,7 @@ class ProductModel {
     String? fuelFeedHole,
     double? price,
     int? stockQuantity,
+    List<String>? searchKeywords,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -193,6 +207,7 @@ class ProductModel {
       fuelFeedHole: fuelFeedHole ?? this.fuelFeedHole,
       price: price ?? this.price,
       stockQuantity: stockQuantity ?? this.stockQuantity,
+      searchKeywords: searchKeywords ?? this.searchKeywords,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
