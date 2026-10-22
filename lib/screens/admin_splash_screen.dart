@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/admin_login_provider.dart';
 import '../theme/app_theme.dart';
+import 'admin/admin_shell_screen.dart';
 import 'admin_login_screen.dart';
 
 /// Admin Splash Screen displaying the Auto Spare Hub logo with subtle animations
@@ -17,7 +20,9 @@ class _AdminSplashScreenState extends State<AdminSplashScreen>
   late AnimationController _animController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  Timer? _navigationTimer;
+
+  Timer? _splashTimer;
+  Future<bool>? _sessionFuture;
 
   @override
   void initState() {
@@ -42,26 +47,39 @@ class _AdminSplashScreenState extends State<AdminSplashScreen>
 
     _animController.forward();
 
-    // Navigate to Admin Login Screen after brief branded display
-    _navigationTimer = Timer(const Duration(milliseconds: 2400), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 600),
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const AdminLoginScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-          ),
-        );
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkSessionAndScheduleNavigation();
+    });
+  }
+
+  /// Concurrently verify persisted session in SharedPreferences and wait for splash animation
+  void _checkSessionAndScheduleNavigation() {
+    _sessionFuture = context.read<AdminLoginProvider>().checkSavedSession();
+
+    _splashTimer = Timer(const Duration(milliseconds: 2000), () async {
+      if (!mounted) return;
+      final bool hasValidSession = await (_sessionFuture ?? Future.value(false));
+      if (!mounted) return;
+
+      final Widget destination = hasValidSession
+          ? const AdminShellScreen()
+          : const AdminLoginScreen();
+
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 600),
+          pageBuilder: (context, animation, secondaryAnimation) => destination,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
     });
   }
 
   @override
   void dispose() {
-    _navigationTimer?.cancel();
+    _splashTimer?.cancel();
     _animController.dispose();
     super.dispose();
   }

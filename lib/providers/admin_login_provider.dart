@@ -1,13 +1,18 @@
 import 'package:flutter/foundation.dart';
 import '../models/admin_model.dart';
 import '../services/admin_auth_service.dart';
+import '../services/session_service.dart';
 
 /// Provider managing admin authentication state, session persistence, and error messages.
 class AdminLoginProvider extends ChangeNotifier {
   final AdminAuthService _authService;
+  final SessionService _sessionService;
 
-  AdminLoginProvider({AdminAuthService? authService})
-      : _authService = authService ?? AdminAuthService();
+  AdminLoginProvider({
+    AdminAuthService? authService,
+    SessionService? sessionService,
+  })  : _authService = authService ?? AdminAuthService(),
+        _sessionService = sessionService ?? SessionService();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -25,6 +30,22 @@ class AdminLoginProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
     }
+  }
+
+  /// Check whether a persistent session exists in SharedPreferences and restore it
+  Future<bool> checkSavedSession() async {
+    try {
+      final savedAdmin = await _sessionService.getAdminSession();
+      if (savedAdmin != null && savedAdmin.isActive) {
+        _currentAdmin = savedAdmin;
+        _errorMessage = null;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('AdminLoginProvider.checkSavedSession error: $e');
+    }
+    return false;
   }
 
   /// Perform admin login with username/phone and password
@@ -48,6 +69,8 @@ class AdminLoginProvider extends ChangeNotifier {
         _currentAdmin = result.admin;
         _errorMessage = null;
         _isLoading = false;
+        // Persist session to local storage via SharedPreferences
+        await _sessionService.saveAdminSession(result.admin!);
         notifyListeners();
         return true;
       } else {
@@ -66,11 +89,12 @@ class AdminLoginProvider extends ChangeNotifier {
     }
   }
 
-  /// Logout current admin and clear session state
-  void logout() {
+  /// Logout current admin and clear session state from local storage
+  Future<void> logout() async {
     _currentAdmin = null;
     _errorMessage = null;
     _isLoading = false;
+    await _sessionService.clearSession();
     notifyListeners();
   }
 }

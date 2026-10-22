@@ -20,10 +20,12 @@ class AdminAuthResult {
 
 /// Service handling Admin authentication and Firestore queries on the ADMINS collection.
 class AdminAuthService {
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _customFirestore;
 
   AdminAuthService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+      : _customFirestore = firestore;
+
+  FirebaseFirestore get _firestore => _customFirestore ?? FirebaseFirestore.instance;
 
   static const String adminsCollection = 'ADMINS';
 

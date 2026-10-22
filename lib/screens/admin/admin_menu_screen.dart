@@ -48,9 +48,10 @@ class AdminMenuScreen extends StatelessWidget {
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(dialogCtx).pop();
-              context.read<AdminLoginProvider>().logout();
+              await context.read<AdminLoginProvider>().logout();
+              if (!context.mounted) return;
               Navigator.of(context).pushAndRemoveUntil(
                 PageRouteBuilder(
                   transitionDuration: const Duration(milliseconds: 400),
