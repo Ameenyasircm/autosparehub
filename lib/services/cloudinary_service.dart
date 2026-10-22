@@ -7,13 +7,14 @@ import 'package:http/http.dart' as http;
 /// Reuses the proven configuration pattern from the TeamOne reference project.
 class CloudinaryService {
   static const String _cloudName = 'dt9qsvvp2';
-  static const String _uploadPreset = 'team_one_preset';
+  static const String _uploadPreset = 'AutoSpareHub';
   static const String _apiUrl =
       'https://api.cloudinary.com/v1_1/$_cloudName/image/upload';
 
   /// Standardized Cloudinary folder paths for AutoSpare
   static const String companiesFolder = 'autospare/companies';
   static const String categoriesFolder = 'autospare/categories';
+  static const String productsFolder = 'autospare/products';
 
   /// Uploads an image file to Cloudinary under the specified [folder].
   /// Returns the secure HTTPS URL on success, or null on failure.

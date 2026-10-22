@@ -12,6 +12,7 @@ class AdminDashboardProvider extends ChangeNotifier {
   int _adminCount = 0;
   int _companyCount = 0;
   int _categoryCount = 0;
+  int _productCount = 0;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -19,6 +20,7 @@ class AdminDashboardProvider extends ChangeNotifier {
   int get adminCount => _adminCount;
   int get companyCount => _companyCount;
   int get categoryCount => _categoryCount;
+  int get productCount => _productCount;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -58,11 +60,13 @@ class AdminDashboardProvider extends ChangeNotifier {
         _fetchCountSafely('ADMINS'),
         _fetchCountSafely('COMPANIES'),
         _fetchCountSafely('CATEGORIES'),
+        _fetchCountSafely('PRODUCTS'),
       ]);
 
       _adminCount = counts[0];
       _companyCount = counts[1];
       _categoryCount = counts[2];
+      _productCount = counts[3];
 
       _isLoading = false;
       notifyListeners();

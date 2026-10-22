@@ -7,6 +7,7 @@ import '../admin_login_screen.dart';
 import 'admin_management_screen.dart';
 import 'categories_screen.dart';
 import 'companies_screen.dart';
+import 'products_screen.dart';
 
 /// Dedicated Admin Menu screen with categorized management options.
 class AdminMenuScreen extends StatelessWidget {
@@ -194,9 +195,23 @@ class AdminMenuScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // SECTION 2: BUSINESS SETUP
-          _buildSectionHeader('Business Setup'),
+          // SECTION 2: CATALOG & BUSINESS MANAGEMENT
+          _buildSectionHeader('Catalog & Business Management'),
           const SizedBox(height: 8),
+
+          _buildMenuItem(
+            context: context,
+            title: 'Spare Parts & Products',
+            description: 'Catalog parts, technical specifications, photos, and compatibility.',
+            icon: Icons.precision_manufacturing_rounded,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProductsScreen()),
+              );
+            },
+          ),
+
+          const SizedBox(height: 10),
 
           _buildMenuItem(
             context: context,

@@ -8,6 +8,8 @@ import '../admin_login_screen.dart';
 import 'admin_management_screen.dart';
 import 'categories_screen.dart';
 import 'companies_screen.dart';
+import 'product_form_screen.dart';
+import 'products_screen.dart';
 
 /// Polished Automotive Admin Dashboard showing actual Firestore counts and quick management actions.
 class AdminHomeScreen extends StatefulWidget {
@@ -238,33 +240,90 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Catalog & Management Overview',
-                          style: TextStyle(
-                            color: AppColors.darkCharcoal,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
+                        Row(
+                          children: [
+                            const Text(
+                              'Catalog & Operations',
+                              style: TextStyle(
+                                color: AppColors.darkCharcoal,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            if (dashboardProvider.isLoading) ...[
+                              const SizedBox(width: 8),
+                              const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGold),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        // Top Quick Action: + Add Product Shortcut
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryGold,
+                            foregroundColor: AppColors.darkCharcoal,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            elevation: 1,
+                          ),
+                          onPressed: () => _navigateTo(const ProductFormScreen()),
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text(
+                            'Add Product',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                           ),
                         ),
-                        if (dashboardProvider.isLoading)
-                          const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGold),
-                            ),
-                          ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
+                    // --- 2x2 METRICS GRID ---
                     Row(
                       children: [
                         _buildSummaryCard(
+                          title: 'Products',
+                          count: dashboardProvider.productCount,
+                          subtitle: 'Spare Parts',
+                          icon: Icons.precision_manufacturing_outlined,
+                          accentColor: AppColors.primaryGold,
+                          isLoading: dashboardProvider.isLoading,
+                          onTap: () => _navigateTo(const ProductsScreen()),
+                        ),
+                        const SizedBox(width: 10),
+                        _buildSummaryCard(
+                          title: 'Companies',
+                          count: dashboardProvider.companyCount,
+                          subtitle: 'Vehicle Brands',
+                          icon: Icons.business_outlined,
+                          accentColor: AppColors.secondaryGold,
+                          isLoading: dashboardProvider.isLoading,
+                          onTap: () => _navigateTo(const CompaniesScreen()),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        _buildSummaryCard(
+                          title: 'Categories',
+                          count: dashboardProvider.categoryCount,
+                          subtitle: 'Part Catalog',
+                          icon: Icons.category_outlined,
+                          accentColor: AppColors.darkCharcoal,
+                          isLoading: dashboardProvider.isLoading,
+                          onTap: () => _navigateTo(const CategoriesScreen()),
+                        ),
+                        const SizedBox(width: 10),
+                        _buildSummaryCard(
                           title: 'Admins',
                           count: dashboardProvider.adminCount,
-                          subtitle: 'Registered',
+                          subtitle: 'Registered Staff',
                           icon: Icons.admin_panel_settings_outlined,
                           accentColor: AppColors.primaryGold,
                           isLoading: dashboardProvider.isLoading,
@@ -280,29 +339,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             }
                           },
                         ),
-                        const SizedBox(width: 10),
-                        _buildSummaryCard(
-                          title: 'Companies',
-                          count: dashboardProvider.companyCount,
-                          subtitle: 'Vehicle Brands',
-                          icon: Icons.business_outlined,
-                          accentColor: AppColors.secondaryGold,
-                          isLoading: dashboardProvider.isLoading,
-                          onTap: () => _navigateTo(const CompaniesScreen()),
-                        ),
-                        const SizedBox(width: 10),
-                        _buildSummaryCard(
-                          title: 'Categories',
-                          count: dashboardProvider.categoryCount,
-                          subtitle: 'Part Catalog',
-                          icon: Icons.category_outlined,
-                          accentColor: AppColors.darkCharcoal,
-                          isLoading: dashboardProvider.isLoading,
-                          onTap: () => _navigateTo(const CategoriesScreen()),
-                        ),
                       ],
                     ),
                     const SizedBox(height: 20),
+
+                    // --- MAIN CENTRAL SECTION (RESERVED FOR CUSTOMER ORDERS FEED) ---
 
                     // --- SYSTEM STATUS BANNER ---
                     Container(

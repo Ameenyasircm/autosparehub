@@ -10,10 +10,12 @@ import 'providers/admin_login_provider.dart';
 import 'providers/admin_management_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/company_provider.dart';
+import 'providers/product_provider.dart';
 import 'screens/admin/admin_management_screen.dart';
 import 'screens/admin/admin_shell_screen.dart';
 import 'screens/admin/categories_screen.dart';
 import 'screens/admin/companies_screen.dart';
+import 'screens/admin/products_screen.dart';
 import 'screens/admin_login_screen.dart';
 import 'screens/admin_splash_screen.dart';
 import 'services/database_service.dart';
@@ -61,6 +63,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<CategoryProvider>(
           create: (_) => CategoryProvider(),
         ),
+        ChangeNotifierProvider<ProductProvider>(
+          create: (_) => ProductProvider(),
+        ),
       ],
       child: MaterialApp(
         title: isAdmin ? 'Auto Spare Hub Admin' : 'Auto Spare Hub',
@@ -74,6 +79,7 @@ class MyApp extends StatelessWidget {
           '/admin_management': (context) => const AdminManagementScreen(),
           '/companies': (context) => const CompaniesScreen(),
           '/categories': (context) => const CategoriesScreen(),
+          '/products': (context) => const ProductsScreen(),
         },
       ),
     );
