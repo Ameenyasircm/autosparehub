@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/user_auth_provider.dart';
 import '../../../theme/app_theme.dart';
 
-/// Bottom sheet dialog prompting unauthenticated customer to register with Name & Phone.
-/// Upon registration, the profile is set to PENDING awaiting Admin approval.
+/// Bottom sheet dialog prompting unauthenticated customer to register with Name & 10-digit Indian mobile.
+/// Handles duplicate request detection, pending status notice, and approved auto-login.
 class CustomerRegistrationSheet extends StatefulWidget {
   final VoidCallback? onRegistered;
 
@@ -42,16 +43,149 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = context.read<UserAuthProvider>();
-    final success = await authProvider.registerCustomer(
+    final result = await authProvider.registerCustomer(
       name: _nameController.text.trim(),
       phoneNumber: _phoneController.text.trim(),
     );
 
-    if (success && mounted) {
+    if (!mounted) return;
+
+    // Case 1: Same mobile number already submitted and awaiting admin approval
+    if (result == CustomerRegistrationResult.alreadyPending) {
+      Navigator.of(context).pop();
+      final requestedDate = authProvider.currentCustomer?.requestedAt;
+      final dateStr = requestedDate != null
+          ? '${requestedDate.day}/${requestedDate.month}/${requestedDate.year}'
+          : 'recently';
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Row(
+            children: const [
+              Icon(Icons.hourglass_top_rounded, color: Colors.amber, size: 26),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Request Already Pending',
+                  style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Approval request for +91 ${_phoneController.text.trim()} is already under review by our administrator (submitted on $dateStr).',
+                style: const TextStyle(color: AppColors.darkCharcoal, fontSize: 13, height: 1.45),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'You do not need to submit another request. Once an admin approves your account, ordering will unlock automatically.',
+                style: TextStyle(color: AppColors.secondaryText, fontSize: 12.5, height: 1.4),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.darkCharcoal,
+                foregroundColor: AppColors.primaryGold,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Understood', style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+      );
+    }
+    // Case 2: Mobile number is already approved in database
+    else if (result == CustomerRegistrationResult.alreadyApproved) {
+      Navigator.of(context).pop();
+      widget.onRegistered?.call();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Welcome back, ${authProvider.currentCustomer?.name ?? ''}! Account is approved.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+    // Case 3: Mobile number was previously rejected
+    else if (result == CustomerRegistrationResult.alreadyRejected) {
+      Navigator.of(context).pop();
+      final reason = authProvider.currentCustomer?.rejectionReason ?? 'Account details could not be verified.';
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Row(
+            children: const [
+              Icon(Icons.cancel_rounded, color: AppColors.error, size: 26),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text('Registration Not Approved', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Your previous request was not approved by the admin team:',
+                style: TextStyle(color: AppColors.secondaryText, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Text(
+                  reason,
+                  style: const TextStyle(color: AppColors.error, fontSize: 12.5, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Close'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.darkCharcoal,
+                foregroundColor: AppColors.primaryGold,
+              ),
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                final ok = await authProvider.reapplyRegistration();
+                if (mounted && ok) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Re-application submitted for admin review.')),
+                  );
+                }
+              },
+              child: const Text('Re-submit Request'),
+            ),
+          ],
+        ),
+      );
+    }
+    // Case 4: Brand new request submitted successfully
+    else if (result == CustomerRegistrationResult.newRequestSubmitted) {
       Navigator.of(context).pop();
       widget.onRegistered?.call();
 
-      // Show informational dialog explaining approval workflow
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -72,15 +206,15 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
-                'Thank you for registering with AutoSpare Hub!',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                'Thank you for registering, ${_nameController.text.trim()}!',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'To maintain high-quality fulfillment, your account is currently pending review by our administration team. Once approved, you can place orders immediately.',
-                style: TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
+                'Your request (+91 ${_phoneController.text.trim()}) has been submitted for administrator review. Once verified, you will be able to order parts immediately.',
+                style: const TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
               ),
             ],
           ),
@@ -180,23 +314,63 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
 
             const SizedBox(height: 16),
 
-            // Phone Field
-            const Text(
-              'Mobile / WhatsApp Phone Number *',
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
+            // Phone Field (Strictly 10-digit Indian Mobile)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text(
+                  'Indian Mobile Number *',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
+                ),
+                Text(
+                  '10 Digits',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.secondaryText),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
             TextFormField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               enabled: !authProvider.isLoading,
-              decoration: const InputDecoration(
-                hintText: 'e.g. 9876543210',
-                prefixIcon: Icon(Icons.phone_android_outlined),
+              maxLength: 10,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
+              decoration: InputDecoration(
+                hintText: '9876543210',
+                counterText: '',
+                prefixIcon: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.phone_android_outlined, size: 20, color: AppColors.primaryGold),
+                      SizedBox(width: 6),
+                      Text(
+                        '+91 ',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.darkCharcoal,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               validator: (val) {
-                if (val == null || val.trim().isEmpty) return 'Phone number is required';
-                if (val.trim().length < 7) return 'Please enter a valid phone number';
+                if (val == null || val.trim().isEmpty) {
+                  return '10-digit mobile number is required';
+                }
+                final cleaned = val.replaceAll(RegExp(r'\D'), '');
+                if (cleaned.length != 10) {
+                  return 'Mobile number must be exactly 10 digits';
+                }
+                if (!RegExp(r'^[6-9]').hasMatch(cleaned)) {
+                  return 'Indian numbers must start with 6, 7, 8, or 9';
+                }
                 return null;
               },
             ),
@@ -216,7 +390,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Admin approval is required once before placing orders.',
+                      'Approval is needed once per mobile number before ordering.',
                       style: TextStyle(fontSize: 11.5, color: Colors.black87),
                     ),
                   ),
@@ -258,16 +432,20 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
                 onPressed: authProvider.isLoading ? null : _submit,
                 child: authProvider.isLoading
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2.2, valueColor: AlwaysStoppedAnimation(AppColors.darkCharcoal)),
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.darkCharcoal),
+                        ),
                       )
                     : const Text(
-                        'Submit for Approval',
+                        'Submit Approval Request',
                         style: TextStyle(
                           color: AppColors.darkCharcoal,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.w800,
-                          fontSize: 15,
+                          letterSpacing: 0.5,
                         ),
                       ),
               ),

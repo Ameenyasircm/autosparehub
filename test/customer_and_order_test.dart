@@ -4,9 +4,36 @@ import 'package:auto_spare_hub/models/customer_model.dart';
 import 'package:auto_spare_hub/models/order_model.dart';
 import 'package:auto_spare_hub/services/keyword_generator.dart';
 import 'package:auto_spare_hub/services/user_session_service.dart';
+import 'package:auto_spare_hub/utils/phone_helper.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('PhoneHelper Indian Number Tests', () {
+    test('validates 10-digit Indian mobile numbers accurately', () {
+      expect(PhoneHelper.isValidIndianNumber('9876543210'), isTrue);
+      expect(PhoneHelper.isValidIndianNumber('8123456789'), isTrue);
+      expect(PhoneHelper.isValidIndianNumber('7000000001'), isTrue);
+      expect(PhoneHelper.isValidIndianNumber('6999999999'), isTrue);
+
+      // Invalid cases
+      expect(PhoneHelper.isValidIndianNumber('5876543210'), isFalse); // Starts with 5
+      expect(PhoneHelper.isValidIndianNumber('987654321'), isFalse); // 9 digits
+      expect(PhoneHelper.isValidIndianNumber('98765432100'), isFalse); // 11 digits
+      expect(PhoneHelper.isValidIndianNumber(''), isFalse);
+      expect(PhoneHelper.isValidIndianNumber(null), isFalse);
+    });
+
+    test('extracts 10 digits and normalizes to 91 standard', () {
+      expect(PhoneHelper.extract10Digits('+91 98765 43210'), '9876543210');
+      expect(PhoneHelper.extract10Digits('09876543210'), '9876543210');
+      expect(PhoneHelper.extract10Digits('9876543210'), '9876543210');
+
+      expect(PhoneHelper.normalizeTo91('9876543210'), '919876543210');
+      expect(PhoneHelper.toDocId('9876543210'), 'USR_919876543210');
+      expect(PhoneHelper.formatForDisplay('9876543210'), '+91 98765 43210');
+    });
+  });
 
   group('KeywordGenerator Tests', () {
     test('generates lowercase tokens and prefix n-grams correctly', () {

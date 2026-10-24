@@ -72,6 +72,12 @@ class UserProductDetailScreen extends StatelessWidget {
     // Case 3: Approved Buyer -> Open Order Placement Sheet directly
     if (authProvider.isApproved) {
       OrderPlacementSheet.show(context, product: product);
+      return;
+    }
+
+    // Case 4: Rejected Buyer -> Prompt registration sheet to review / re-apply
+    if (authProvider.isRejected) {
+      CustomerRegistrationSheet.show(context);
     }
   }
 

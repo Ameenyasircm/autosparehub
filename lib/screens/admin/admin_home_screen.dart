@@ -10,6 +10,7 @@ import '../../providers/customer_management_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/admin_authorization_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/phone_helper.dart';
 import '../admin_login_screen.dart';
 import 'admin_management_screen.dart';
 import 'categories_screen.dart';
@@ -31,6 +32,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CustomerManagementProvider>().listenToCustomers();
       _refreshAllData();
     });
   }
@@ -211,6 +213,68 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
+  void _showRejectCustomerDialog(BuildContext context, CustomerModel customer) {
+    final reasonController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.person_off_outlined, color: AppColors.error),
+            SizedBox(width: 8),
+            Text('Reject Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Customer: ${customer.name}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+            const SizedBox(height: 2),
+            Text('Mobile: ${PhoneHelper.formatForDisplay(customer.phone)}', style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText)),
+            const SizedBox(height: 12),
+            const Text(
+              'Reason for rejection (shown to customer):',
+              style: TextStyle(fontSize: 12, color: AppColors.darkCharcoal, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                hintText: 'e.g. Phone verification failed / Non-commercial enquiry',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              final provider = context.read<CustomerManagementProvider>();
+              final reason = reasonController.text.trim().isNotEmpty
+                  ? reasonController.text.trim()
+                  : 'Account request could not be verified.';
+              final ok = await provider.rejectCustomer(customer.id, reason: reason);
+              if (context.mounted && ok) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Rejected request for ${customer.name}')),
+                );
+              }
+            },
+            child: const Text('Confirm Rejection'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCustomerApprovalCard(CustomerModel customer, String? adminId) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -261,7 +325,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         const Icon(Icons.phone_outlined, size: 13, color: AppColors.secondaryText),
                         const SizedBox(width: 4),
                         Text(
-                          customer.phone,
+                          PhoneHelper.formatForDisplay(customer.phone),
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.secondaryText,
@@ -301,15 +365,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                onPressed: () async {
-                  final provider = context.read<CustomerManagementProvider>();
-                  final ok = await provider.rejectCustomer(customer.id);
-                  if (mounted && ok) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Rejected request for ${customer.name}')),
-                    );
-                  }
-                },
+                onPressed: () => _showRejectCustomerDialog(context, customer),
                 icon: const Icon(Icons.close_rounded, size: 16),
                 label: const Text('Reject', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
               ),

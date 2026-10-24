@@ -279,24 +279,118 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     }
 
     if (auth.isPending) {
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: Colors.amber.shade900.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.amber.shade400, width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.hourglass_empty_rounded, color: Colors.amber, size: 12),
-            SizedBox(width: 4),
-            Text(
-              'Pending',
-              style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700),
+      return GestureDetector(
+        onTap: () {
+          final requestedDate = auth.currentCustomer?.requestedAt;
+          final dateStr = requestedDate != null
+              ? '${requestedDate.day}/${requestedDate.month}/${requestedDate.year}'
+              : 'Recently';
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              title: Row(
+                children: const [
+                  Icon(Icons.hourglass_top_rounded, color: Colors.amber, size: 24),
+                  SizedBox(width: 8),
+                  Text('Approval Pending', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Name: ${auth.currentCustomer?.name ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                  const SizedBox(height: 4),
+                  Text('Mobile: +91 ${auth.currentCustomer?.phone ?? ''}', style: const TextStyle(fontSize: 13, color: AppColors.secondaryText)),
+                  const SizedBox(height: 4),
+                  Text('Submitted: $dateStr', style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText)),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Your account is currently waiting for administrator authorization. Once approved, you can place orders immediately.',
+                    style: TextStyle(fontSize: 12, color: Colors.black87, height: 1.4),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Close'),
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.darkCharcoal,
+                    foregroundColor: AppColors.primaryGold,
+                  ),
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    await auth.refreshApprovalStatus();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            auth.isApproved
+                                ? 'Congratulations! Your account is approved!'
+                                : 'Still pending administrator review.',
+                          ),
+                          backgroundColor: auth.isApproved ? AppColors.success : AppColors.darkCharcoal,
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Check Status'),
+                ),
+              ],
             ),
-          ],
+          );
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.amber.shade900.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.amber.shade400, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.hourglass_empty_rounded, color: Colors.amber, size: 12),
+              SizedBox(width: 4),
+              Text(
+                'Pending ⏳',
+                style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (auth.isRejected) {
+      return GestureDetector(
+        onTap: () => CustomerRegistrationSheet.show(context),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: AppColors.error.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.error, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.error_outline, color: AppColors.error, size: 12),
+              SizedBox(width: 4),
+              Text(
+                'Rejected',
+                style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
         ),
       );
     }

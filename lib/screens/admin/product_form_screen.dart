@@ -597,7 +597,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           _buildFieldLabel('Vehicle Manufacturer / Brand *'),
           DropdownButtonFormField<String>(
             isExpanded: true,
-            initialValue: _selectedCompanyId,
+            value: _selectedCompanyId,
             decoration: const InputDecoration(
               prefixIcon: Icon(Icons.business_outlined),
               hintText: 'Select vehicle company',
@@ -632,7 +632,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           _buildFieldLabel('Spare Parts Category *'),
           DropdownButtonFormField<String>(
             isExpanded: true,
-            initialValue: _selectedCategoryId,
+            value: _selectedCategoryId,
             decoration: const InputDecoration(
               prefixIcon: Icon(Icons.category_outlined),
               hintText: 'Select part category',
@@ -891,7 +891,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           _buildFieldLabel('Rotation Direction'),
           DropdownButtonFormField<String>(
             isExpanded: true,
-            initialValue: _selectedRotation,
+            value: _selectedRotation,
             decoration: const InputDecoration(
               prefixIcon: Icon(Icons.rotate_right_rounded),
               hintText: 'Select rotation direction',
@@ -1001,7 +1001,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           ),
           Switch(
             value: _isActive,
-            activeThumbColor: AppColors.primaryGold,
+            activeColor: AppColors.primaryGold,
             activeTrackColor: AppColors.darkCharcoal,
             onChanged: provider.isSaving
                 ? null

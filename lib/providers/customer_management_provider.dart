@@ -16,6 +16,7 @@ class CustomerManagementProvider extends ChangeNotifier {
   List<CustomerModel> _customers = [];
   bool _isLoading = false;
   String? _errorMessage;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _customersSubscription;
 
   List<CustomerModel> get customers => _customers;
   bool get isLoading => _isLoading;
@@ -26,7 +27,35 @@ class CustomerManagementProvider extends ChangeNotifier {
 
   int get pendingCount => pendingCustomers.length;
 
-  /// Fetch all registered customers
+  /// Start real-time Firestore listener for customer requests
+  void listenToCustomers() {
+    _customersSubscription?.cancel();
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    _customersSubscription = _firestore.collection(collectionName).snapshots().listen(
+      (snapshot) {
+        _customers = snapshot.docs.map((doc) => CustomerModel.fromFirestore(doc)).toList();
+        _customers.sort((a, b) {
+          if (a.requestedAt != null && b.requestedAt != null) {
+            return b.requestedAt!.compareTo(a.requestedAt!);
+          }
+          return b.id.compareTo(a.id);
+        });
+        _isLoading = false;
+        notifyListeners();
+      },
+      onError: (e) {
+        debugPrint('CustomerManagementProvider stream error: $e');
+        _errorMessage = 'Failed to load customers: $e';
+        _isLoading = false;
+        notifyListeners();
+      },
+    );
+  }
+
+  /// Fetch all registered customers once (for pull-to-refresh)
   Future<void> fetchCustomers() async {
     _isLoading = true;
     _errorMessage = null;
@@ -114,5 +143,11 @@ class CustomerManagementProvider extends ChangeNotifier {
       debugPrint('CustomerManagementProvider.rejectCustomer error: $e');
       return false;
     }
+  }
+
+  @override
+  void dispose() {
+    _customersSubscription?.cancel();
+    super.dispose();
   }
 }

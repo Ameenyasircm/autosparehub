@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_login_provider.dart';
+import '../../providers/customer_management_provider.dart';
 import '../../services/admin_authorization_service.dart';
 import '../../theme/app_theme.dart';
 import '../admin_login_screen.dart';
 import 'admin_management_screen.dart';
 import 'categories_screen.dart';
 import 'companies_screen.dart';
+import 'customer_approvals_screen.dart';
 import 'products_screen.dart';
 
 /// Dedicated Admin Menu screen with categorized management options.
@@ -72,6 +74,7 @@ class AdminMenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentAdmin = context.watch<AdminLoginProvider>().currentAdmin;
+    final customerProvider = context.watch<CustomerManagementProvider>();
     final isManager = AdminAuthorizationService.canManageAdmins(currentAdmin);
 
     return Scaffold(
@@ -168,9 +171,24 @@ class AdminMenuScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // SECTION 1: ADMINISTRATION
-          _buildSectionHeader('Administration'),
+          // SECTION 1: ADMINISTRATION & USER APPROVALS
+          _buildSectionHeader('Administration & Approvals'),
           const SizedBox(height: 8),
+
+          _buildMenuItem(
+            context: context,
+            title: 'Customer Approvals',
+            description: 'Review registration requests, approve buyers, and manage permissions.',
+            icon: Icons.how_to_reg_rounded,
+            badge: customerProvider.pendingCount > 0 ? '${customerProvider.pendingCount} PENDING' : null,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CustomerApprovalsScreen()),
+              );
+            },
+          ),
+
+          const SizedBox(height: 10),
 
           _buildMenuItem(
             context: context,

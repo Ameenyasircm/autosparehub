@@ -376,7 +376,7 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
                     ),
                     Switch(
                       value: _isActive,
-                      activeThumbColor: AppColors.primaryGold,
+                      activeColor: AppColors.primaryGold,
                       onChanged: provider.isSaving
                           ? null
                           : (val) => setState(() => _isActive = val),
