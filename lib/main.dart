@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'providers/admin_dashboard_provider.dart';
 import 'providers/admin_login_provider.dart';
 import 'providers/admin_management_provider.dart';
+import 'providers/cart_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/company_provider.dart';
 import 'providers/customer_management_provider.dart';
@@ -21,6 +22,7 @@ import 'screens/admin/companies_screen.dart';
 import 'screens/admin/products_screen.dart';
 import 'screens/admin_login_screen.dart';
 import 'screens/admin_splash_screen.dart';
+import 'screens/user/cart_screen.dart';
 import 'screens/user/user_home_screen.dart';
 import 'screens/user/user_orders_screen.dart';
 import 'services/database_service.dart';
@@ -74,6 +76,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<UserAuthProvider>(
           create: (_) => UserAuthProvider()..initSession(),
         ),
+        ChangeNotifierProvider<CartProvider>(
+          create: (_) => CartProvider(),
+        ),
         ChangeNotifierProvider<OrderProvider>(
           create: (_) => OrderProvider(),
         ),
@@ -95,6 +100,7 @@ class MyApp extends StatelessWidget {
           '/categories': (context) => const CategoriesScreen(),
           '/products': (context) => const ProductsScreen(),
           '/user_home': (context) => const UserHomeScreen(),
+          '/cart': (context) => const CartScreen(),
           '/user_orders': (context) => const UserOrdersScreen(),
         },
       ),

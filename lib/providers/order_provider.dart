@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../models/cart_item_model.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
 
@@ -13,7 +14,7 @@ enum OrderDateFilter {
 }
 
 /// Provider managing customer orders, checkout placement, admin order streams,
-/// and date / status filtering on the Admin Home dashboard.
+/// and date, status, customer, and category filtering on the Admin Home dashboard.
 class OrderProvider extends ChangeNotifier {
   final FirebaseFirestore? _customFirestore;
 
@@ -32,6 +33,8 @@ class OrderProvider extends ChangeNotifier {
   String _statusFilter = 'ALL'; // ALL, PENDING, CONFIRMED, DISPATCHED, DELIVERED, CANCELLED
   OrderDateFilter _dateFilter = OrderDateFilter.all;
   DateTimeRange? _customDateRange;
+  String _customerFilter = '';
+  String _categoryFilter = 'ALL';
 
   // Getters
   List<OrderModel> get adminOrders => _adminOrders;
@@ -42,6 +45,8 @@ class OrderProvider extends ChangeNotifier {
   String get statusFilter => _statusFilter;
   OrderDateFilter get dateFilter => _dateFilter;
   DateTimeRange? get customDateRange => _customDateRange;
+  String get customerFilter => _customerFilter;
+  String get categoryFilter => _categoryFilter;
 
   // Order Counts for metrics
   int get totalOrdersCount => _adminOrders.length;
@@ -49,7 +54,7 @@ class OrderProvider extends ChangeNotifier {
   int get confirmedOrdersCount => _adminOrders.where((o) => o.isConfirmed).length;
   int get deliveredOrdersCount => _adminOrders.where((o) => o.isDelivered).length;
 
-  /// Returns admin orders filtered by selected status and date range
+  /// Returns admin orders filtered by status, date range, customer (name/phone), and category
   List<OrderModel> get filteredAdminOrders {
     final now = DateTime.now();
 
@@ -59,7 +64,34 @@ class OrderProvider extends ChangeNotifier {
         return false;
       }
 
-      // 2. Date Filter
+      // 2. Customer Filter (Customer name, mobile number, or order number)
+      if (_customerFilter.isNotEmpty) {
+        final query = _customerFilter.toLowerCase();
+        final matchesName = order.userName.toLowerCase().contains(query);
+        final matchesPhone = order.userPhone.contains(query);
+        final matchesOrderNum = order.orderNumber.toLowerCase().contains(query);
+        if (!matchesName && !matchesPhone && !matchesOrderNum) {
+          return false;
+        }
+      }
+
+      // 3. Category Filter
+      if (_categoryFilter != 'ALL') {
+        final matchesCategoryList = order.categoryNames.any(
+          (c) => c.toLowerCase() == _categoryFilter.toLowerCase(),
+        );
+        final matchesRootCategory =
+            order.categoryName.toLowerCase() == _categoryFilter.toLowerCase();
+        final matchesAnyItem = order.items.any(
+          (item) => item.categoryName.toLowerCase() == _categoryFilter.toLowerCase(),
+        );
+
+        if (!matchesCategoryList && !matchesRootCategory && !matchesAnyItem) {
+          return false;
+        }
+      }
+
+      // 4. Date Filter
       if (order.createdAt == null) return true;
       final createdAt = order.createdAt!;
 
@@ -99,7 +131,26 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Customer places a new order for a spare part
+  void setCustomerFilter(String query) {
+    _customerFilter = query.trim();
+    notifyListeners();
+  }
+
+  void setCategoryFilter(String categoryName) {
+    _categoryFilter = categoryName;
+    notifyListeners();
+  }
+
+  void resetAllFilters() {
+    _statusFilter = 'ALL';
+    _dateFilter = OrderDateFilter.all;
+    _customDateRange = null;
+    _customerFilter = '';
+    _categoryFilter = 'ALL';
+    notifyListeners();
+  }
+
+  /// Customer places a direct order for a single spare part (e.g. via "Buy Now")
   Future<OrderModel?> placeOrder({
     required String userId,
     required String userName,
@@ -120,6 +171,18 @@ class OrderProvider extends ChangeNotifier {
       final unitPrice = product.price ?? 0.0;
       final totalAmount = unitPrice * quantity;
 
+      final item = OrderItemModel(
+        productId: product.id,
+        productName: product.name,
+        productImage: product.imageUrl,
+        companyName: product.companyName,
+        categoryName: product.categoryName,
+        refNo: product.refNo,
+        unitPrice: unitPrice,
+        quantity: quantity,
+        totalPrice: totalAmount,
+      );
+
       final order = OrderModel(
         id: docId,
         orderNumber: orderNumber,
@@ -137,6 +200,8 @@ class OrderProvider extends ChangeNotifier {
         shippingAddress: shippingAddress?.trim(),
         customerNote: customerNote?.trim(),
         status: 'PENDING',
+        items: [item],
+        categoryNames: [product.categoryName],
         createdAt: now,
       );
 
@@ -152,6 +217,90 @@ class OrderProvider extends ChangeNotifier {
       return order;
     } catch (e) {
       debugPrint('OrderProvider.placeOrder error: $e');
+      _errorMessage = 'Failed to place order: $e';
+      _isPlacingOrder = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Customer places an order from their shopping cart containing 1 or more items
+  Future<OrderModel?> placeCartOrder({
+    required String userId,
+    required String userName,
+    required String userPhone,
+    required List<CartItemModel> cartItems,
+    String? shippingAddress,
+    String? customerNote,
+  }) async {
+    if (cartItems.isEmpty) {
+      _errorMessage = 'Cannot place an empty order.';
+      notifyListeners();
+      return null;
+    }
+
+    _isPlacingOrder = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final now = DateTime.now();
+      final docId = 'ORD${now.millisecondsSinceEpoch}';
+      final orderNumber = '#ORD-${(now.millisecondsSinceEpoch % 10000).toString().padLeft(4, '0')}';
+
+      final items = cartItems.map((cartItem) {
+        final p = cartItem.product;
+        return OrderItemModel(
+          productId: p.id,
+          productName: p.name,
+          productImage: p.imageUrl,
+          companyName: p.companyName,
+          categoryName: p.categoryName,
+          refNo: p.refNo,
+          unitPrice: p.price ?? 0.0,
+          quantity: cartItem.quantity,
+          totalPrice: cartItem.totalPrice,
+        );
+      }).toList();
+
+      final totalAmount = items.fold<double>(0.0, (total, i) => total + i.totalPrice);
+      final categoryNames = items.map((i) => i.categoryName).where((c) => c.isNotEmpty).toSet().toList();
+      final totalQuantity = items.fold<int>(0, (total, i) => total + i.quantity);
+
+      final order = OrderModel(
+        id: docId,
+        orderNumber: orderNumber,
+        userId: userId,
+        userName: userName,
+        userPhone: userPhone,
+        productId: items.first.productId,
+        productName: items.length == 1 ? items.first.productName : '${items.first.productName} & ${items.length - 1} more',
+        productImage: items.first.productImage,
+        companyName: items.first.companyName,
+        categoryName: items.first.categoryName,
+        unitPrice: items.first.unitPrice,
+        quantity: totalQuantity,
+        totalAmount: totalAmount,
+        shippingAddress: shippingAddress?.trim(),
+        customerNote: customerNote?.trim(),
+        status: 'PENDING',
+        items: items,
+        categoryNames: categoryNames,
+        createdAt: now,
+      );
+
+      await _firestore
+          .collection(collectionName)
+          .doc(docId)
+          .set(order.toMap())
+          .timeout(const Duration(seconds: 10));
+
+      _customerOrders.insert(0, order);
+      _isPlacingOrder = false;
+      notifyListeners();
+      return order;
+    } catch (e) {
+      debugPrint('OrderProvider.placeCartOrder error: $e');
       _errorMessage = 'Failed to place order: $e';
       _isPlacingOrder = false;
       notifyListeners();

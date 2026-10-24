@@ -6,6 +6,7 @@ import '../../models/customer_model.dart';
 import '../../models/order_model.dart';
 import '../../providers/admin_dashboard_provider.dart';
 import '../../providers/admin_login_provider.dart';
+import '../../providers/category_provider.dart';
 import '../../providers/customer_management_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/admin_authorization_service.dart';
@@ -28,6 +29,8 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
+  final _customerSearchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -37,11 +40,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _customerSearchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _refreshAllData() async {
     await Future.wait([
       context.read<AdminDashboardProvider>().fetchDashboardCounts(),
       context.read<CustomerManagementProvider>().fetchCustomers(),
       context.read<OrderProvider>().fetchAdminOrders(),
+      context.read<CategoryProvider>().fetchCategories(),
     ]);
   }
 
@@ -392,6 +402,383 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // --- DETAILED ORDER BREAKDOWN SHEET ---
+  void _showOrderDetailsSheet(BuildContext context, OrderModel order) {
+    Color badgeColor;
+    Color badgeBg;
+    IconData statusIcon;
+
+    switch (order.status) {
+      case 'CONFIRMED':
+        badgeColor = Colors.blue.shade700;
+        badgeBg = Colors.blue.shade50;
+        statusIcon = Icons.thumb_up_alt_rounded;
+        break;
+      case 'DISPATCHED':
+        badgeColor = Colors.deepPurple;
+        badgeBg = Colors.deepPurple.shade50;
+        statusIcon = Icons.local_shipping_rounded;
+        break;
+      case 'DELIVERED':
+        badgeColor = Colors.green.shade700;
+        badgeBg = Colors.green.shade50;
+        statusIcon = Icons.check_circle_rounded;
+        break;
+      case 'CANCELLED':
+        badgeColor = Colors.red.shade700;
+        badgeBg = Colors.red.shade50;
+        statusIcon = Icons.cancel_rounded;
+        break;
+      case 'PENDING':
+      default:
+        badgeColor = Colors.amber.shade800;
+        badgeBg = Colors.amber.shade50;
+        statusIcon = Icons.hourglass_top_rounded;
+        break;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => Container(
+        height: MediaQuery.of(context).size.height * 0.88,
+        decoration: const BoxDecoration(
+          color: AppColors.backgroundLight,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 44,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        order.orderNumber,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.darkCharcoal,
+                        ),
+                      ),
+                      if (order.createdAt != null)
+                        Text(
+                          '${order.createdAt!.day}/${order.createdAt!.month}/${order.createdAt!.year} at ${order.createdAt!.hour.toString().padLeft(2, '0')}:${order.createdAt!.minute.toString().padLeft(2, '0')}',
+                          style: const TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
+                        ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: badgeBg,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(statusIcon, size: 14, color: badgeColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          order.status,
+                          style: TextStyle(
+                            color: badgeColor,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Customer Contact Card
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: AppColors.primaryGold.withValues(alpha: 0.2),
+                            child: Text(
+                              order.userName.isNotEmpty ? order.userName[0].toUpperCase() : 'C',
+                              style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.darkCharcoal),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  order.userName,
+                                  style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: AppColors.darkCharcoal),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  PhoneHelper.formatForDisplay(order.userPhone),
+                                  style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.copy_rounded, color: AppColors.primaryGold, size: 18),
+                            tooltip: 'Copy Phone',
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: order.userPhone));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Copied ${order.userPhone} to clipboard')),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Ordered Spare Parts
+                    Row(
+                      children: [
+                        const Icon(Icons.precision_manufacturing_outlined, color: AppColors.primaryGold, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Ordered Spare Parts (${order.items.length} items)',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.darkCharcoal),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: order.items.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final item = order.items[index];
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  width: 50,
+                                  height: 50,
+                                  color: Colors.grey.shade100,
+                                  child: item.productImage.isNotEmpty
+                                      ? Image.network(
+                                          item.productImage,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) =>
+                                              const Icon(Icons.car_repair_rounded, color: AppColors.primaryGold),
+                                        )
+                                      : const Icon(Icons.car_repair_rounded, color: AppColors.primaryGold),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.productName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${item.companyName} • ${item.categoryName}',
+                                      style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                                    ),
+                                    if (item.refNo != null && item.refNo!.isNotEmpty)
+                                      Text(
+                                        'Ref: ${item.refNo}',
+                                        style: const TextStyle(fontSize: 10.5, color: Colors.grey),
+                                      ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Qty: ${item.quantity}   •   ₹ ${item.unitPrice.toStringAsFixed(0)} each',
+                                      style: const TextStyle(fontSize: 11.5, color: Colors.blueGrey, fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                '₹ ${item.totalPrice.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                  color: AppColors.darkCharcoal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Delivery Details
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(Icons.location_on_outlined, color: AppColors.primaryGold, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Delivery Address & Notes',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.darkCharcoal),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          const Divider(height: 1),
+                          const SizedBox(height: 10),
+                          Text(
+                            order.shippingAddress != null && order.shippingAddress!.isNotEmpty
+                                ? order.shippingAddress!
+                                : 'No shipping address provided.',
+                            style: const TextStyle(fontSize: 13, color: AppColors.darkCharcoal, height: 1.3),
+                          ),
+                          if (order.customerNote != null && order.customerNote!.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.backgroundLight,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.note_alt_outlined, size: 16, color: AppColors.secondaryText),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Customer Note: "${order.customerNote!}"',
+                                      style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.secondaryText),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Financial Summary
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Total Units (${order.totalItemUnits} units)',
+                                style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Order Total Amount',
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.darkCharcoal),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '₹ ${order.totalAmount.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.darkCharcoal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Change Status Action Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.darkCharcoal,
+                          foregroundColor: AppColors.primaryGold,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(sheetCtx);
+                          _showOrderStatusDialog(context, order);
+                        },
+                        icon: const Icon(Icons.edit_note_rounded, size: 20),
+                        label: const Text('Update Order Status', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -850,6 +1237,64 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     ),
                     const SizedBox(height: 12),
 
+                    // --- CUSTOMER SEARCH FILTER ---
+                    Container(
+                      height: 44,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: TextField(
+                        controller: _customerSearchController,
+                        onChanged: (val) => orderProvider.setCustomerFilter(val),
+                        style: const TextStyle(fontSize: 13, color: AppColors.darkCharcoal),
+                        decoration: InputDecoration(
+                          hintText: 'Search customer name, phone, or #ORD...',
+                          hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+                          prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.primaryGold),
+                          suffixIcon: _customerSearchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 16, color: Colors.grey),
+                                  onPressed: () {
+                                    _customerSearchController.clear();
+                                    orderProvider.setCustomerFilter('');
+                                  },
+                                )
+                              : null,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                          filled: true,
+                          fillColor: Colors.white,
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: AppColors.primaryGold, width: 1.5),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // --- CATEGORY FILTER STRIP ---
+                    Consumer<CategoryProvider>(
+                      builder: (context, catProvider, child) {
+                        final categories = catProvider.categories;
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildCategoryFilterChip('ALL', 'All Categories', orderProvider),
+                              ...categories.map((cat) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: _buildCategoryFilterChip(cat.name, cat.name, orderProvider),
+                                );
+                              }),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 10),
+
                     // --- DATE FILTER STRIP ---
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -915,6 +1360,41 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         ],
                       ),
                     ),
+
+                    if (orderProvider.customerFilter.isNotEmpty ||
+                        orderProvider.categoryFilter != 'ALL' ||
+                        orderProvider.statusFilter != 'ALL' ||
+                        orderProvider.dateFilter != OrderDateFilter.all) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.filter_alt, size: 13, color: AppColors.primaryGold),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Filtered: ${orderProvider.filteredAdminOrders.length} of ${orderProvider.totalOrdersCount} orders',
+                                style: const TextStyle(fontSize: 11.5, color: AppColors.secondaryText, fontStyle: FontStyle.italic),
+                              ),
+                            ],
+                          ),
+                          InkWell(
+                            onTap: () {
+                              _customerSearchController.clear();
+                              orderProvider.resetAllFilters();
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              child: Text(
+                                'Reset Filters',
+                                style: TextStyle(fontSize: 11.5, color: AppColors.error, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 14),
 
                     // --- ORDERS LIST ---
@@ -1015,8 +1495,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         break;
     }
 
-    return Container(
-      decoration: BoxDecoration(
+    return InkWell(
+      onTap: () => _showOrderDetailsSheet(context, order),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
@@ -1123,7 +1606,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            order.productName,
+                            order.items.length > 1
+                                ? '${order.items.first.productName} & ${order.items.length - 1} more parts'
+                                : order.productName,
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
@@ -1132,12 +1617,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${order.companyName} • ${order.categoryName}',
+                            order.items.length > 1
+                                ? '${order.items.length} parts • ${order.totalItemUnits} units'
+                                : '${order.companyName} • ${order.categoryName}',
                             style: const TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Qty: ${order.quantity}   •   ₹${order.totalAmount.toStringAsFixed(0)}',
+                            'Units: ${order.totalItemUnits}   •   ₹${order.totalAmount.toStringAsFixed(0)}',
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
@@ -1166,7 +1653,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     const Icon(Icons.phone_outlined, size: 14, color: AppColors.secondaryText),
                     const SizedBox(width: 4),
                     Text(
-                      order.userPhone,
+                      PhoneHelper.formatForDisplay(order.userPhone),
                       style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.darkCharcoal),
                     ),
                     IconButton(
@@ -1231,11 +1718,26 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.darkCharcoal,
                         side: BorderSide(color: Colors.grey.shade300),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () => _showOrderDetailsSheet(context, order),
+                      icon: const Icon(Icons.visibility_outlined, size: 16),
+                      label: const Text(
+                        'View Details',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.darkCharcoal,
+                        foregroundColor: AppColors.primaryGold,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       onPressed: () => _showOrderStatusDialog(context, order),
-                      icon: const Icon(Icons.edit_note_rounded, size: 18),
+                      icon: const Icon(Icons.edit_note_rounded, size: 16),
                       label: const Text(
                         'Change Status',
                         style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
@@ -1247,6 +1749,32 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
           ),
         ],
+      ),
+    ),
+    );
+  }
+
+  Widget _buildCategoryFilterChip(String category, String label, OrderProvider provider) {
+    final isSelected = provider.categoryFilter.toLowerCase() == category.toLowerCase();
+    return GestureDetector(
+      onTap: () => provider.setCategoryFilter(category),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.darkCharcoal : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.darkCharcoal : Colors.grey.shade300,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: isSelected ? AppColors.primaryGold : AppColors.secondaryText,
+          ),
+        ),
       ),
     );
   }

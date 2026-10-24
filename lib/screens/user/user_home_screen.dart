@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
+import '../../providers/cart_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/company_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
+import 'cart_screen.dart';
 import 'user_orders_screen.dart';
 import 'user_product_detail_screen.dart';
 import 'widgets/customer_registration_sheet.dart';
@@ -93,6 +95,48 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           // User Status Badge
           _buildCustomerStatusBadge(context, authProvider),
           const SizedBox(width: 4),
+
+          // Cart Button with dynamic count badge
+          Consumer<CartProvider>(
+            builder: (context, cart, child) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                    tooltip: 'Shopping Cart',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const CartScreen()),
+                      );
+                    },
+                  ),
+                  if (cart.totalItemCount > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.primaryGold,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                        child: Text(
+                          '${cart.totalItemCount}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.darkCharcoal,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
 
           // Orders Shortcut Button
           IconButton(
@@ -571,13 +615,39 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                               ),
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryGold.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
+                          InkWell(
+                            onTap: () {
+                              context.read<CartProvider>().addToCart(product);
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Added ${product.name} to cart'),
+                                  duration: const Duration(seconds: 2),
+                                  action: SnackBarAction(
+                                    label: 'View Cart',
+                                    textColor: AppColors.primaryGold,
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(builder: (_) => const CartScreen()),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryGold.withValues(alpha: 0.18),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.add_shopping_cart_rounded,
+                                size: 14,
+                                color: AppColors.darkCharcoal,
+                              ),
                             ),
-                            child: const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppColors.darkCharcoal),
                           ),
                         ],
                       ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
+import '../../providers/cart_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
+import 'cart_screen.dart';
 import 'widgets/customer_registration_sheet.dart';
 import 'widgets/order_placement_sheet.dart';
 
@@ -101,6 +103,49 @@ class UserProductDetailScreen extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16.5),
         ),
+        actions: [
+          Consumer<CartProvider>(
+            builder: (context, cart, child) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                    tooltip: 'Shopping Cart',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const CartScreen()),
+                      );
+                    },
+                  ),
+                  if (cart.totalItemCount > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.primaryGold,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                        child: Text(
+                          '${cart.totalItemCount}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.darkCharcoal,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       bottomNavigationBar: _buildStickyBottomBar(context, authProvider, isOutOfStock),
       body: SingleChildScrollView(
@@ -380,56 +425,82 @@ class UserProductDetailScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Total Price', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                const Text('Price', style: TextStyle(fontSize: 11, color: Colors.grey)),
                 Text(
                   product.price != null
-                      ? '₹ ${product.price!.toStringAsFixed(2)}'
+                      ? '₹ ${product.price!.toStringAsFixed(0)}'
                       : 'N/A',
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: AppColors.darkCharcoal),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.darkCharcoal),
                 ),
               ],
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
 
-            // Order CTA Button
+            // Add to Cart Button
             Expanded(
-              child: Container(
+              flex: 1,
+              child: SizedBox(
                 height: 48,
-                decoration: BoxDecoration(
-                  gradient: isOutOfStock
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.darkCharcoal,
+                    side: BorderSide(
+                      color: isOutOfStock ? Colors.grey.shade300 : AppColors.darkCharcoal,
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: isOutOfStock
                       ? null
-                      : const LinearGradient(colors: [AppColors.primaryGold, AppColors.lightGold]),
-                  color: isOutOfStock ? Colors.grey.shade300 : null,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: isOutOfStock
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: AppColors.primaryGold.withValues(alpha: 0.35),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
+                      : () {
+                          context.read<CartProvider>().addToCart(product);
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Added ${product.name} to cart'),
+                              duration: const Duration(seconds: 2),
+                              action: SnackBarAction(
+                                label: 'View Cart',
+                                textColor: AppColors.primaryGold,
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => const CartScreen()),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                  icon: const Icon(Icons.add_shopping_cart_rounded, size: 17),
+                  label: const Text(
+                    'Add to Cart',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
+                  ),
                 ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Buy Now / Order Button
+            Expanded(
+              flex: 1,
+              child: SizedBox(
+                height: 48,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
+                    backgroundColor: isOutOfStock ? Colors.grey.shade300 : AppColors.darkCharcoal,
+                    foregroundColor: isOutOfStock ? Colors.grey : AppColors.primaryGold,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: isOutOfStock ? null : () => _handleOrderTap(context),
-                  icon: Icon(
-                    ctaIcon,
-                    color: isOutOfStock ? Colors.grey : AppColors.darkCharcoal,
-                    size: 19,
-                  ),
+                  icon: Icon(ctaIcon, size: 17),
                   label: Text(
-                    isOutOfStock ? 'Out of Stock' : ctaLabel,
-                    style: TextStyle(
-                      color: isOutOfStock ? Colors.grey : AppColors.darkCharcoal,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                    ),
+                    isOutOfStock ? 'Out of Stock' : (authProvider.isApproved ? 'Buy Now' : ctaLabel),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
                   ),
                 ),
               ),
