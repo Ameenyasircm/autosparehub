@@ -122,6 +122,21 @@ void main() {
       expect(cart.totalItemCount, 0);
       expect(cart.subtotalAmount, 0.0);
     });
+
+    test('sets user ID and handles user logout correctly', () async {
+      final cart = CartProvider();
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      cart.setUserId('USR_TEST_01');
+      expect(cart.currentUserId, 'USR_TEST_01');
+
+      await cart.addToCart(sampleProduct1, quantity: 1);
+      expect(cart.items.length, 1);
+
+      await cart.onUserLogout();
+      expect(cart.currentUserId, isNull);
+      expect(cart.isEmpty, isTrue);
+    });
   });
 
   group('Multi-Item OrderModel Tests', () {

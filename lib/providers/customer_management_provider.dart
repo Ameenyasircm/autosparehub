@@ -145,6 +145,39 @@ class CustomerManagementProvider extends ChangeNotifier {
     }
   }
 
+  /// Update customer password by administrator
+  Future<bool> updateCustomerPassword(String customerId, String newPassword) async {
+    final cleanPass = newPassword.trim();
+    if (cleanPass.length < 6) {
+      _errorMessage = 'Password must be at least 6 characters.';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      await _firestore
+          .collection(collectionName)
+          .doc(customerId)
+          .update({
+            'PASSWORD': cleanPass,
+            'UPDATED_AT': FieldValue.serverTimestamp(),
+          })
+          .timeout(const Duration(seconds: 8));
+
+      final index = _customers.indexWhere((c) => c.id == customerId);
+      if (index != -1) {
+        _customers[index] = _customers[index].copyWith(password: cleanPass);
+        notifyListeners();
+      }
+      return true;
+    } catch (e) {
+      debugPrint('CustomerManagementProvider.updateCustomerPassword error: $e');
+      _errorMessage = 'Failed to update password: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
   @override
   void dispose() {
     _customersSubscription?.cancel();

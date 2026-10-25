@@ -10,6 +10,7 @@ import '../../theme/app_theme.dart';
 import 'cart_screen.dart';
 import 'user_orders_screen.dart';
 import 'user_product_detail_screen.dart';
+import 'widgets/change_password_dialog.dart';
 import 'widgets/customer_registration_sheet.dart';
 
 /// Customer Storefront Home Screen displaying automotive spare parts catalog,
@@ -27,8 +28,14 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<UserAuthProvider>().initSession();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<UserAuthProvider>().initSession();
+      if (!mounted) return;
+      final auth = context.read<UserAuthProvider>();
+      if (auth.isApproved && auth.currentCustomer != null) {
+        context.read<CartProvider>().loadCartForUser(auth.currentCustomer!.id);
+      }
+
       context.read<ProductProvider>().fetchProducts();
 
       final compProvider = context.read<CompanyProvider>();
@@ -62,9 +69,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         backgroundColor: AppColors.darkCharcoal,
         elevation: 0,
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
@@ -73,28 +81,31 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 borderRadius: BorderRadius.circular(6),
                 child: Image.asset(
                   'assets/AutoSpareLogo.jpg',
-                  width: 26,
-                  height: 26,
+                  width: 24,
+                  height: 24,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) => const Icon(
                     Icons.directions_car,
                     color: AppColors.primaryGold,
-                    size: 20,
+                    size: 18,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 10),
-            const Text(
-              'AutoSpare Store',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
+            const SizedBox(width: 8),
+            const Flexible(
+              child: Text(
+                'AutoSpare',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16.5),
+              ),
             ),
           ],
         ),
         actions: [
           // User Status Badge
           _buildCustomerStatusBadge(context, authProvider),
-          const SizedBox(width: 4),
 
           // Cart Button with dynamic count badge
           Consumer<CartProvider>(
@@ -103,8 +114,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 alignment: Alignment.center,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                    icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white, size: 21),
                     tooltip: 'Shopping Cart',
+                    visualDensity: VisualDensity.compact,
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const CartScreen()),
@@ -113,21 +125,21 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   ),
                   if (cart.totalItemCount > 0)
                     Positioned(
-                      right: 6,
-                      top: 6,
+                      right: 4,
+                      top: 4,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(3.5),
                         decoration: const BoxDecoration(
                           color: AppColors.primaryGold,
                           shape: BoxShape.circle,
                         ),
-                        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                         child: Text(
                           '${cart.totalItemCount}',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: AppColors.darkCharcoal,
-                            fontSize: 10,
+                            fontSize: 9.5,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -140,8 +152,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
           // Orders Shortcut Button
           IconButton(
-            icon: const Icon(Icons.shopping_bag_outlined, color: AppColors.lightGold),
+            icon: const Icon(Icons.shopping_bag_outlined, color: AppColors.lightGold, size: 21),
             tooltip: 'My Orders',
+            visualDensity: VisualDensity.compact,
             onPressed: () {
               if (authProvider.isRegistered) {
                 Navigator.of(context).push(
@@ -152,7 +165,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               }
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
@@ -314,11 +327,12 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
       return TextButton.icon(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.lightGold,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          visualDensity: VisualDensity.compact,
         ),
         onPressed: () => CustomerRegistrationSheet.show(context),
         icon: const Icon(Icons.person_outline, size: 16),
-        label: const Text('Register', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+        label: const Text('Sign In', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
       );
     }
 
@@ -352,12 +366,39 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   Text('Submitted: $dateStr', style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText)),
                   const SizedBox(height: 12),
                   const Text(
-                    'Your account is currently waiting for administrator authorization. Once approved, you can place orders immediately.',
+                    'Your account registration has been submitted and is currently waiting for administrator authorization. Once approved, you can log in and place orders.',
                     style: TextStyle(fontSize: 12, color: Colors.black87, height: 1.4),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber.shade200),
+                    ),
+                    child: const Text(
+                      'നിങ്ങളുടെ രജിസ്ട്രേഷൻ അഡ്മിൻ പരിശോധിച്ചുകൊണ്ടിരിക്കുകയാണ്. പരിശോധന പൂർത്തിയാക്കിയ ശേഷം അഡ്മിൻ നിങ്ങളെ ഉടൻ ബന്ധപ്പെടുന്നതാണ്. ദയവായി കാത്തിരിക്കുക!',
+                      style: TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal, height: 1.4),
+                    ),
                   ),
                 ],
               ),
               actions: [
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    await auth.logout();
+                    if (context.mounted) {
+                      context.read<CartProvider>().onUserLogout();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Logged out successfully.')),
+                      );
+                    }
+                  },
+                  child: const Text('Log Out'),
+                ),
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(),
                   child: const Text('Close'),
@@ -371,6 +412,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     Navigator.of(ctx).pop();
                     await auth.refreshApprovalStatus();
                     if (context.mounted) {
+                      if (auth.isApproved && auth.currentCustomer != null) {
+                        context.read<CartProvider>().loadCartForUser(auth.currentCustomer!.id);
+                      }
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -439,24 +483,133 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
       );
     }
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.success, width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.verified_user_rounded, color: AppColors.success, size: 12),
-          SizedBox(width: 4),
-          Text(
-            'Verified',
-            style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700),
+    // Approved Customer Badge with Account Menu
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (dialogCtx) => AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppColors.primaryGold.withValues(alpha: 0.2),
+                  child: Text(
+                    auth.currentCustomer?.name.isNotEmpty == true ? auth.currentCustomer!.name[0].toUpperCase() : 'U',
+                    style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.darkCharcoal),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        auth.currentCustomer?.name ?? 'Customer',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                      ),
+                      Text(
+                        '+91 ${auth.currentCustomer?.phone ?? ''}',
+                        style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.check_circle_rounded, color: AppColors.success, size: 16),
+                      SizedBox(width: 6),
+                      Text(
+                        'Verified & Approved Customer',
+                        style: TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.receipt_long_rounded, color: AppColors.primaryGold),
+                  title: const Text('My Orders', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                  onTap: () {
+                    Navigator.pop(dialogCtx);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const UserOrdersScreen()),
+                    );
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.lock_reset_rounded, color: AppColors.primaryGold),
+                  title: const Text('Change Password', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                  onTap: () {
+                    Navigator.pop(dialogCtx);
+                    ChangeUserPasswordDialog.show(context);
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.logout_rounded, color: AppColors.error),
+                  title: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.error)),
+                  onTap: () async {
+                    Navigator.pop(dialogCtx);
+                    await auth.logout();
+                    if (context.mounted) {
+                      context.read<CartProvider>().onUserLogout();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Signed out successfully.')),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text('Close'),
+              ),
+            ],
           ),
-        ],
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.success, width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.verified_user_rounded, color: AppColors.success, size: 12),
+            SizedBox(width: 4),
+            Text(
+              'Verified',
+              style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
       ),
     );
   }

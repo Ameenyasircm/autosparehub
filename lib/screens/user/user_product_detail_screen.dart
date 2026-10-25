@@ -39,7 +39,10 @@ class UserProductDetailScreen extends StatelessWidget {
       if (!context.mounted) return;
 
       if (authProvider.isApproved) {
-        // Now approved! Proceed to order placement
+        // Now approved! Sync cart and proceed to order placement
+        if (authProvider.currentCustomer != null) {
+          context.read<CartProvider>().loadCartForUser(authProvider.currentCustomer!.id);
+        }
         OrderPlacementSheet.show(context, product: product);
       } else {
         // Still pending approval
@@ -55,9 +58,28 @@ class UserProductDetailScreen extends StatelessWidget {
                 Text('Approval Pending', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
               ],
             ),
-            content: const Text(
-              'Your registration has been submitted and is awaiting administrator verification. Once approved, you can place orders immediately.',
-              style: TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Your registration has been submitted and is awaiting administrator verification. Once approved, you can place orders immediately.',
+                  style: TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: const Text(
+                    'നിങ്ങളുടെ അക്കൗണ്ട് അഡ്മിന്റെ പരിശോധനയിലാണ്. അഡ്മിൻ അനുമതി നൽകിയ ശേഷം മാത്രമേ ഓർഡറുകൾ നൽകാൻ സാധിക്കൂ.',
+                    style: TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal, height: 1.4),
+                  ),
+                ),
+              ],
             ),
             actions: [
               TextButton(

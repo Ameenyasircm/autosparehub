@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:auto_spare_hub/models/customer_model.dart';
 import 'package:auto_spare_hub/models/order_model.dart';
+import 'package:auto_spare_hub/providers/user_auth_provider.dart';
 import 'package:auto_spare_hub/services/keyword_generator.dart';
 import 'package:auto_spare_hub/services/user_session_service.dart';
 import 'package:auto_spare_hub/utils/phone_helper.dart';
@@ -86,6 +87,7 @@ void main() {
         name: 'Ameen Yasir',
         phone: '+919876543210',
         status: 'PENDING',
+        password: 'securePassword123',
         requestedAt: now,
       );
 
@@ -94,13 +96,34 @@ void main() {
       expect(map['NAME'], 'Ameen Yasir');
       expect(map['PHONE_NUMBER'], '+919876543210');
       expect(map['STATUS'], 'PENDING');
+      expect(map['PASSWORD'], 'securePassword123');
 
       final fromMap = CustomerModel.fromMap(map, 'USR1776788421000');
       expect(fromMap.id, 'USR1776788421000');
       expect(fromMap.name, 'Ameen Yasir');
       expect(fromMap.phone, '+919876543210');
+      expect(fromMap.password, 'securePassword123');
       expect(fromMap.isPending, isTrue);
       expect(fromMap.isApproved, isFalse);
+    });
+
+    test('copyWith updates password and status correctly', () {
+      const original = CustomerModel(
+        id: 'USR1',
+        name: 'Buyer',
+        phone: '9988776655',
+        status: 'PENDING',
+        password: 'oldPassword',
+      );
+
+      final updated = original.copyWith(
+        status: 'APPROVED',
+        password: 'newPassword456',
+      );
+
+      expect(updated.status, 'APPROVED');
+      expect(updated.password, 'newPassword456');
+      expect(updated.name, 'Buyer');
     });
 
     test('status helper getters report correct state', () {
@@ -166,6 +189,7 @@ void main() {
         name: 'Rahul',
         phone: '9988776655',
         status: 'APPROVED',
+        password: 'mySecretPass789',
       );
 
       await sessionService.saveCustomerSession(customer);
@@ -176,10 +200,31 @@ void main() {
       expect(session.name, 'Rahul');
       expect(session.phone, '9988776655');
       expect(session.status, 'APPROVED');
+      expect(session.password, 'mySecretPass789');
 
       await sessionService.clearCustomerSession();
       final cleared = await sessionService.getCustomerSession();
       expect(cleared, isNull);
+    });
+  });
+
+  group('UserAuthProvider Change Password & Logout Tests', () {
+    test('changePassword fails gracefully when no customer is signed in', () async {
+      final auth = UserAuthProvider();
+      final result = await auth.changePassword(
+        oldPassword: 'old',
+        newPassword: 'newPassword123',
+      );
+      expect(result, isFalse);
+      expect(auth.errorMessage, contains('signed in'));
+    });
+
+    test('logout clears customer and resets state', () async {
+      SharedPreferences.setMockInitialValues({});
+      final auth = UserAuthProvider();
+      await auth.logout();
+      expect(auth.currentCustomer, isNull);
+      expect(auth.isRegistered, isFalse);
     });
   });
 }

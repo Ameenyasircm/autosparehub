@@ -10,6 +10,7 @@ class CustomerModel {
   final DateTime? requestedAt;
   final DateTime? approvedAt;
   final String? rejectionReason;
+  final String? password;
 
   const CustomerModel({
     required this.id,
@@ -20,6 +21,7 @@ class CustomerModel {
     this.requestedAt,
     this.approvedAt,
     this.rejectionReason,
+    this.password,
   }) : phoneNumber = phoneNumber ?? phone ?? '';
 
   String get phone => phoneNumber;
@@ -48,6 +50,7 @@ class CustomerModel {
       requestedAt: parseTimestamp(data['REQUESTED_AT'] ?? data['requestedAt'] ?? data['CREATED_AT']),
       approvedAt: parseTimestamp(data['APPROVED_AT'] ?? data['approvedAt']),
       rejectionReason: data['REJECTION_REASON']?.toString(),
+      password: (data['PASSWORD'] ?? data['password'])?.toString(),
     );
   }
 
@@ -57,6 +60,7 @@ class CustomerModel {
       'NAME': name,
       'PHONE_NUMBER': phoneNumber,
       'STATUS': status,
+      if (password != null && password!.isNotEmpty) 'PASSWORD': password,
       'REQUESTED_AT': requestedAt != null ? Timestamp.fromDate(requestedAt!) : FieldValue.serverTimestamp(),
       'APPROVED_AT': approvedAt != null ? Timestamp.fromDate(approvedAt!) : null,
       'REJECTION_REASON': rejectionReason,
@@ -72,6 +76,7 @@ class CustomerModel {
     DateTime? requestedAt,
     DateTime? approvedAt,
     String? rejectionReason,
+    String? password,
   }) {
     return CustomerModel(
       id: id ?? this.id,
@@ -81,6 +86,7 @@ class CustomerModel {
       requestedAt: requestedAt ?? this.requestedAt,
       approvedAt: approvedAt ?? this.approvedAt,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      password: password ?? this.password,
     );
   }
 

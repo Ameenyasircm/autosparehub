@@ -285,6 +285,129 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
+  void _showChangeCustomerPasswordDialog(BuildContext context, CustomerModel customer) {
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Row(
+            children: const [
+              Icon(Icons.lock_reset_rounded, color: AppColors.primaryGold, size: 24),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Change Customer Password', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Customer: ${customer.name}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                const SizedBox(height: 2),
+                Text('Mobile: +91 ${customer.phone}', style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText)),
+                const SizedBox(height: 14),
+                const Text(
+                  'New Password *',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
+                ),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: newPasswordController,
+                  obscureText: obscureNew,
+                  decoration: InputDecoration(
+                    hintText: 'Minimum 6 characters',
+                    prefixIcon: const Icon(Icons.lock_outline, size: 18),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility, size: 18),
+                      onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) return 'Please enter new password';
+                    if (val.trim().length < 6) return 'Password must be at least 6 characters';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Confirm Password *',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
+                ),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: confirmPasswordController,
+                  obscureText: obscureConfirm,
+                  decoration: InputDecoration(
+                    hintText: 'Re-enter new password',
+                    prefixIcon: const Icon(Icons.lock_outline, size: 18),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureConfirm ? Icons.visibility_off : Icons.visibility, size: 18),
+                      onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val != newPasswordController.text) return 'Passwords do not match';
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.darkCharcoal,
+                foregroundColor: AppColors.primaryGold,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                Navigator.pop(dialogCtx);
+                final provider = context.read<CustomerManagementProvider>();
+                final messenger = ScaffoldMessenger.of(context);
+                final ok = await provider.updateCustomerPassword(
+                  customer.id,
+                  newPasswordController.text.trim(),
+                );
+                if (ok) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Password updated successfully for ${customer.name}!'),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                } else {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(provider.errorMessage ?? 'Failed to update password.'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Update Password', style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCustomerApprovalCard(CustomerModel customer, String? adminId) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -365,9 +488,22 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.end,
             children: [
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.darkCharcoal,
+                  side: BorderSide(color: Colors.grey.shade400),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () => _showChangeCustomerPasswordDialog(context, customer),
+                icon: const Icon(Icons.lock_reset_rounded, size: 15, color: AppColors.primaryGold),
+                label: const Text('Change Password', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+              ),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.error,
@@ -379,7 +515,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 icon: const Icon(Icons.close_rounded, size: 16),
                 label: const Text('Reject', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
               ),
-              const SizedBox(width: 10),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.success,

@@ -5,7 +5,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
-import 'user_orders_screen.dart';
+import 'order_success_screen.dart';
 import 'widgets/customer_registration_sheet.dart';
 
 /// Customer shopping cart screen displaying selected spare parts,
@@ -19,13 +19,11 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  final _addressController = TextEditingController();
   final _noteController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
-    _addressController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -73,9 +71,28 @@ class _CartScreenState extends State<CartScreen> {
                 Text('Approval Pending', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
               ],
             ),
-            content: const Text(
-              'Your customer account is currently awaiting administrator verification. Once approved, your order will be submitted right away.',
-              style: TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Your customer account is currently awaiting administrator verification. Once approved, your order will be submitted right away.',
+                  style: TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: const Text(
+                    'നിങ്ങളുടെ അക്കൗണ്ട് അഡ്മിന്റെ പരിശോധനയിലാണ്. അഡ്മിൻ അനുമതി നൽകിയ ശേഷം മാത്രമേ ഓർഡറുകൾ നൽകാൻ സാധിക്കൂ.',
+                    style: TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal, height: 1.4),
+                  ),
+                ),
+              ],
             ),
             actions: [
               TextButton(
@@ -95,11 +112,7 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
 
-    // 4. Approved -> Validate form and submit order
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+    // 4. Approved -> Submit order
     final customer = authProvider.currentCustomer!;
     final orderProvider = context.read<OrderProvider>();
 
@@ -108,16 +121,22 @@ class _CartScreenState extends State<CartScreen> {
       userName: customer.name,
       userPhone: customer.phone,
       cartItems: cartProvider.items,
-      shippingAddress: _addressController.text.trim(),
+      shippingAddress: null,
       customerNote: _noteController.text.trim(),
     );
 
     if (!mounted) return;
 
     if (order != null) {
-      await cartProvider.clearCart();
-      _showOrderSuccessDialog(order.orderNumber);
+      await cartProvider.clearCart(isOrderPlaced: true);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => OrderSuccessScreen(order: order),
+        ),
+      );
     } else {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(orderProvider.errorMessage ?? 'Failed to place order. Please try again.'),
@@ -125,89 +144,6 @@ class _CartScreenState extends State<CartScreen> {
         ),
       );
     }
-  }
-
-  void _showOrderSuccessDialog(String orderNumber) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle_rounded,
-                color: AppColors.success,
-                size: 54,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Order Placed Successfully!',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.darkCharcoal,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primaryGold.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                orderNumber,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  color: AppColors.darkCharcoal,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Our operations team has received your spare parts order and will contact you for dispatch confirmation.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop(); // Close dialog
-              Navigator.of(context).pop(); // Back to catalog
-            },
-            child: const Text('Back to Catalog', style: TextStyle(fontWeight: FontWeight.w700)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.darkCharcoal,
-              foregroundColor: AppColors.primaryGold,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop(); // Close dialog
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const UserOrdersScreen()),
-              );
-            },
-            child: const Text('View My Orders', style: TextStyle(fontWeight: FontWeight.w800)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -308,10 +244,10 @@ class _CartScreenState extends State<CartScreen> {
                         children: [
                           Row(
                             children: const [
-                              Icon(Icons.local_shipping_outlined, color: AppColors.primaryGold, size: 20),
+                              Icon(Icons.person_pin_circle_outlined, color: AppColors.primaryGold, size: 20),
                               SizedBox(width: 8),
                               Text(
-                                'Delivery Information',
+                                'Order Contact & Details',
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w800,
@@ -386,38 +322,51 @@ class _CartScreenState extends State<CartScreen> {
                               ),
                             ),
 
-                          // Shipping Address Field
-                          TextFormField(
-                            controller: _addressController,
-                            maxLines: 2,
-                            decoration: InputDecoration(
-                              labelText: 'Workshop / Shipping Address *',
-                              hintText: 'Shop / Garage Name, Street, City, State, PIN',
-                              prefixIcon: const Icon(Icons.location_on_outlined, color: AppColors.primaryGold),
-                              filled: true,
-                              fillColor: AppColors.backgroundLight,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none,
-                              ),
+                          // Direct Contact / No Delivery Notice
+                          Container(
+                            padding: const EdgeInsets.all(11),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.amber.shade200),
                             ),
-                            validator: (val) {
-                              if (val == null || val.trim().isEmpty) {
-                                return 'Please enter workshop or shipping address';
-                              }
-                              return null;
-                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Row(
+                                  children: [
+                                    Icon(Icons.phone_in_talk_outlined, size: 16, color: AppColors.darkCharcoal),
+                                    SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'No delivery service. Admin will contact you directly to confirm parts.',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.darkCharcoal,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'ഞങ്ങൾക്ക് ഡെലിവറി സർവീസ് ലഭ്യമല്ല. ഓർഡർ ലഭിച്ച ശേഷം അഡ്മിൻ നേരിട്ട് ബന്ധപ്പെടുന്നതാണ്.',
+                                  style: TextStyle(fontSize: 11, color: AppColors.secondaryText, height: 1.35),
+                                ),
+                              ],
+                            ),
                           ),
 
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 14),
 
                           // Customer Note Field
                           TextFormField(
                             controller: _noteController,
                             maxLines: 2,
                             decoration: InputDecoration(
-                              labelText: 'Order Notes (Optional)',
-                              hintText: 'e.g. Urgent bus transport / parcel office dispatch',
+                              labelText: 'Order Remarks / Requirements (Optional)',
+                              hintText: 'e.g. Specify car model, engine type, or urgent note',
                               prefixIcon: const Icon(Icons.note_alt_outlined, color: AppColors.secondaryText),
                               filled: true,
                               fillColor: AppColors.backgroundLight,
@@ -456,12 +405,6 @@ class _CartScreenState extends State<CartScreen> {
                           _buildSummaryRow(
                             'Parts Subtotal (${cartProvider.totalItemCount} units)',
                             '₹ ${cartProvider.subtotalAmount.toStringAsFixed(2)}',
-                          ),
-                          const SizedBox(height: 8),
-                          _buildSummaryRow(
-                            'Logistics & Transport',
-                            'To Pay (Bus / Parcel)',
-                            isSecondary: true,
                           ),
                           const Divider(height: 24),
                           Row(

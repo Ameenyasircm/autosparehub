@@ -26,6 +26,7 @@ class UserSessionService {
         'requestedAt': customer.requestedAt?.millisecondsSinceEpoch,
         'approvedAt': customer.approvedAt?.millisecondsSinceEpoch,
         'rejectionReason': customer.rejectionReason,
+        'password': customer.password,
       };
       await prefs.setString(_keyCustomerSession, jsonEncode(jsonMap));
     } catch (e) {

@@ -97,6 +97,129 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
     );
   }
 
+  void _showChangePasswordDialog(BuildContext context, CustomerModel customer) {
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          title: Row(
+            children: const [
+              Icon(Icons.lock_reset_rounded, color: AppColors.primaryGold, size: 24),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Change Customer Password', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Customer: ${customer.name}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                const SizedBox(height: 2),
+                Text('Mobile: ${PhoneHelper.formatForDisplay(customer.phone)}', style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText)),
+                const SizedBox(height: 14),
+                const Text(
+                  'New Password *',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
+                ),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: newPasswordController,
+                  obscureText: obscureNew,
+                  decoration: InputDecoration(
+                    hintText: 'Minimum 6 characters',
+                    prefixIcon: const Icon(Icons.lock_outline, size: 18),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility, size: 18),
+                      onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) return 'Please enter new password';
+                    if (val.trim().length < 6) return 'Password must be at least 6 characters';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Confirm Password *',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
+                ),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: confirmPasswordController,
+                  obscureText: obscureConfirm,
+                  decoration: InputDecoration(
+                    hintText: 'Re-enter new password',
+                    prefixIcon: const Icon(Icons.lock_outline, size: 18),
+                    suffixIcon: IconButton(
+                      icon: Icon(obscureConfirm ? Icons.visibility_off : Icons.visibility, size: 18),
+                      onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val != newPasswordController.text) return 'Passwords do not match';
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.darkCharcoal,
+                foregroundColor: AppColors.primaryGold,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                Navigator.pop(dialogCtx);
+                final provider = context.read<CustomerManagementProvider>();
+                final messenger = ScaffoldMessenger.of(context);
+                final ok = await provider.updateCustomerPassword(
+                  customer.id,
+                  newPasswordController.text.trim(),
+                );
+                if (ok) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Password updated successfully for ${customer.name}!'),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                } else {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(provider.errorMessage ?? 'Failed to update password.'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Update Password', style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CustomerManagementProvider>();
@@ -320,6 +443,14 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
                             );
                           },
                         ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: const Icon(Icons.lock_reset_rounded, size: 16, color: AppColors.secondaryGold),
+                          tooltip: 'Change Password',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => _showChangePasswordDialog(context, customer),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 2),
@@ -349,30 +480,45 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
             ),
           ],
 
-          if (isPendingTab) ...[
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 10),
+
+          // Action Buttons Bar (Always shows Change Password, plus status-specific actions)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.end,
+            children: [
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.darkCharcoal,
+                  side: BorderSide(color: Colors.grey.shade400),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () => _showChangePasswordDialog(context, customer),
+                icon: const Icon(Icons.lock_reset_rounded, size: 16, color: AppColors.primaryGold),
+                label: const Text('Change Password', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              ),
+
+              if (isPendingTab) ...[
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.error,
                     side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   onPressed: () => _showRejectDialog(context, customer),
                   icon: const Icon(Icons.close_rounded, size: 16),
                   label: const Text('Reject', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                 ),
-                const SizedBox(width: 10),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.success,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   onPressed: () async {
@@ -388,9 +534,30 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
                   icon: const Icon(Icons.check_rounded, size: 16),
                   label: const Text('Approve Account', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                 ),
+              ] else if (customer.isRejected) ...[
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () async {
+                    final provider = context.read<CustomerManagementProvider>();
+                    final messenger = ScaffoldMessenger.of(context);
+                    final ok = await provider.approveCustomer(customer.id, adminId: adminId);
+                    if (mounted && ok) {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('Re-approved ${customer.name}!')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.check_rounded, size: 16),
+                  label: const Text('Approve', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                ),
               ],
-            ),
-          ],
+            ],
+          ),
         ],
       ),
     );

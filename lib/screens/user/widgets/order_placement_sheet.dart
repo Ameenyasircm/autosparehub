@@ -4,6 +4,7 @@ import '../../../models/product_model.dart';
 import '../../../providers/order_provider.dart';
 import '../../../providers/user_auth_provider.dart';
 import '../../../theme/app_theme.dart';
+import '../order_success_screen.dart';
 
 /// Modal bottom sheet allowing an approved customer to choose quantity, enter shipping address,
 /// and place a spare part order.
@@ -38,13 +39,11 @@ class OrderPlacementSheet extends StatefulWidget {
 }
 
 class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
-  final _addressController = TextEditingController();
   final _noteController = TextEditingController();
   int _quantity = 1;
 
   @override
   void dispose() {
-    _addressController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -66,72 +65,16 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
       userPhone: customer.phoneNumber,
       product: widget.product,
       quantity: _quantity,
-      shippingAddress: _addressController.text.trim(),
+      shippingAddress: null,
       customerNote: _noteController.text.trim(),
     );
 
     if (order != null && mounted) {
       Navigator.of(context).pop();
       widget.onOrderPlaced?.call();
-
-      // Show Order Success Dialog
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Row(
-            children: const [
-              Icon(Icons.check_circle_rounded, color: AppColors.success, size: 28),
-              SizedBox(width: 10),
-              Text('Order Received!', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Your order for ${widget.product.name} has been placed successfully.',
-                style: const TextStyle(fontSize: 13.5, color: AppColors.darkCharcoal),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryGold.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Order Number:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5)),
-                    Text(
-                      order.orderNumber,
-                      style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.darkCharcoal, fontSize: 13.5),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Our administration team will verify stock and contact you for dispatch confirmation.',
-                style: TextStyle(color: Colors.grey, fontSize: 11.5),
-              ),
-            ],
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.darkCharcoal,
-                foregroundColor: AppColors.primaryGold,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Continue Browsing', style: TextStyle(fontWeight: FontWeight.w800)),
-            ),
-          ],
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OrderSuccessScreen(order: order),
         ),
       );
     }
@@ -247,18 +190,39 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
 
           const SizedBox(height: 16),
 
-          // Delivery Address
-          const Text(
-            'Delivery Address / Workshop Location (Optional)',
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
-            controller: _addressController,
-            maxLines: 2,
-            decoration: const InputDecoration(
-              hintText: 'Enter garage name, workshop address, or delivery city',
-              prefixIcon: Icon(Icons.location_on_outlined),
+          // Direct Contact / No Delivery Notice
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.amber.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Row(
+                  children: [
+                    Icon(Icons.phone_in_talk_outlined, size: 16, color: AppColors.darkCharcoal),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'No delivery service. Admin will contact you directly.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.darkCharcoal,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'ഞങ്ങൾക്ക് ഡെലിവറി സർവീസ് ലഭ്യമല്ല. ഓർഡർ ലഭിച്ച ശേഷം അഡ്മിൻ നേരിട്ട് ബന്ധപ്പെടുന്നതാണ്.',
+                  style: TextStyle(fontSize: 11, color: AppColors.secondaryText, height: 1.35),
+                ),
+              ],
             ),
           ),
 

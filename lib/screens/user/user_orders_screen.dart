@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/order_model.dart';
+import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
+import 'widgets/change_password_dialog.dart';
 
 /// Customer screen displaying the history, live status, and detailed itemized
 /// breakdowns of placed automotive spare part orders.
@@ -220,10 +222,10 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                         children: [
                           Row(
                             children: const [
-                              Icon(Icons.location_on_outlined, color: AppColors.primaryGold, size: 18),
+                              Icon(Icons.handshake_outlined, color: AppColors.primaryGold, size: 18),
                               SizedBox(width: 8),
                               Text(
-                                'Delivery Details',
+                                'Fulfillment & Contact',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w800,
@@ -238,7 +240,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                           Text(
                             order.shippingAddress != null && order.shippingAddress!.isNotEmpty
                                 ? order.shippingAddress!
-                                : 'No specific address provided.',
+                                : 'Direct Pickup / Phone Confirmation (No Delivery)',
                             style: const TextStyle(fontSize: 13, color: AppColors.darkCharcoal, height: 1.3),
                           ),
                           if (order.customerNote != null && order.customerNote!.isNotEmpty) ...[
@@ -290,20 +292,6 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                               Text(
                                 '₹ ${order.totalAmount.toStringAsFixed(2)}',
                                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: const [
-                              Text(
-                                'Transport / Freight',
-                                style: TextStyle(fontSize: 13, color: AppColors.secondaryText),
-                              ),
-                              Text(
-                                'To Pay on Delivery',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.blueGrey),
                               ),
                             ],
                           ),
@@ -362,6 +350,50 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
           'My Spare Part Orders',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            tooltip: 'Account Options',
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            onSelected: (value) async {
+              if (value == 'change_password') {
+                ChangeUserPasswordDialog.show(context);
+              } else if (value == 'logout') {
+                final auth = context.read<UserAuthProvider>();
+                await auth.logout();
+                if (context.mounted) {
+                  context.read<CartProvider>().onUserLogout();
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Logged out successfully.')),
+                  );
+                }
+              }
+            },
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'change_password',
+                child: Row(
+                  children: const [
+                    Icon(Icons.lock_reset_rounded, size: 18, color: AppColors.primaryGold),
+                    SizedBox(width: 8),
+                    Text('Change Password', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: const [
+                    Icon(Icons.logout_rounded, size: 18, color: AppColors.error),
+                    SizedBox(width: 8),
+                    Text('Log Out', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.error)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: customer == null
           ? const Center(
