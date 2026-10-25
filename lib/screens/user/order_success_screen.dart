@@ -253,7 +253,7 @@ class OrderSuccessScreen extends StatelessWidget {
                               size: 19, color: AppColors.primaryGold),
                           const SizedBox(width: 8),
                           Text(
-                            'Order Summary (${order.items.length} ${order.items.length == 1 ? 'part' : 'parts'})',
+                            'Order Summary (${order.distinctItems.length} ${order.distinctItems.length == 1 ? 'part' : 'parts'})',
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
@@ -269,11 +269,11 @@ class OrderSuccessScreen extends StatelessWidget {
                       ListView.separated(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: order.items.length,
+                        itemCount: order.distinctItems.length,
                         separatorBuilder: (context, index) =>
                             const SizedBox(height: 10),
                         itemBuilder: (context, index) {
-                          final item = order.items[index];
+                          final item = order.distinctItems[index];
                           return Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [

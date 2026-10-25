@@ -45,10 +45,12 @@ class UserAuthProvider extends ChangeNotifier {
 
   CustomerModel? _currentCustomer;
   bool _isLoading = false;
+  bool _isSessionInitialized = false;
   String? _errorMessage;
 
   CustomerModel? get currentCustomer => _currentCustomer;
   bool get isLoading => _isLoading;
+  bool get isSessionInitialized => _isSessionInitialized;
   String? get errorMessage => _errorMessage;
 
   bool get isRegistered => _currentCustomer != null;
@@ -60,7 +62,6 @@ class UserAuthProvider extends ChangeNotifier {
   Future<void> initSession() async {
     try {
       _currentCustomer = await _sessionService.getCustomerSession();
-      notifyListeners();
 
       // If user was previously registered, refresh status from Firestore
       if (_currentCustomer != null) {
@@ -68,6 +69,9 @@ class UserAuthProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('UserAuthProvider.initSession error: $e');
+    } finally {
+      _isSessionInitialized = true;
+      notifyListeners();
     }
   }
 

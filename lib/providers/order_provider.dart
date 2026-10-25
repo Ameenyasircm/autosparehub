@@ -27,6 +27,7 @@ class OrderProvider extends ChangeNotifier {
   List<OrderModel> _adminOrders = [];
   List<OrderModel> _customerOrders = [];
   bool _isLoading = false;
+  bool _isCustomerOrdersLoading = false;
   bool _isPlacingOrder = false;
   String? _errorMessage;
 
@@ -38,8 +39,19 @@ class OrderProvider extends ChangeNotifier {
 
   // Getters
   List<OrderModel> get adminOrders => _adminOrders;
-  List<OrderModel> get customerOrders => _customerOrders;
+  List<OrderModel> get customerOrders {
+    final seen = <String>{};
+    final list = <OrderModel>[];
+    for (final o in _customerOrders) {
+      final key = o.id.isNotEmpty ? o.id : o.orderNumber;
+      if (seen.add(key)) {
+        list.add(o);
+      }
+    }
+    return list;
+  }
   bool get isLoading => _isLoading;
+  bool get isCustomerOrdersLoading => _isCustomerOrdersLoading;
   bool get isPlacingOrder => _isPlacingOrder;
   String? get errorMessage => _errorMessage;
   String get statusFilter => _statusFilter;
@@ -213,6 +225,7 @@ class OrderProvider extends ChangeNotifier {
           .set(order.toMap())
           .timeout(const Duration(seconds: 10));
 
+      _customerOrders.removeWhere((o) => o.id == order.id || o.orderNumber == order.orderNumber);
       _customerOrders.insert(0, order);
       _isPlacingOrder = false;
       notifyListeners();
@@ -297,6 +310,7 @@ class OrderProvider extends ChangeNotifier {
           .set(order.toMap())
           .timeout(const Duration(seconds: 10));
 
+      _customerOrders.removeWhere((o) => o.id == order.id || o.orderNumber == order.orderNumber);
       _customerOrders.insert(0, order);
       _isPlacingOrder = false;
       notifyListeners();
@@ -311,27 +325,71 @@ class OrderProvider extends ChangeNotifier {
   }
 
   /// Fetch orders placed by a specific customer
-  Future<void> fetchCustomerOrders(String userId) async {
-    if (userId.isEmpty) return;
+  Future<void> fetchCustomerOrders(String userId, {String? userPhone}) async {
+    if (userId.isEmpty && (userPhone == null || userPhone.isEmpty)) return;
+
+    _isCustomerOrdersLoading = true;
+    notifyListeners();
 
     try {
-      final snapshot = await _firestore
-          .collection(collectionName)
-          .where('USER_ID', isEqualTo: userId)
-          .get()
-          .timeout(const Duration(seconds: 10));
+      final Map<String, OrderModel> orderMap = {};
 
-      _customerOrders = snapshot.docs.map((doc) => OrderModel.fromFirestore(doc)).toList();
-      _customerOrders.sort((a, b) {
+      if (userId.isNotEmpty) {
+        final snapshot = await _firestore
+            .collection(collectionName)
+            .where('USER_ID', isEqualTo: userId)
+            .get()
+            .timeout(const Duration(seconds: 10));
+
+        for (final doc in snapshot.docs) {
+          final order = OrderModel.fromFirestore(doc);
+          final key = order.id.isNotEmpty ? order.id : order.orderNumber;
+          orderMap[key] = order;
+        }
+      }
+
+      // Also if userPhone is provided, fetch by phone in case order was placed with phone or legacy doc
+      if (userPhone != null && userPhone.isNotEmpty) {
+        final phoneSnapshot = await _firestore
+            .collection(collectionName)
+            .where('USER_PHONE', isEqualTo: userPhone)
+            .get()
+            .timeout(const Duration(seconds: 10));
+
+        for (final doc in phoneSnapshot.docs) {
+          final order = OrderModel.fromFirestore(doc);
+          final key = order.id.isNotEmpty ? order.id : order.orderNumber;
+          orderMap[key] = order;
+        }
+      }
+
+      final list = orderMap.values.toList();
+      list.sort((a, b) {
         if (a.createdAt != null && b.createdAt != null) {
           return b.createdAt!.compareTo(a.createdAt!);
         }
         return b.id.compareTo(a.id);
       });
-      notifyListeners();
+      _customerOrders = list;
     } catch (e) {
       debugPrint('OrderProvider.fetchCustomerOrders error: $e');
+    } finally {
+      _isCustomerOrdersLoading = false;
+      notifyListeners();
     }
+  }
+
+  /// Clear customer orders on logout or switching accounts
+  void clearCustomerOrders() {
+    _customerOrders = [];
+    _isCustomerOrdersLoading = false;
+    notifyListeners();
+  }
+
+  /// Populate customer orders for testing
+  void setCustomerOrdersForTesting(List<OrderModel> orders) {
+    _customerOrders = List.from(orders);
+    notifyListeners();
   }
 
   /// Fetch all orders for the Admin Dashboard

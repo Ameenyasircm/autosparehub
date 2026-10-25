@@ -420,5 +420,101 @@ void main() {
       provider.setStatusFilter('ALL');
       expect(provider.filteredAdminOrders.length, 5);
     });
+
+    test('distinctItems aggregates and deduplicates duplicate products in an order', () {
+      const item1 = OrderItemModel(
+        productId: 'PRD001',
+        productName: 'Power Steering Pump',
+        productImage: 'https://img.com/pump.jpg',
+        companyName: 'Toyota',
+        categoryName: 'Steering',
+        unitPrice: 4500.0,
+        quantity: 2,
+        totalPrice: 9000.0,
+      );
+      const item2 = OrderItemModel(
+        productId: 'PRD001',
+        productName: 'Power Steering Pump',
+        productImage: 'https://img.com/pump.jpg',
+        companyName: 'Toyota',
+        categoryName: 'Steering',
+        unitPrice: 4500.0,
+        quantity: 3,
+        totalPrice: 13500.0,
+      );
+      const item3 = OrderItemModel(
+        productId: 'PRD002',
+        productName: 'Brake Disc Rotor',
+        productImage: 'https://img.com/rotor.jpg',
+        companyName: 'Honda',
+        categoryName: 'Braking',
+        unitPrice: 2200.0,
+        quantity: 1,
+        totalPrice: 2200.0,
+      );
+
+      final order = OrderModel(
+        id: 'ORD_DUP',
+        orderNumber: '#ORD-DUP',
+        userId: 'U1',
+        userName: 'Customer 1',
+        userPhone: '9876543210',
+        totalAmount: 24700.0,
+        items: [item1, item2, item3],
+      );
+
+      expect(order.items.length, 3);
+      expect(order.distinctItems.length, 2);
+
+      final mergedPrd1 = order.distinctItems.firstWhere((i) => i.productId == 'PRD001');
+      expect(mergedPrd1.quantity, 5);
+      expect(mergedPrd1.totalPrice, 22500.0);
+
+      final prd2 = order.distinctItems.firstWhere((i) => i.productId == 'PRD002');
+      expect(prd2.quantity, 1);
+      expect(prd2.totalPrice, 2200.0);
+    });
+
+    test('customerOrders getter filters duplicate order records and clearCustomerOrders resets list', () {
+      final order1 = OrderModel(
+        id: 'ORD1',
+        orderNumber: '#ORD-1',
+        userId: 'U1',
+        userName: 'User 1',
+        userPhone: '9876543210',
+        totalAmount: 1000.0,
+      );
+      final order1Duplicate = OrderModel(
+        id: 'ORD1',
+        orderNumber: '#ORD-1',
+        userId: 'U1',
+        userName: 'User 1',
+        userPhone: '9876543210',
+        totalAmount: 1000.0,
+      );
+      final order2 = OrderModel(
+        id: 'ORD2',
+        orderNumber: '#ORD-2',
+        userId: 'U1',
+        userName: 'User 1',
+        userPhone: '9876543210',
+        totalAmount: 2000.0,
+      );
+
+      final provider = OrderProvider();
+      expect(provider.customerOrders, isEmpty);
+      expect(provider.isCustomerOrdersLoading, isFalse);
+
+      // Verify deduplication
+      provider.setCustomerOrdersForTesting([order1, order1Duplicate, order2]);
+      expect(provider.customerOrders.length, 2);
+      expect(provider.customerOrders.first.id, 'ORD1');
+      expect(provider.customerOrders.last.id, 'ORD2');
+
+      // Verify clearCustomerOrders
+      provider.clearCustomerOrders();
+      expect(provider.customerOrders, isEmpty);
+      expect(provider.isCustomerOrdersLoading, isFalse);
+    });
   });
 }

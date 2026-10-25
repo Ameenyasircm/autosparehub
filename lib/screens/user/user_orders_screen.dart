@@ -19,15 +19,23 @@ class UserOrdersScreen extends StatefulWidget {
 }
 
 class _UserOrdersScreenState extends State<UserOrdersScreen> {
+  String? _lastFetchedCustomerId;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final customer = context.read<UserAuthProvider>().currentCustomer;
-      if (customer != null) {
-        context.read<OrderProvider>().fetchCustomerOrders(customer.id);
-      }
+      _checkAndFetchOrders();
     });
+  }
+
+  void _checkAndFetchOrders() {
+    if (!mounted) return;
+    final customer = context.read<UserAuthProvider>().currentCustomer;
+    if (customer != null && _lastFetchedCustomerId != customer.id) {
+      _lastFetchedCustomerId = customer.id;
+      context.read<OrderProvider>().fetchCustomerOrders(customer.id, userPhone: customer.phone);
+    }
   }
 
   void _showOrderDetailsSheet(BuildContext context, OrderModel order) {
@@ -121,7 +129,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                         const Icon(Icons.shopping_bag_outlined, color: AppColors.primaryGold, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Ordered Spare Parts (${order.items.length} items)',
+                          'Ordered Spare Parts (${order.distinctItems.length} items)',
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
@@ -135,10 +143,10 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                     ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: order.items.length,
+                      itemCount: order.distinctItems.length,
                       separatorBuilder: (context, index) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
-                        final item = order.items[index];
+                        final item = order.distinctItems[index];
                         return Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -373,9 +381,16 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final customer = context.watch<UserAuthProvider>().currentCustomer;
+    final auth = context.watch<UserAuthProvider>();
+    final customer = auth.currentCustomer;
     final orderProvider = context.watch<OrderProvider>();
     final orders = orderProvider.customerOrders;
+
+    if (customer != null && _lastFetchedCustomerId != customer.id) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkAndFetchOrders();
+      });
+    }
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -404,6 +419,8 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                       await auth.logout();
                       if (context.mounted) {
                         context.read<CartProvider>().onUserLogout();
+                        context.read<OrderProvider>().clearCustomerOrders();
+                        _lastFetchedCustomerId = null;
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Logged out successfully.')),
@@ -437,118 +454,153 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
               ],
             )
           : null,
-      body: customer == null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 68,
-                      height: 68,
-                      decoration: BoxDecoration(
-                        color: AppColors.darkButton,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.12),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.receipt_long_rounded,
-                        color: AppColors.warmGold,
-                        size: 32,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'Sign In to View Orders',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.darkHeader,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Log in with your garage mobile number and password to track orders, status updates, and view delivery remarks.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.secondaryText,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.darkButton,
-                          foregroundColor: AppColors.warmGold,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const UserLoginScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'Login to Garage Account',
-                          style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+      body: !auth.isSessionInitialized
+          ? const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: AppColors.warmGold),
+                  SizedBox(height: 14),
+                  Text(
+                    'Loading account...',
+                    style: TextStyle(fontSize: 13, color: AppColors.secondaryText, fontWeight: FontWeight.w600),
+                  ),
+                ],
               ),
             )
-          : RefreshIndicator(
-              color: AppColors.primaryGold,
-              backgroundColor: AppColors.darkCharcoal,
-              onRefresh: () => orderProvider.fetchCustomerOrders(customer.id),
-              child: orders.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.shopping_bag_outlined, size: 54, color: Colors.grey),
-                            SizedBox(height: 14),
-                            Text(
-                              'No Orders Placed Yet',
-                              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-                            ),
-                            SizedBox(height: 6),
-                            Text(
-                              'When you order automotive spare parts, their tracking status will appear here.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey, fontSize: 13),
-                            ),
-                          ],
+          : customer == null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 68,
+                          height: 68,
+                          decoration: BoxDecoration(
+                            color: AppColors.darkButton,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.12),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.receipt_long_rounded,
+                            color: AppColors.warmGold,
+                            size: 32,
+                          ),
                         ),
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                      itemCount: orders.length,
-                      itemBuilder: (context, index) {
-                        final order = orders[index];
-                        return _buildOrderCard(order);
-                      },
+                        const SizedBox(height: 18),
+                        const Text(
+                          'Sign In to View Orders',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.darkHeader,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Log in with your garage mobile number and password to track orders, status updates, and view delivery remarks.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.secondaryText,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.darkButton,
+                              foregroundColor: AppColors.warmGold,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const UserLoginScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Login to Garage Account',
+                              style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-            ),
+                  ),
+                )
+              : RefreshIndicator(
+                  color: AppColors.primaryGold,
+                  backgroundColor: AppColors.darkCharcoal,
+                  onRefresh: () => orderProvider.fetchCustomerOrders(customer.id, userPhone: customer.phone),
+                  child: orders.isEmpty
+                      ? (orderProvider.isCustomerOrdersLoading
+                          ? const Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircularProgressIndicator(color: AppColors.warmGold),
+                                  SizedBox(height: 14),
+                                  Text(
+                                    'Loading your orders...',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.secondaryText,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                              child: Container(
+                                alignment: Alignment.center,
+                                height: MediaQuery.of(context).size.height * 0.65,
+                                padding: const EdgeInsets.all(24.0),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.shopping_bag_outlined, size: 54, color: Colors.grey),
+                                    SizedBox(height: 14),
+                                    Text(
+                                      'No Orders Placed Yet',
+                                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                                    ),
+                                    SizedBox(height: 6),
+                                    Text(
+                                      'When you order automotive spare parts, their tracking status will appear here.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ))
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                          itemCount: orders.length,
+                          itemBuilder: (context, index) {
+                            final order = orders[index];
+                            return _buildOrderCard(order);
+                          },
+                        ),
+                ),
     );
   }
 
@@ -561,9 +613,11 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                 ? Colors.blue.shade700
                 : AppColors.secondaryGold;
 
-    final isMultiItem = order.items.length > 1;
+    final distinctItems = order.distinctItems;
+    final isMultiItem = distinctItems.length > 1;
 
     return InkWell(
+      key: ValueKey(order.id.isNotEmpty ? order.id : order.orderNumber),
       onTap: () => _showOrderDetailsSheet(context, order),
       borderRadius: BorderRadius.circular(14),
       child: Container(
@@ -650,7 +704,9 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isMultiItem ? '${order.items.first.productName} & ${order.items.length - 1} more' : order.productName,
+                        isMultiItem
+                            ? '${distinctItems.first.productName} & ${distinctItems.length - 1} more'
+                            : order.productName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
@@ -658,7 +714,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                       const SizedBox(height: 2),
                       Text(
                         isMultiItem
-                            ? '${order.items.length} parts • ${order.totalItemUnits} units'
+                            ? '${distinctItems.length} parts • ${order.totalItemUnits} units'
                             : '${order.companyName} • Qty: ${order.quantity}',
                         style: const TextStyle(color: Colors.grey, fontSize: 12),
                       ),

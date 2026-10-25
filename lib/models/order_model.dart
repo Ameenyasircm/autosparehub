@@ -149,6 +149,31 @@ class OrderModel {
   /// Total count of all items across cart line items
   int get totalItemUnits => items.fold<int>(0, (total, i) => total + i.quantity);
 
+  /// Returns items deduplicated and aggregated by product ID
+  List<OrderItemModel> get distinctItems {
+    final Map<String, OrderItemModel> map = {};
+    for (final item in items) {
+      final key = item.productId.isNotEmpty ? item.productId : item.productName;
+      if (map.containsKey(key)) {
+        final prev = map[key]!;
+        map[key] = OrderItemModel(
+          productId: item.productId,
+          productName: item.productName,
+          productImage: item.productImage.isNotEmpty ? item.productImage : prev.productImage,
+          companyName: item.companyName.isNotEmpty ? item.companyName : prev.companyName,
+          categoryName: item.categoryName.isNotEmpty ? item.categoryName : prev.categoryName,
+          refNo: item.refNo ?? prev.refNo,
+          unitPrice: item.unitPrice > 0 ? item.unitPrice : prev.unitPrice,
+          quantity: prev.quantity + item.quantity,
+          totalPrice: prev.totalPrice + item.totalPrice,
+        );
+      } else {
+        map[key] = item;
+      }
+    }
+    return map.values.toList();
+  }
+
   factory OrderModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
     return OrderModel.fromMap(data, doc.id);

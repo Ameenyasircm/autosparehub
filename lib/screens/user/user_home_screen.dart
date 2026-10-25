@@ -4,6 +4,7 @@ import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/company_provider.dart';
+import '../../providers/order_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
@@ -29,25 +30,34 @@ class UserHomeScreen extends StatefulWidget {
 class _UserHomeScreenState extends State<UserHomeScreen> {
   int _currentTabIndex = 0;
   final _searchController = TextEditingController();
+  bool _isInitialLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _isInitialLoading = context.read<ProductProvider>().products.isEmpty;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await context.read<UserAuthProvider>().initSession();
       if (!mounted) return;
       final auth = context.read<UserAuthProvider>();
-      if (auth.isApproved && auth.currentCustomer != null) {
-        context.read<CartProvider>().loadCartForUser(auth.currentCustomer!.id);
+      if (auth.currentCustomer != null) {
+        final cust = auth.currentCustomer!;
+        if (auth.isApproved) {
+          context.read<CartProvider>().loadCartForUser(cust.id);
+        }
+        context.read<OrderProvider>().fetchCustomerOrders(cust.id, userPhone: cust.phone);
       }
-
-      context.read<ProductProvider>().fetchProducts();
 
       final compProvider = context.read<CompanyProvider>();
       if (compProvider.companies.isEmpty) compProvider.fetchCompanies();
 
       final catProvider = context.read<CategoryProvider>();
       if (catProvider.categories.isEmpty) catProvider.fetchCategories();
+
+      await context.read<ProductProvider>().fetchProducts();
+      if (mounted) {
+        setState(() => _isInitialLoading = false);
+      }
     });
   }
 
@@ -284,6 +294,12 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       fontWeight: FontWeight.w400,
                     ),
                     border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    filled: false,
                     isDense: true,
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -395,8 +411,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             color: AppColors.warmGold,
             backgroundColor: AppColors.darkHeader,
             onRefresh: () => productProvider.fetchProducts(),
-            child: products.isEmpty
-                ? _buildEmptyState(productProvider)
+            child: (_isInitialLoading || productProvider.isLoading)
+                ? _buildLoadingState()
+                : products.isEmpty
+                    ? _buildEmptyState(productProvider)
                 : GridView.builder(
                     padding: const EdgeInsets.fromLTRB(14, 4, 14, 16),
                     physics: const AlwaysScrollableScrollPhysics(
@@ -628,6 +646,30 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // --- LOADING CATALOG STATE ---
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          CircularProgressIndicator(
+            color: AppColors.warmGold,
+            strokeWidth: 2.8,
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Loading spare parts...',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.secondaryText,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1032,7 +1074,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     final color = isSelected ? const Color(0xFF111317) : const Color(0xFF8C95A6);
 
     return InkWell(
-      onTap: () => setState(() => _currentTabIndex = index),
+      onTap: () {
+        setState(() => _currentTabIndex = index);
+        if (index == 1) {
+          final auth = context.read<UserAuthProvider>();
+          if (auth.currentCustomer != null) {
+            final cust = auth.currentCustomer!;
+            context.read<OrderProvider>().fetchCustomerOrders(cust.id, userPhone: cust.phone);
+          }
+        }
+      },
       child: SizedBox(
         width: 80,
         child: Column(
