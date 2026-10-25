@@ -14,6 +14,7 @@ import 'user_login_screen.dart';
 import 'user_orders_screen.dart';
 import 'user_product_detail_screen.dart';
 import 'widgets/change_password_dialog.dart';
+import 'widgets/contact_us_sheet.dart';
 
 /// Customer Storefront Home Screen matching Image 5 with pixel-level precision:
 /// - Dark AppBar (#12151B) with circular logo, "AUTO SPARE HUB" rich title, and rounded square cart button with badge dot
@@ -933,6 +934,19 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 14),
+              TextButton.icon(
+                onPressed: () => ContactUsSheet.show(context),
+                icon: const Icon(Icons.support_agent_rounded, size: 18, color: AppColors.warmGold),
+                label: const Text(
+                  'Need Help? Contact Us',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.darkHeader,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -1117,6 +1131,14 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 title: const Text('My Orders', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
                 onTap: () => setState(() => _currentTabIndex = 1),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.support_agent_rounded, color: AppColors.warmGold),
+                title: const Text('Contact Us', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                subtitle: const Text('Direct call & WhatsApp support', style: TextStyle(fontSize: 11.5, color: AppColors.secondaryText)),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+                onTap: () => ContactUsSheet.show(context),
               ),
               const Divider(height: 1),
               ListTile(
