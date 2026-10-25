@@ -233,30 +233,46 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          // Brand Title: "AUTO SPARE HUB"
-          RichText(
-            text: const TextSpan(
-              children: [
-                TextSpan(
-                  text: 'AUTO SPARE ',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15.5,
-                    letterSpacing: 0.6,
-                  ),
+          // Brand Title: "AUTO SPARE HUB" with "MANJERI"
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RichText(
+                text: const TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'AUTO SPARE ',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14.5,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'HUB',
+                      style: TextStyle(
+                        color: AppColors.warmGold,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14.5,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
-                TextSpan(
-                  text: 'HUB',
-                  style: TextStyle(
-                    color: AppColors.warmGold,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15.5,
-                    letterSpacing: 0.6,
-                  ),
+              ),
+              const SizedBox(height: 1),
+              const Text(
+                'MANJERI',
+                style: TextStyle(
+                  color: AppColors.warmGold,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 9.5,
+                  letterSpacing: 2.2,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
