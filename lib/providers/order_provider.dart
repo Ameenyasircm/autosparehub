@@ -52,7 +52,9 @@ class OrderProvider extends ChangeNotifier {
   int get totalOrdersCount => _adminOrders.length;
   int get pendingOrdersCount => _adminOrders.where((o) => o.isPending).length;
   int get confirmedOrdersCount => _adminOrders.where((o) => o.isConfirmed).length;
+  int get dispatchedOrdersCount => _adminOrders.where((o) => o.isDispatched).length;
   int get deliveredOrdersCount => _adminOrders.where((o) => o.isDelivered).length;
+  int get cancelledOrdersCount => _adminOrders.where((o) => o.isCancelled).length;
 
   /// Returns admin orders filtered by status, date range, customer (name/phone), and category
   List<OrderModel> get filteredAdminOrders {
@@ -364,21 +366,29 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
-  /// Update order status (Admin operation: PENDING -> CONFIRMED -> DISPATCHED -> DELIVERED -> CANCELLED)
-  Future<bool> updateOrderStatus(String orderId, String newStatus) async {
+  /// Update order status with optional remark (Admin operation)
+  Future<bool> updateOrderStatus(String orderId, String newStatus, {String? adminRemark}) async {
     try {
+      final Map<String, dynamic> updateData = {
+        'STATUS': newStatus,
+        'UPDATED_AT': FieldValue.serverTimestamp(),
+      };
+      if (adminRemark != null) {
+        updateData['ADMIN_REMARK'] = adminRemark.trim();
+      }
+
       await _firestore
           .collection(collectionName)
           .doc(orderId)
-          .update({
-            'STATUS': newStatus,
-            'UPDATED_AT': FieldValue.serverTimestamp(),
-          })
+          .update(updateData)
           .timeout(const Duration(seconds: 8));
 
       final index = _adminOrders.indexWhere((o) => o.id == orderId);
       if (index != -1) {
-        _adminOrders[index] = _adminOrders[index].copyWith(status: newStatus);
+        _adminOrders[index] = _adminOrders[index].copyWith(
+          status: newStatus,
+          adminRemark: adminRemark?.trim() ?? _adminOrders[index].adminRemark,
+        );
         notifyListeners();
       }
       return true;

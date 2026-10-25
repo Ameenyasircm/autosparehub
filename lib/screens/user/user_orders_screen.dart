@@ -266,6 +266,44 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                               ),
                             ),
                           ],
+                          if (order.adminRemark != null && order.adminRemark!.trim().isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryGold.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.35)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.support_agent_rounded, size: 16, color: AppColors.primaryGold),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Admin Update / Remark:',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.darkCharcoal,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          order.adminRemark!,
+                                          style: const TextStyle(fontSize: 12.5, color: AppColors.darkCharcoal),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -574,6 +612,41 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                 ),
               ],
             ),
+            if (order.adminRemark != null && order.adminRemark!.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGold.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.support_agent_rounded, size: 14, color: AppColors.primaryGold),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal),
+                          children: [
+                            const TextSpan(
+                              text: 'Admin Note: ',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                            TextSpan(
+                              text: order.adminRemark!,
+                              style: const TextStyle(fontStyle: FontStyle.italic),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -846,6 +846,44 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               ),
                             ),
                           ],
+                          if (order.adminRemark != null && order.adminRemark!.trim().isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryGold.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.35)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.rate_review_rounded, size: 16, color: AppColors.primaryGold),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Admin Remark:',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w800,
+                                            color: AppColors.darkCharcoal,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          order.adminRemark!,
+                                          style: const TextStyle(fontSize: 12.5, color: AppColors.darkCharcoal),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -918,7 +956,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  // --- ORDER STATUS UPDATER SHEET ---
+  // --- ORDER STATUS & REMARK UPDATER SHEET ---
   void _showOrderStatusDialog(BuildContext context, OrderModel order) {
     final orderProvider = context.read<OrderProvider>();
     const statuses = [
@@ -929,66 +967,309 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       {'status': 'CANCELLED', 'label': 'Cancelled / Rejected', 'icon': Icons.cancel_rounded, 'color': Colors.red},
     ];
 
+    final remarkController = TextEditingController(text: order.adminRemark ?? '');
+    String selectedStatus = order.status;
+    bool isSaving = false;
+
+    const quickRemarks = [
+      'Verified with customer',
+      'Ready for store pickup',
+      'Dispatched via transport',
+      'Customer unreachable on phone',
+      'Cancelled on customer request',
+      'Out of stock / part unavailable',
+    ];
+
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (sheetCtx) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Update Status for ${order.orderNumber}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.darkCharcoal),
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: EdgeInsets.only(
+                top: 20,
+                left: 20,
+                right: 20,
+                bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 20,
               ),
-              const SizedBox(height: 4),
-              Text(
-                'Current Status: ${order.status}',
-                style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
               ),
-              const SizedBox(height: 16),
-              ...statuses.map((s) {
-                final isSelected = order.status == s['status'];
-                final color = s['color'] as Color;
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: isSelected ? color : Colors.grey.shade200,
-                        width: isSelected ? 2 : 1,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Handle bar
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
-                    tileColor: isSelected ? color.withValues(alpha: 0.08) : Colors.transparent,
-                    leading: Icon(s['icon'] as IconData, color: color),
-                    title: Text(
-                      s['label'] as String,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Update Status & Remark',
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.darkCharcoal),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${order.orderNumber} • ${order.userName}',
+                                style: const TextStyle(fontSize: 12, color: AppColors.secondaryText, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.secondaryText),
+                          onPressed: () => Navigator.pop(sheetCtx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    const Divider(height: 1),
+                    const SizedBox(height: 14),
+
+                    // Status Header
+                    const Text(
+                      'SELECT STATUS',
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                        color: AppColors.darkCharcoal,
-                        fontSize: 13,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: AppColors.secondaryText,
                       ),
                     ),
-                    trailing: isSelected ? Icon(Icons.check_circle_rounded, color: color) : null,
-                    onTap: () async {
-                      Navigator.pop(sheetCtx);
-                      final ok = await orderProvider.updateOrderStatus(order.id, s['status'] as String);
-                      if (context.mounted && ok) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Order ${order.orderNumber} updated to ${s['status']}')),
-                        );
-                      }
-                    },
-                  ),
-                );
-              }),
-            ],
-          ),
+                    const SizedBox(height: 8),
+
+                    // Status options
+                    ...statuses.map((s) {
+                      final isSelected = selectedStatus == s['status'];
+                      final color = s['color'] as Color;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: InkWell(
+                          onTap: () {
+                            setSheetState(() {
+                              selectedStatus = s['status'] as String;
+                            });
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isSelected ? color.withValues(alpha: 0.08) : Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected ? color : Colors.grey.shade200,
+                                width: isSelected ? 1.8 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(s['icon'] as IconData, color: color, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    s['label'] as String,
+                                    style: TextStyle(
+                                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                      color: isSelected ? AppColors.darkCharcoal : Colors.grey.shade700,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Icon(Icons.check_circle_rounded, color: color, size: 20)
+                                else
+                                  Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.grey.shade300, width: 1.5),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+
+                    const SizedBox(height: 12),
+
+                    // Remark Section Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'ADMIN REMARK / NOTE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: AppColors.secondaryText,
+                          ),
+                        ),
+                        if (remarkController.text.isNotEmpty)
+                          GestureDetector(
+                            onTap: () {
+                              setSheetState(() {
+                                remarkController.clear();
+                              });
+                            },
+                            child: const Text(
+                              'Clear',
+                              style: TextStyle(fontSize: 11, color: AppColors.error, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Quick Remark Suggestion Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: quickRemarks.map((q) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6, bottom: 8),
+                            child: ActionChip(
+                              label: Text(
+                                q,
+                                style: const TextStyle(fontSize: 11, color: AppColors.darkCharcoal),
+                              ),
+                              backgroundColor: Colors.grey.shade100,
+                              side: BorderSide(color: Colors.grey.shade300),
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                              onPressed: () {
+                                setSheetState(() {
+                                  remarkController.text = q;
+                                });
+                              },
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+
+                    // Text Field for Remark
+                    TextField(
+                      controller: remarkController,
+                      maxLines: 2,
+                      style: const TextStyle(fontSize: 13, color: AppColors.darkCharcoal),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. Called customer, confirmed for pickup at 4 PM...',
+                        hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                        contentPadding: const EdgeInsets.all(12),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppColors.primaryGold, width: 1.5),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.darkCharcoal,
+                              side: BorderSide(color: Colors.grey.shade300),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: isSaving ? null : () => Navigator.pop(sheetCtx),
+                            child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.darkCharcoal,
+                              foregroundColor: AppColors.primaryGold,
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            onPressed: isSaving
+                                ? null
+                                : () async {
+                                    setSheetState(() => isSaving = true);
+                                    final finalRemark = remarkController.text.trim();
+                                    final ok = await orderProvider.updateOrderStatus(
+                                      order.id,
+                                      selectedStatus,
+                                      adminRemark: finalRemark,
+                                    );
+                                    if (context.mounted) {
+                                      Navigator.pop(sheetCtx);
+                                      if (ok) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Order ${order.orderNumber} updated to $selectedStatus'),
+                                            backgroundColor: AppColors.darkCharcoal,
+                                          ),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Failed to update order status.'),
+                                            backgroundColor: AppColors.error,
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                            icon: isSaving
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryGold),
+                                  )
+                                : const Icon(Icons.check_rounded, size: 18),
+                            label: Text(
+                              isSaving ? 'Updating...' : 'Save Status & Remark',
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1372,6 +1653,69 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     ),
                     const SizedBox(height: 12),
 
+                    // --- STATUS FILTER STRIP (PRIMARY STATUS TABS) ---
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildStatusFilterChip(
+                            status: 'ALL',
+                            label: 'All Orders',
+                            count: orderProvider.totalOrdersCount,
+                            icon: Icons.all_inbox_rounded,
+                            color: AppColors.darkCharcoal,
+                            provider: orderProvider,
+                          ),
+                          const SizedBox(width: 6),
+                          _buildStatusFilterChip(
+                            status: 'PENDING',
+                            label: 'Pending',
+                            count: orderProvider.pendingOrdersCount,
+                            icon: Icons.hourglass_top_rounded,
+                            color: Colors.amber.shade800,
+                            provider: orderProvider,
+                          ),
+                          const SizedBox(width: 6),
+                          _buildStatusFilterChip(
+                            status: 'CONFIRMED',
+                            label: 'Confirmed',
+                            count: orderProvider.confirmedOrdersCount,
+                            icon: Icons.thumb_up_alt_rounded,
+                            color: Colors.blue.shade700,
+                            provider: orderProvider,
+                          ),
+                          const SizedBox(width: 6),
+                          _buildStatusFilterChip(
+                            status: 'DISPATCHED',
+                            label: 'Dispatched',
+                            count: orderProvider.dispatchedOrdersCount,
+                            icon: Icons.local_shipping_rounded,
+                            color: Colors.deepPurple,
+                            provider: orderProvider,
+                          ),
+                          const SizedBox(width: 6),
+                          _buildStatusFilterChip(
+                            status: 'DELIVERED',
+                            label: 'Delivered',
+                            count: orderProvider.deliveredOrdersCount,
+                            icon: Icons.check_circle_rounded,
+                            color: Colors.green.shade700,
+                            provider: orderProvider,
+                          ),
+                          const SizedBox(width: 6),
+                          _buildStatusFilterChip(
+                            status: 'CANCELLED',
+                            label: 'Cancelled',
+                            count: orderProvider.cancelledOrdersCount,
+                            icon: Icons.cancel_rounded,
+                            color: Colors.red.shade700,
+                            provider: orderProvider,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
                     // --- CUSTOMER SEARCH FILTER ---
                     Container(
                       height: 44,
@@ -1471,27 +1815,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             activeFilter: orderProvider.dateFilter,
                             onTap: () => _pickCustomDateRange(context),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // --- STATUS FILTER STRIP ---
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _buildStatusFilterChip('ALL', 'All', orderProvider),
-                          const SizedBox(width: 6),
-                          _buildStatusFilterChip('PENDING', 'Pending (${orderProvider.pendingOrdersCount})', orderProvider),
-                          const SizedBox(width: 6),
-                          _buildStatusFilterChip('CONFIRMED', 'Confirmed (${orderProvider.confirmedOrdersCount})', orderProvider),
-                          const SizedBox(width: 6),
-                          _buildStatusFilterChip('DISPATCHED', 'Dispatched', orderProvider),
-                          const SizedBox(width: 6),
-                          _buildStatusFilterChip('DELIVERED', 'Delivered (${orderProvider.deliveredOrdersCount})', orderProvider),
-                          const SizedBox(width: 6),
-                          _buildStatusFilterChip('CANCELLED', 'Cancelled', orderProvider),
                         ],
                       ),
                     ),
@@ -1843,6 +2166,42 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                 ],
 
+                if (order.adminRemark != null && order.adminRemark!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGold.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.35)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.rate_review_rounded, size: 14, color: AppColors.primaryGold),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal),
+                              children: [
+                                const TextSpan(
+                                  text: 'Admin Remark: ',
+                                  style: TextStyle(fontWeight: FontWeight.w800),
+                                ),
+                                TextSpan(
+                                  text: order.adminRemark!,
+                                  style: const TextStyle(fontStyle: FontStyle.italic),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 12),
 
                 // Action Bar
@@ -1874,7 +2233,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       onPressed: () => _showOrderStatusDialog(context, order),
                       icon: const Icon(Icons.edit_note_rounded, size: 16),
                       label: const Text(
-                        'Change Status',
+                        'Status & Remark',
                         style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                       ),
                     ),
@@ -1944,26 +2303,71 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _buildStatusFilterChip(String status, String label, OrderProvider provider) {
+  Widget _buildStatusFilterChip({
+    required String status,
+    required String label,
+    required int count,
+    required IconData icon,
+    required Color color,
+    required OrderProvider provider,
+  }) {
     final isSelected = provider.statusFilter == status;
     return GestureDetector(
       onTap: () => provider.setStatusFilter(status),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6.5),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryGold : Colors.white,
+          color: isSelected ? color : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppColors.primaryGold : Colors.grey.shade300,
+            color: isSelected ? color : Colors.grey.shade300,
+            width: isSelected ? 1.5 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.28),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            color: isSelected ? AppColors.darkCharcoal : AppColors.secondaryText,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 13.5,
+              color: isSelected ? (status == 'ALL' ? AppColors.primaryGold : Colors.white) : color,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? Colors.white : AppColors.darkCharcoal,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white.withValues(alpha: 0.22) : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                count.toString(),
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: isSelected ? Colors.white : AppColors.secondaryText,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

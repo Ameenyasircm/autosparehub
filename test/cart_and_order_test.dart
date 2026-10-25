@@ -302,5 +302,123 @@ void main() {
       provider.setCategoryFilter('ALL');
       expect(provider.filteredAdminOrders.length, 2);
     });
+
+    test('serializes and deserializes adminRemark in OrderModel', () {
+      final order = OrderModel(
+        id: 'ORD_REMARK',
+        orderNumber: '#ORD-2001',
+        userId: 'USR_R',
+        userName: 'Remark Customer',
+        userPhone: '9876543210',
+        totalAmount: 3500.0,
+        status: 'CONFIRMED',
+        adminRemark: 'Verified with customer, ready for store pickup',
+      );
+
+      final map = order.toMap();
+      expect(map['ADMIN_REMARK'], 'Verified with customer, ready for store pickup');
+
+      final parsed = OrderModel.fromMap(map, 'ORD_REMARK');
+      expect(parsed.adminRemark, 'Verified with customer, ready for store pickup');
+
+      final updated = parsed.copyWith(adminRemark: 'Dispatched via transport');
+      expect(updated.adminRemark, 'Dispatched via transport');
+      expect(updated.status, 'CONFIRMED');
+    });
+
+    test('filters by status marked and computes live count badges', () {
+      final orderPending = OrderModel(
+        id: 'ORD_P',
+        orderNumber: '#ORD-001',
+        userId: 'U1',
+        userName: 'User 1',
+        userPhone: '9876543210',
+        totalAmount: 1000.0,
+        status: 'PENDING',
+      );
+
+      final orderConfirmed = OrderModel(
+        id: 'ORD_C',
+        orderNumber: '#ORD-002',
+        userId: 'U2',
+        userName: 'User 2',
+        userPhone: '9876543211',
+        totalAmount: 2000.0,
+        status: 'CONFIRMED',
+        adminRemark: 'Confirmed on call',
+      );
+
+      final orderDispatched = OrderModel(
+        id: 'ORD_D',
+        orderNumber: '#ORD-003',
+        userId: 'U3',
+        userName: 'User 3',
+        userPhone: '9876543212',
+        totalAmount: 3000.0,
+        status: 'DISPATCHED',
+      );
+
+      final orderDelivered = OrderModel(
+        id: 'ORD_DEL',
+        orderNumber: '#ORD-004',
+        userId: 'U4',
+        userName: 'User 4',
+        userPhone: '9876543213',
+        totalAmount: 4000.0,
+        status: 'DELIVERED',
+      );
+
+      final orderCancelled = OrderModel(
+        id: 'ORD_CAN',
+        orderNumber: '#ORD-005',
+        userId: 'U5',
+        userName: 'User 5',
+        userPhone: '9876543214',
+        totalAmount: 5000.0,
+        status: 'CANCELLED',
+      );
+
+      final provider = OrderProvider();
+      provider.adminOrders.addAll([
+        orderPending,
+        orderConfirmed,
+        orderDispatched,
+        orderDelivered,
+        orderCancelled,
+      ]);
+
+      // Counts verify all statuses
+      expect(provider.totalOrdersCount, 5);
+      expect(provider.pendingOrdersCount, 1);
+      expect(provider.confirmedOrdersCount, 1);
+      expect(provider.dispatchedOrdersCount, 1);
+      expect(provider.deliveredOrdersCount, 1);
+      expect(provider.cancelledOrdersCount, 1);
+
+      // Status filters
+      provider.setStatusFilter('PENDING');
+      expect(provider.filteredAdminOrders.length, 1);
+      expect(provider.filteredAdminOrders.first.id, 'ORD_P');
+
+      provider.setStatusFilter('CONFIRMED');
+      expect(provider.filteredAdminOrders.length, 1);
+      expect(provider.filteredAdminOrders.first.id, 'ORD_C');
+      expect(provider.filteredAdminOrders.first.adminRemark, 'Confirmed on call');
+
+      provider.setStatusFilter('DISPATCHED');
+      expect(provider.filteredAdminOrders.length, 1);
+      expect(provider.filteredAdminOrders.first.id, 'ORD_D');
+
+      provider.setStatusFilter('DELIVERED');
+      expect(provider.filteredAdminOrders.length, 1);
+      expect(provider.filteredAdminOrders.first.id, 'ORD_DEL');
+
+      provider.setStatusFilter('CANCELLED');
+      expect(provider.filteredAdminOrders.length, 1);
+      expect(provider.filteredAdminOrders.first.id, 'ORD_CAN');
+
+      provider.setStatusFilter('ALL');
+      expect(provider.filteredAdminOrders.length, 5);
+    });
   });
 }

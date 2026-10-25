@@ -84,6 +84,7 @@ class OrderModel {
   final double totalAmount;
   final String? shippingAddress;
   final String? customerNote;
+  final String? adminRemark;
   final String status; // 'PENDING' | 'CONFIRMED' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED'
   final List<OrderItemModel> items;
   final List<String> categoryNames;
@@ -106,6 +107,7 @@ class OrderModel {
     required this.totalAmount,
     this.shippingAddress,
     this.customerNote,
+    this.adminRemark,
     this.status = 'PENDING',
     List<OrderItemModel>? items,
     List<String>? categoryNames,
@@ -210,6 +212,7 @@ class OrderModel {
       totalAmount: parseDouble(data['TOTAL_AMOUNT'] ?? data['totalAmount']),
       shippingAddress: data['SHIPPING_ADDRESS']?.toString(),
       customerNote: data['CUSTOMER_NOTE']?.toString(),
+      adminRemark: data['ADMIN_REMARK']?.toString() ?? data['adminRemark']?.toString(),
       status: (data['STATUS'] ?? data['status'] ?? 'PENDING').toString().trim().toUpperCase(),
       items: parsedItems,
       categoryNames: parsedCategoryNames,
@@ -235,6 +238,7 @@ class OrderModel {
       'TOTAL_AMOUNT': totalAmount,
       'SHIPPING_ADDRESS': shippingAddress,
       'CUSTOMER_NOTE': customerNote,
+      'ADMIN_REMARK': adminRemark,
       'STATUS': status,
       'ITEMS': items.map((item) => item.toMap()).toList(),
       'CATEGORY_NAMES': categoryNames,
@@ -259,6 +263,7 @@ class OrderModel {
     double? totalAmount,
     String? shippingAddress,
     String? customerNote,
+    String? adminRemark,
     String? status,
     List<OrderItemModel>? items,
     List<String>? categoryNames,
@@ -281,6 +286,7 @@ class OrderModel {
       totalAmount: totalAmount ?? this.totalAmount,
       shippingAddress: shippingAddress ?? this.shippingAddress,
       customerNote: customerNote ?? this.customerNote,
+      adminRemark: adminRemark ?? this.adminRemark,
       status: status ?? this.status,
       items: items ?? this.items,
       categoryNames: categoryNames ?? this.categoryNames,
