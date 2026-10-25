@@ -127,45 +127,87 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
           index: _currentIndex,
           children: _screens,
         ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppColors.darkCharcoal,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: NavigationBar(
-            height: 64,
-            elevation: 0,
-            backgroundColor: AppColors.darkCharcoal,
-            indicatorColor: AppColors.primaryGold.withValues(alpha: 0.22),
-            selectedIndex: _currentIndex,
-            onDestinationSelected: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined, color: Colors.white70),
-                selectedIcon: Icon(Icons.home_rounded, color: AppColors.primaryGold),
-                label: 'Home',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.grid_view_outlined, color: Colors.white70),
-                selectedIcon: Icon(Icons.grid_view_rounded, color: AppColors.primaryGold),
-                label: 'Menu',
-              ),
-            ],
-          ),
-        ),
-      ),
+      bottomNavigationBar: _buildBottomNav(context),
     ),
   );
 }
+
+  Widget _buildBottomNav(BuildContext context) {
+    return Container(
+      height: 64,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0xFFECEFF3), width: 1),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(
+            index: 0,
+            icon: Icons.receipt_long_outlined,
+            activeIcon: Icons.receipt_long_rounded,
+            label: 'Orders',
+          ),
+          _buildNavItem(
+            index: 1,
+            icon: Icons.grid_view_outlined,
+            activeIcon: Icons.grid_view_rounded,
+            label: 'Menu',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+  }) {
+    final bool isSelected = _currentIndex == index;
+    final color = isSelected ? const Color(0xFF111317) : const Color(0xFF8C95A6);
+
+    return InkWell(
+      onTap: () {
+        setState(() => _currentIndex = index);
+      },
+      child: SizedBox(
+        width: 100,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? activeIcon : icon,
+              size: 22,
+              color: color,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                color: color,
+              ),
+            ),
+            if (isSelected)
+              Container(
+                margin: const EdgeInsets.only(top: 3),
+                width: 5,
+                height: 5,
+                decoration: const BoxDecoration(
+                  color: AppColors.warmGold,
+                  shape: BoxShape.circle,
+                ),
+              )
+            else
+              const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
 }

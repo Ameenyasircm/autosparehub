@@ -3,52 +3,106 @@ import 'package:provider/provider.dart';
 import '../../providers/admin_login_provider.dart';
 import '../../providers/customer_management_provider.dart';
 import '../../services/admin_authorization_service.dart';
+import '../../services/contact_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/phone_helper.dart';
 import '../admin_login_screen.dart';
 import 'admin_management_screen.dart';
 import 'categories_screen.dart';
 import 'companies_screen.dart';
 import 'customer_approvals_screen.dart';
+import 'product_form_screen.dart';
 import 'products_screen.dart';
 
-/// Dedicated Admin Menu screen with categorized management options.
-class AdminMenuScreen extends StatelessWidget {
+/// Admin Menu Screen hosting all management options, approvals, catalog controls,
+/// contact details settings, and admin session management.
+class AdminMenuScreen extends StatefulWidget {
   const AdminMenuScreen({super.key});
+
+  @override
+  State<AdminMenuScreen> createState() => _AdminMenuScreenState();
+}
+
+class _AdminMenuScreenState extends State<AdminMenuScreen> {
+  final ContactService _contactService = ContactService();
+  String _activeContactPhone = ContactService.defaultPhoneNumber;
+  bool _isLoadingContact = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContactPhone();
+  }
+
+  Future<void> _loadContactPhone() async {
+    final phone = await _contactService.fetchContactPhone();
+    if (mounted) {
+      setState(() {
+        _activeContactPhone = phone;
+        _isLoadingContact = false;
+      });
+    }
+  }
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
         title: Row(
-          children: const [
-            Icon(Icons.logout_rounded, color: AppColors.error),
-            SizedBox(width: 10),
-            Text(
-              'Sign Out',
-              style: TextStyle(
-                color: AppColors.darkCharcoal,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.logout_rounded,
+                color: AppColors.error,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Sign Out',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.darkHeader,
+                ),
               ),
             ),
           ],
         ),
         content: const Text(
           'Are you sure you want to end your administrative session?',
-          style: TextStyle(color: AppColors.secondaryText, fontSize: 14),
+          style: TextStyle(
+            color: AppColors.secondaryText,
+            fontSize: 13.5,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.secondaryText)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.secondaryText, fontWeight: FontWeight.w600),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             ),
             onPressed: () async {
               Navigator.of(dialogCtx).pop();
@@ -56,7 +110,7 @@ class AdminMenuScreen extends StatelessWidget {
               if (!context.mounted) return;
               Navigator.of(context).pushAndRemoveUntil(
                 PageRouteBuilder(
-                  transitionDuration: const Duration(milliseconds: 400),
+                  transitionDuration: const Duration(milliseconds: 300),
                   pageBuilder: (context, anim, secAnim) => const AdminLoginScreen(),
                   transitionsBuilder: (context, anim, secAnim, child) =>
                       FadeTransition(opacity: anim, child: child),
@@ -71,6 +125,149 @@ class AdminMenuScreen extends StatelessWidget {
     );
   }
 
+  void _showEditContactDialog(BuildContext context) {
+    final controller = TextEditingController(text: _activeContactPhone);
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+            titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            title: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.darkHeader,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.contact_phone_rounded,
+                    color: AppColors.warmGold,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Store Contact Number',
+                    style: TextStyle(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.darkHeader,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'This 10-digit number is displayed on the customer profile for instant calling and WhatsApp inquiries.',
+                  style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText, height: 1.4),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 10,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.phone_rounded, color: AppColors.warmGold, size: 20),
+                    prefixText: '+91 ',
+                    prefixStyle: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.darkHeader),
+                    labelText: 'Customer Helpline Phone',
+                    hintText: '9048112233',
+                    counterText: '',
+                    filled: true,
+                    fillColor: const Color(0xFFF7F8FA),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.warmGold, width: 1.8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogCtx).pop(),
+                child: const Text('Cancel', style: TextStyle(color: AppColors.secondaryText)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.darkButton,
+                  foregroundColor: AppColors.warmGold,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                ),
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        final val = controller.text.trim();
+                        final clean = PhoneHelper.extract10Digits(val);
+                        if (clean.length != 10) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please enter a valid 10-digit mobile number.'),
+                              backgroundColor: AppColors.error,
+                            ),
+                          );
+                          return;
+                        }
+                        final messenger = ScaffoldMessenger.of(context);
+                        setDialogState(() => isSaving = true);
+                        final ok = await _contactService.updateContactPhone(clean);
+                        if (dialogCtx.mounted) {
+                          Navigator.of(dialogCtx).pop();
+                        }
+                        if (mounted) {
+                          if (ok) {
+                            setState(() => _activeContactPhone = clean);
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Helpline phone updated to +91 $clean'),
+                                backgroundColor: AppColors.darkHeader,
+                              ),
+                            );
+                          } else {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Failed to update helpline number.'),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                child: isSaving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.warmGold),
+                      )
+                    : const Text('Save Number', style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentAdmin = context.watch<AdminLoginProvider>().currentAdmin;
@@ -79,97 +276,15 @@ class AdminMenuScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: AppColors.darkCharcoal,
-        elevation: 0,
-        title: const Text(
-          'Admin Menu',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 18,
-          ),
-        ),
-      ),
+      appBar: _buildTopAppBar(context),
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
         physics: const BouncingScrollPhysics(),
         children: [
           // Current Admin Profile Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.darkCharcoal,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primaryGold, width: 1.5),
-                  ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    color: AppColors.primaryGold,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        currentAdmin?.name ?? 'Admin',
-                        style: const TextStyle(
-                          color: AppColors.darkCharcoal,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Phone: ${currentAdmin?.phoneNumber ?? '--'}',
-                        style: const TextStyle(
-                          color: AppColors.secondaryText,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGold.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.4)),
-                  ),
-                  child: Text(
-                    currentAdmin?.type ?? 'STAFF',
-                    style: const TextStyle(
-                      color: AppColors.primaryGold,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildAdminProfileCard(currentAdmin),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // SECTION 1: ADMINISTRATION & USER APPROVALS
           _buildSectionHeader('Administration & Approvals'),
@@ -181,6 +296,7 @@ class AdminMenuScreen extends StatelessWidget {
             description: 'Review registration requests, approve buyers, and manage permissions.',
             icon: Icons.how_to_reg_rounded,
             badge: customerProvider.pendingCount > 0 ? '${customerProvider.pendingCount} PENDING' : null,
+            badgeColor: customerProvider.pendingCount > 0 ? AppColors.warmGold : null,
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const CustomerApprovalsScreen()),
@@ -192,10 +308,11 @@ class AdminMenuScreen extends StatelessWidget {
 
           _buildMenuItem(
             context: context,
-            title: 'Manager Admins',
-            description: 'Manage administrator accounts, roles, and access.',
+            title: 'Admin Management',
+            description: 'Manage staff administrators, access permissions, and roles.',
             icon: Icons.admin_panel_settings_rounded,
-            badge: isManager ? null : 'LOCKED',
+            badge: isManager ? 'MANAGER ACCESS' : 'LOCKED',
+            badgeColor: isManager ? const Color(0xFF2E7D32) : Colors.grey.shade600,
             onTap: () {
               if (isManager) {
                 Navigator.of(context).push(
@@ -212,16 +329,16 @@ class AdminMenuScreen extends StatelessWidget {
             },
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
 
           // SECTION 2: CATALOG & BUSINESS MANAGEMENT
-          _buildSectionHeader('Catalog & Business Management'),
+          _buildSectionHeader('Catalog & Inventory Management'),
           const SizedBox(height: 8),
 
           _buildMenuItem(
             context: context,
             title: 'Spare Parts & Products',
-            description: 'Catalog parts, technical specifications, photos, and compatibility.',
+            description: 'Catalog parts, technical specifications, photos, and stock.',
             icon: Icons.precision_manufacturing_rounded,
             onTap: () {
               Navigator.of(context).push(
@@ -234,8 +351,22 @@ class AdminMenuScreen extends StatelessWidget {
 
           _buildMenuItem(
             context: context,
-            title: 'Companies',
-            description: 'Add and maintain vehicle manufacturers, brands, or companies.',
+            title: 'Add New Product',
+            description: 'Quickly register a new automotive spare part in the catalog.',
+            icon: Icons.add_box_rounded,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProductFormScreen()),
+              );
+            },
+          ),
+
+          const SizedBox(height: 10),
+
+          _buildMenuItem(
+            context: context,
+            title: 'Vehicle Brands & Companies',
+            description: 'Add and maintain vehicle manufacturers, brands, and logos.',
             icon: Icons.business_rounded,
             onTap: () {
               Navigator.of(context).push(
@@ -248,8 +379,8 @@ class AdminMenuScreen extends StatelessWidget {
 
           _buildMenuItem(
             context: context,
-            title: 'Categories',
-            description: 'Manage spare parts categories and their images.',
+            title: 'Part Categories',
+            description: 'Manage automotive categories, descriptions, and icon images.',
             icon: Icons.category_rounded,
             onTap: () {
               Navigator.of(context).push(
@@ -258,9 +389,25 @@ class AdminMenuScreen extends StatelessWidget {
             },
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
 
-          // SECTION 3: SESSION MANAGEMENT
+          // SECTION 3: STORE & CUSTOMER SETTINGS
+          _buildSectionHeader('Store & Support Settings'),
+          const SizedBox(height: 8),
+
+          _buildMenuItem(
+            context: context,
+            title: 'Customer Helpline Contact',
+            description: 'Manage store phone number used for user direct calls and WhatsApp.',
+            icon: Icons.contact_phone_rounded,
+            badge: _isLoadingContact ? '...' : _contactService.formatForDisplay(_activeContactPhone),
+            badgeColor: AppColors.warmGold,
+            onTap: () => _showEditContactDialog(context),
+          ),
+
+          const SizedBox(height: 22),
+
+          // SECTION 4: SESSION MANAGEMENT
           _buildSectionHeader('Account & Session'),
           const SizedBox(height: 8),
 
@@ -273,18 +420,181 @@ class AdminMenuScreen extends StatelessWidget {
             onTap: () => _showLogoutDialog(context),
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           Center(
             child: Text(
-              'AutoSpare Admin Portal • Version 2.0.0',
+              'SN AutoSpare Hub • Admin Operations v2.0.0',
               style: TextStyle(
                 color: Colors.grey.shade500,
                 fontSize: 11,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildTopAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: AppColors.darkHeader,
+      elevation: 0,
+      centerTitle: false,
+      titleSpacing: 16,
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Circular Logo Emblem
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.warmGold.withValues(alpha: 0.6),
+                width: 1.5,
+              ),
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/AutoSpareLogo.jpg',
+                width: 34,
+                height: 34,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.settings_suggest_rounded,
+                  color: AppColors.warmGold,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Brand Title: "AUTO SPARE HUB" with "ADMIN MENU"
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RichText(
+                text: const TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'AUTO SPARE ',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14.5,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'HUB',
+                      style: TextStyle(
+                        color: AppColors.warmGold,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14.5,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 1),
+              const Text(
+                'ADMIN MENU',
+                style: TextStyle(
+                  color: AppColors.warmGold,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 9.5,
+                  letterSpacing: 2.0,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdminProfileCard(dynamic currentAdmin) {
+    final String name = currentAdmin?.name ?? 'Admin';
+    final String phone = currentAdmin?.phoneNumber ?? '--';
+    final String role = currentAdmin?.type ?? 'STAFF';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.darkHeader,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.warmGold.withValues(alpha: 0.3), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF22262F),
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.warmGold, width: 1.5),
+            ),
+            child: const Icon(
+              Icons.person_rounded,
+              color: AppColors.warmGold,
+              size: 26,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Phone: $phone',
+                  style: TextStyle(
+                    color: Colors.grey.shade400,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.warmGold.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.warmGold, width: 1),
+            ),
+            child: Text(
+              role,
+              style: const TextStyle(
+                color: AppColors.warmGold,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -295,9 +605,9 @@ class AdminMenuScreen extends StatelessWidget {
       padding: const EdgeInsets.only(left: 4.0),
       child: Text(
         title.toUpperCase(),
-        style: TextStyle(
-          color: Colors.grey.shade600,
-          fontSize: 11.5,
+        style: const TextStyle(
+          color: Color(0xFF5A6271),
+          fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 1.0,
         ),
@@ -312,81 +622,100 @@ class AdminMenuScreen extends StatelessWidget {
     required IconData icon,
     Color? iconColor,
     String? badge,
+    Color? badgeColor,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 1.5,
-      shadowColor: Colors.black.withValues(alpha: 0.04),
-      shape: RoundedRectangleBorder(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade200),
+        border: Border.all(color: const Color(0xFFEDEFF2), width: 1.1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.darkCharcoal,
-                  borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14.0),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.darkHeader,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: iconColor ?? AppColors.warmGold, size: 22),
                 ),
-                child: Icon(icon, color: iconColor ?? AppColors.primaryGold, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              color: AppColors.darkCharcoal,
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        if (badge != null) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
                             child: Text(
-                              badge,
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
+                              title,
+                              style: const TextStyle(
+                                color: AppColors.darkHeader,
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ),
+                          if (badge != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: (badgeColor ?? AppColors.darkHeader).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: (badgeColor ?? AppColors.darkHeader).withValues(alpha: 0.4),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                badge,
+                                style: TextStyle(
+                                  color: badgeColor ?? AppColors.darkHeader,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        color: AppColors.secondaryText,
-                        fontSize: 12,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 3),
+                      Text(
+                        description,
+                        style: const TextStyle(
+                          color: AppColors.secondaryText,
+                          fontSize: 12,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.secondaryText),
-            ],
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: Color(0xFFB0B7C3),
+                ),
+              ],
+            ),
           ),
         ),
       ),

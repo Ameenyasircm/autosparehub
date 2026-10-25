@@ -61,6 +61,23 @@ class ContactService {
     return _cachedPhoneNumber!;
   }
 
+  /// Updates the store contact phone number in /CONTACT_DETAILS/1234PHONE
+  Future<bool> updateContactPhone(String newPhone) async {
+    final clean = PhoneHelper.extract10Digits(newPhone);
+    if (clean.length != 10) return false;
+    try {
+      await _firestore.collection(collectionName).doc(documentId).set({
+        'PHONE': clean,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      _cachedPhoneNumber = clean;
+      return true;
+    } catch (e) {
+      debugPrint('ContactService.updateContactPhone error: $e');
+      return false;
+    }
+  }
+
   /// Launch phone dialer intent
   Future<bool> launchPhoneCall([String? phone]) async {
     final raw = phone ?? activePhoneNumber;
