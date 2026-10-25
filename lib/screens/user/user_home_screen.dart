@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
@@ -67,23 +68,126 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     super.dispose();
   }
 
+  Future<bool> _showExitConfirmDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        title: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.darkHeader,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.exit_to_app_rounded,
+                color: AppColors.warmGold,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Exit App?',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.darkHeader,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to exit SN AutoSpare Hub?',
+          style: TextStyle(
+            fontSize: 13.5,
+            color: AppColors.darkCharcoal,
+            height: 1.4,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: AppColors.secondaryText,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.darkButton,
+              foregroundColor: AppColors.warmGold,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'Exit',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final auth = context.watch<UserAuthProvider>();
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
-      appBar: _buildTopAppBar(context, cart, auth),
-      body: IndexedStack(
-        index: _currentTabIndex,
-        children: [
-          _buildStorefrontCatalogTab(context),
-          const UserOrdersScreen(showAppBar: false),
-          _buildProfileTab(context, auth),
-        ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        // If user is on Orders or Profile tab, switch back to Home tab first
+        if (_currentTabIndex != 0) {
+          setState(() => _currentTabIndex = 0);
+          return;
+        }
+
+        final shouldExit = await _showExitConfirmDialog(context);
+        if (shouldExit && context.mounted) {
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.backgroundLight,
+        appBar: _buildTopAppBar(context, cart, auth),
+        body: IndexedStack(
+          index: _currentTabIndex,
+          children: [
+            _buildStorefrontCatalogTab(context),
+            const UserOrdersScreen(showAppBar: false),
+            _buildProfileTab(context, auth),
+          ],
+        ),
+        bottomNavigationBar: _buildBottomNav(context),
       ),
-      bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
