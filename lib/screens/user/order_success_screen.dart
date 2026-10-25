@@ -219,28 +219,8 @@ class OrderSuccessScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
                       const Divider(color: Colors.white24, height: 1),
                       const SizedBox(height: 12),
-
-                      _buildInfoBullet(
-                        icon: Icons.payments_outlined,
-                        title: 'No In-App Payment',
-                        subtitle:
-                            'No payment has been deducted or required in this app.',
-                        malayalamSubtitle: 'ആപ്പിൽ പണം അടയ്ക്കേണ്ടതില്ല.',
-                      ),
-                      const SizedBox(height: 10),
-
-                      _buildInfoBullet(
-                        icon: Icons.local_shipping_outlined,
-                        title: 'No Automated Courier Dispatch',
-                        subtitle:
-                            'Orders are personally reviewed and dispatched upon direct agreement.',
-                        malayalamSubtitle:
-                            'ഓർഡർ പരിശോധിച്ച് ഉറപ്പുവരുത്തിയ ശേഷം അയക്കുന്നതാണ്.',
-                      ),
-                      const SizedBox(height: 10),
 
                       _buildInfoBullet(
                         icon: Icons.phone_callback_rounded,

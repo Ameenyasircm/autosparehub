@@ -2,19 +2,30 @@ import 'package:flutter/material.dart';
 
 /// Centralized branding colors and theme configurations for Auto Spare Hub.
 class AppColors {
-  // Brand colors specified in requirements
-  static const Color primaryGold = Color(0xFFC3903C);
-  static const Color darkCharcoal = Color(0xFF25282D);
-  static const Color secondaryGold = Color(0xFFC89B40);
-  static const Color lightGold = Color(0xFFE5C063);
+  // Brand colors specified in requirements & user app mockup theme
+  static const Color primaryGold = Color(0xFFE5A93C); // Vibrant warm gold from mockups
+  static const Color darkCharcoal = Color(0xFF181A20); // Obsidian dark for buttons & cards
+  static const Color darkHeader = Color(0xFF12151B); // Top app bar header dark
+  static const Color darkButton = Color(0xFF181A20); // Primary action button dark
+  static const Color secondaryGold = Color(0xFFC3903C);
+  static const Color lightGold = Color(0xFFF0CA7A);
+  static const Color warmGold = Color(0xFFE5A93C);
 
-  // Suggested UI & background colors
-  static const Color backgroundLight = Color(0xFFF5F6F8);
+  // Suggested UI & background colors matching mockups
+  static const Color backgroundLight = Color(0xFFF4F6F9); // Clean cool off-white
   static const Color cardLight = Color(0xFFFFFFFF);
-  static const Color primaryText = Color(0xFF25282D);
-  static const Color secondaryText = Color(0xFF777777);
+  static const Color primaryText = Color(0xFF181A20);
+  static const Color secondaryText = Color(0xFF6B7280);
   static const Color error = Color(0xFFD32F2F);
   static const Color success = Color(0xFF2E7D32);
+
+  // Mockup pill badges & stepper colors
+  static const Color badgeGoldBg = Color(0xFFFFF9EE);
+  static const Color badgeGoldBorder = Color(0xFFE5A93C);
+  static const Color badgeGoldText = Color(0xFFC3903C);
+  static const Color stepperBg = Color(0xFFFDE8C7);
+  static const Color borderLight = Color(0xFFDDE1E6);
+  static const Color cardBorder = Color(0xFFEDEFF2);
 
   // Dark palette accents for Admin portal
   static const Color darkSurface = Color(0xFF1A1C20);
@@ -27,6 +38,94 @@ class AppColors {
 }
 
 class AppTheme {
+  /// User Storefront Theme matching the provided design system mockups
+  static ThemeData get userTheme {
+    return ThemeData(
+      useMaterial3: true,
+      scaffoldBackgroundColor: AppColors.backgroundLight,
+      colorScheme: const ColorScheme(
+        brightness: Brightness.light,
+        primary: AppColors.warmGold,
+        onPrimary: AppColors.darkButton,
+        secondary: AppColors.secondaryGold,
+        onSecondary: Colors.white,
+        error: AppColors.error,
+        onError: Colors.white,
+        surface: AppColors.cardLight,
+        onSurface: AppColors.primaryText,
+      ),
+      fontFamily: 'Roboto',
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.darkHeader,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: Colors.white),
+        titleTextStyle: TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.darkButton,
+          foregroundColor: AppColors.warmGold,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.darkButton,
+          backgroundColor: Colors.white,
+          side: const BorderSide(color: AppColors.borderLight, width: 1.2),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 14.5,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        labelStyle: const TextStyle(
+          color: AppColors.secondaryText,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        hintStyle: const TextStyle(
+          color: Color(0xFF9EA3AC),
+          fontSize: 13.5,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.borderLight, width: 1.2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.borderLight, width: 1.2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.darkButton, width: 1.5),
+        ),
+      ),
+    );
+  }
+
   /// Admin Portal Light Theme with dark charcoal and gold highlights
   static ThemeData get adminTheme {
     return ThemeData(

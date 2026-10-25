@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/user_auth_provider.dart';
 import '../../../theme/app_theme.dart';
+import '../user_login_screen.dart';
 
 /// Modal bottom sheet providing seamless customer account Registration & Sign In.
 /// Allows setting a password during registration, logging in once approved,
@@ -23,16 +24,12 @@ class CustomerRegistrationSheet extends StatefulWidget {
     VoidCallback? onRegistered,
     bool initialIsLogin = false,
   }) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => CustomerRegistrationSheet(
-        onRegistered: onRegistered,
-        initialIsLogin: initialIsLogin,
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UserLoginScreen(
+          initialIsRegister: !initialIsLogin,
+          onAuthenticated: onRegistered,
+        ),
       ),
     );
   }

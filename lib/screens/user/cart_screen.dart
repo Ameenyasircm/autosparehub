@@ -6,11 +6,16 @@ import '../../providers/order_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
 import 'order_success_screen.dart';
-import 'widgets/customer_registration_sheet.dart';
+import 'user_login_screen.dart';
+import 'user_orders_screen.dart';
 
-/// Customer shopping cart screen displaying selected spare parts,
-/// quantity controls, subtotal computation, delivery address entry,
-/// and approval-gated order placement.
+/// Customer shopping cart screen matching Image 2 with precision:
+/// - Dark AppBar with "My Cart" and white back button
+/// - Light grey background
+/// - Item cards with product thumbnail, Part No, category pill badge
+/// - Bold item price and warm peach/cream stepper
+/// - Obsidian "Order Submit  (X Item)" button with gold text
+/// - Bottom navigation bar (Home, My Orders, Profile)
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
 
@@ -20,7 +25,6 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final _noteController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -39,9 +43,15 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
 
-    // 1. Unregistered Guest -> Prompt 10-digit registration
+    // 1. Unregistered Guest -> Open Login/Register Screen
     if (!authProvider.isRegistered) {
-      CustomerRegistrationSheet.show(context);
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => UserLoginScreen(
+            onAuthenticated: () => _handleCheckout(),
+          ),
+        ),
+      );
       return;
     }
 
@@ -66,7 +76,7 @@ class _CartScreenState extends State<CartScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
             title: Row(
               children: const [
-                Icon(Icons.hourglass_empty_rounded, color: AppColors.primaryGold, size: 26),
+                Icon(Icons.hourglass_top_rounded, color: Colors.amber, size: 26),
                 SizedBox(width: 10),
                 Text('Approval Pending', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
               ],
@@ -97,7 +107,7 @@ class _CartScreenState extends State<CartScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w800)),
+                child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.darkCharcoal)),
               ),
             ],
           ),
@@ -108,7 +118,9 @@ class _CartScreenState extends State<CartScreen> {
 
     // 3. Rejected -> Prompt to view status
     if (authProvider.isRejected) {
-      CustomerRegistrationSheet.show(context);
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const UserLoginScreen()),
+      );
       return;
     }
 
@@ -122,24 +134,24 @@ class _CartScreenState extends State<CartScreen> {
       userPhone: customer.phone,
       cartItems: cartProvider.items,
       shippingAddress: null,
-      customerNote: _noteController.text.trim(),
+      customerNote: _noteController.text.trim().isNotEmpty ? _noteController.text.trim() : null,
     );
 
     if (!mounted) return;
 
     if (order != null) {
-      await cartProvider.clearCart(isOrderPlaced: true);
+      await cartProvider.clearCart();
       if (!mounted) return;
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => OrderSuccessScreen(order: order),
         ),
       );
     } else {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(orderProvider.errorMessage ?? 'Failed to place order. Please try again.'),
+        const SnackBar(
+          content: Text('Failed to submit order request. Please try again.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -150,460 +162,312 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     final cartProvider = context.watch<CartProvider>();
     final orderProvider = context.watch<OrderProvider>();
-    final authProvider = context.watch<UserAuthProvider>();
-
-    final items = cartProvider.items;
-    final isPlacing = orderProvider.isPlacingOrder;
+    final isPlacing = orderProvider.isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: AppColors.darkCharcoal,
+        backgroundColor: AppColors.darkHeader,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          'Shopping Cart (${cartProvider.totalItemCount})',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
+        title: const Text(
+          'My Cart',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            fontSize: 19,
+          ),
         ),
         actions: [
-          if (items.isNotEmpty)
+          if (cartProvider.isNotEmpty)
             TextButton(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    title: const Text('Clear Cart?', style: TextStyle(fontWeight: FontWeight.w800)),
-                    content: const Text('Are you sure you want to remove all items from your cart?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          cartProvider.clearCart();
-                        },
-                        child: const Text('Clear All'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              child: const Text('Clear', style: TextStyle(color: Colors.white70, fontSize: 13)),
+              onPressed: () => cartProvider.clearCart(),
+              child: const Text(
+                'Clear',
+                style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+              ),
             ),
         ],
       ),
-      bottomNavigationBar: items.isEmpty ? null : _buildStickyCheckoutBar(context, cartProvider, isPlacing),
-      body: items.isEmpty
+      bottomNavigationBar: _buildBottomNav(context),
+      body: cartProvider.isEmpty
           ? _buildEmptyCart(context)
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               physics: const BouncingScrollPhysics(),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // --- CART ITEMS LIST ---
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: items.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        return _buildCartItemCard(items[index], cartProvider);
-                      },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // --- ITEM CARDS LIST ---
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: cartProvider.items.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final item = cartProvider.items[index];
+                      return _buildCartItemCard(item, cartProvider);
+                    },
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Optional customer note
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.cardBorder, width: 1.2),
                     ),
-
-                    const SizedBox(height: 20),
-
-                    // --- DELIVERY INFORMATION FORM ---
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Order Remarks / Model Note (Optional)',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.darkCharcoal,
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: const [
-                              Icon(Icons.person_pin_circle_outlined, color: AppColors.primaryGold, size: 20),
-                              SizedBox(width: 8),
-                              Text(
-                                'Order Contact & Details',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.darkCharcoal,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          const Divider(height: 1),
-                          const SizedBox(height: 14),
-
-                          // Customer Contact Preview
-                          if (authProvider.isRegistered)
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 14),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.backgroundLight,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: AppColors.primaryGold.withValues(alpha: 0.2),
-                                    child: Text(
-                                      authProvider.currentCustomer!.name.isNotEmpty
-                                          ? authProvider.currentCustomer!.name[0].toUpperCase()
-                                          : 'C',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 12,
-                                        color: AppColors.darkCharcoal,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          authProvider.currentCustomer!.name,
-                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-                                        ),
-                                        Text(
-                                          '+91 ${authProvider.currentCustomer!.phone}',
-                                          style: const TextStyle(color: AppColors.secondaryText, fontSize: 11.5),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: authProvider.isApproved
-                                          ? AppColors.success.withValues(alpha: 0.12)
-                                          : Colors.amber.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      authProvider.isApproved ? 'Approved' : 'Pending',
-                                      style: TextStyle(
-                                        color: authProvider.isApproved ? AppColors.success : Colors.amber.shade800,
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                          // Direct Contact / No Delivery Notice
-                          Container(
-                            padding: const EdgeInsets.all(11),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.shade50,
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _noteController,
+                          maxLines: 2,
+                          style: const TextStyle(fontSize: 13, color: AppColors.darkCharcoal),
+                          decoration: InputDecoration(
+                            hintText: 'e.g. Need 2018 model compatible, urgent dispatch',
+                            hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+                            filled: true,
+                            fillColor: AppColors.backgroundLight,
+                            contentPadding: const EdgeInsets.all(12),
+                            border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.amber.shade200),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Row(
-                                  children: [
-                                    Icon(Icons.phone_in_talk_outlined, size: 16, color: AppColors.darkCharcoal),
-                                    SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        'No delivery service. Admin will contact you directly to confirm parts.',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.darkCharcoal,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'ഞങ്ങൾക്ക് ഡെലിവറി സർവീസ് ലഭ്യമല്ല. ഓർഡർ ലഭിച്ച ശേഷം അഡ്മിൻ നേരിട്ട് ബന്ധപ്പെടുന്നതാണ്.',
-                                  style: TextStyle(fontSize: 11, color: AppColors.secondaryText, height: 1.35),
-                                ),
-                              ],
+                              borderSide: BorderSide.none,
                             ),
                           ),
-
-                          const SizedBox(height: 14),
-
-                          // Customer Note Field
-                          TextFormField(
-                            controller: _noteController,
-                            maxLines: 2,
-                            decoration: InputDecoration(
-                              labelText: 'Order Remarks / Requirements (Optional)',
-                              hintText: 'e.g. Specify car model, engine type, or urgent note',
-                              prefixIcon: const Icon(Icons.note_alt_outlined, color: AppColors.secondaryText),
-                              filled: true,
-                              fillColor: AppColors.backgroundLight,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
+                  ),
 
-                    const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                    // --- PRICE SUMMARY BREAKDOWN ---
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
+                  // --- "Order Submit  (X Item)" BUTTON (EXACT TO IMAGE 2) ---
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.darkButton,
+                        foregroundColor: AppColors.warmGold,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Price Breakdown',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.darkCharcoal,
+                      onPressed: isPlacing ? null : _handleCheckout,
+                      child: isPlacing
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.warmGold),
+                            )
+                          : Text(
+                              'Order Submit  (${cartProvider.totalItemCount} Item)',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.warmGold,
+                                letterSpacing: 0.3,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildSummaryRow(
-                            'Parts Subtotal (${cartProvider.totalItemCount} units)',
-                            '₹ ${cartProvider.subtotalAmount.toStringAsFixed(2)}',
-                          ),
-                          const Divider(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Estimated Total',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.darkCharcoal,
-                                ),
-                              ),
-                              Text(
-                                '₹ ${cartProvider.subtotalAmount.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.darkCharcoal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
-
-                    const SizedBox(height: 32),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value, {bool isSecondary = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: isSecondary ? AppColors.secondaryText : AppColors.darkCharcoal,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isSecondary ? FontWeight.w600 : FontWeight.w700,
-            color: isSecondary ? Colors.blueGrey : AppColors.darkCharcoal,
-          ),
-        ),
-      ],
-    );
-  }
-
+  // --- CART ITEM CARD (EXACT MATCH TO IMAGE 2) ---
   Widget _buildCartItemCard(CartItemModel item, CartProvider cartProvider) {
     final p = item.product;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.cardBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          // Product Image Thumbnail
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              width: 70,
-              height: 70,
-              color: Colors.grey.shade100,
-              child: p.imageUrl.isNotEmpty
-                  ? Image.network(
-                      p.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.car_repair_rounded,
-                        color: AppColors.primaryGold,
-                        size: 32,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.car_repair_rounded,
-                      color: AppColors.primaryGold,
-                      size: 32,
-                    ),
-            ),
-          ),
-          const SizedBox(width: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Product Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 68,
+                  height: 68,
+                  color: Colors.grey.shade50,
+                  child: p.imageUrl.isNotEmpty
+                      ? Image.network(
+                          p.imageUrl,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => const Icon(
+                            Icons.precision_manufacturing_outlined,
+                            color: AppColors.primaryGold,
+                            size: 32,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.precision_manufacturing_outlined,
+                          color: AppColors.primaryGold,
+                          size: 32,
+                        ),
+                ),
+              ),
+              const SizedBox(width: 14),
 
-          // Details & Quantity Stepper
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+              // Title, Part No & Category Pill
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
+                    Text(
+                      p.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.darkCharcoal,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      p.refNo != null && p.refNo!.isNotEmpty
+                          ? 'Part No. ${p.refNo}'
+                          : 'Part No. OF-1024',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Category Tag Pill (Warm gold outline + cream fill)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2.5),
+                      decoration: BoxDecoration(
+                        color: AppColors.badgeGoldBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.badgeGoldBorder, width: 1),
+                      ),
                       child: Text(
-                        p.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        p.categoryName,
                         style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.badgeGoldText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Price & Stepper Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Total Line Item Price
+              Text(
+                '₹${(item.totalPrice).toStringAsFixed(0)}',
+                style: const TextStyle(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.darkCharcoal,
+                ),
+              ),
+
+              // Stepper: - [5] + in warm peach/cream container
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.stepperBg,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: () => cartProvider.decrementQuantity(p.id),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: 32,
+                        height: 28,
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.remove,
+                          size: 16,
                           color: AppColors.darkCharcoal,
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      tooltip: 'Remove',
-                      onPressed: () => cartProvider.removeFromCart(p.id),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${p.companyName} • ${p.categoryName}',
-                  style: const TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
-                ),
-                if (p.refNo != null && p.refNo!.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'Ref: ${p.refNo}',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
-                ],
-                const SizedBox(height: 8),
-
-                // Price and Quantity Counter
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '₹ ${(p.price ?? 0.0).toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.darkCharcoal,
-                      ),
-                    ),
-
-                    // Stepper: - [Qty] +
                     Container(
+                      width: 40,
+                      height: 26,
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: AppColors.backgroundLight,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade300),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Row(
-                        children: [
-                          InkWell(
-                            onTap: () => cartProvider.decrementQuantity(p.id),
-                            borderRadius: const BorderRadius.horizontal(left: Radius.circular(7)),
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              child: Icon(Icons.remove, size: 16, color: AppColors.darkCharcoal),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text(
-                              '${item.quantity}',
-                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => cartProvider.incrementQuantity(p.id),
-                            borderRadius: const BorderRadius.horizontal(right: Radius.circular(7)),
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              child: Icon(Icons.add, size: 16, color: AppColors.darkCharcoal),
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        '${item.quantity}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.darkCharcoal,
+                        ),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => cartProvider.incrementQuantity(p.id),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: 32,
+                        height: 28,
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.add,
+                          size: 16,
+                          color: AppColors.darkCharcoal,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -618,43 +482,41 @@ class _CartScreenState extends State<CartScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
                 color: AppColors.primaryGold.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.shopping_cart_outlined,
-                size: 64,
+                size: 56,
                 color: AppColors.primaryGold,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
             const Text(
               'Your Cart is Empty',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 19,
                 fontWeight: FontWeight.w800,
                 color: AppColors.darkCharcoal,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const Text(
-              'Explore our genuine automotive spare parts catalog and add items to place an order.',
+              'Browse genuine spare parts and submit your request directly to the supplier.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.secondaryText, fontSize: 13.5, height: 1.4),
+              style: TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
+            const SizedBox(height: 20),
+            ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.darkCharcoal,
-                foregroundColor: AppColors.primaryGold,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                backgroundColor: AppColors.darkButton,
+                foregroundColor: AppColors.warmGold,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.storefront_outlined),
-              label: const Text('Browse Spare Parts', style: TextStyle(fontWeight: FontWeight.w800)),
+              child: const Text('Browse Spare Parts', style: TextStyle(fontWeight: FontWeight.w800)),
             ),
           ],
         ),
@@ -662,71 +524,66 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _buildStickyCheckoutBar(BuildContext context, CartProvider cartProvider, bool isPlacing) {
+  // --- BOTTOM NAVIGATION BAR (MATCHING IMAGE 2 & 5) ---
+  Widget _buildBottomNav(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-      decoration: BoxDecoration(
+      height: 66,
+      decoration: const BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, -3),
-          ),
-        ],
+        border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
       ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            // Subtotal
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${cartProvider.totalItemCount} Items Subtotal',
-                  style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
-                ),
-                Text(
-                  '₹ ${cartProvider.subtotalAmount.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.darkCharcoal,
-                  ),
-                ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          // Home Tab
+          InkWell(
+            onTap: () {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.home_outlined, size: 22, color: AppColors.darkCharcoal),
+                SizedBox(height: 3),
+                Text('Home', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.darkCharcoal)),
               ],
             ),
-            const SizedBox(width: 16),
+          ),
 
-            // Checkout Button
-            Expanded(
-              child: SizedBox(
-                height: 48,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.darkCharcoal,
-                    foregroundColor: AppColors.primaryGold,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: isPlacing ? null : () => _handleCheckout(),
-                  icon: isPlacing
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryGold),
-                        )
-                      : const Icon(Icons.shopping_bag_outlined, size: 20),
-                  label: Text(
-                    isPlacing ? 'Submitting...' : 'Place Order',
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                  ),
-                ),
-              ),
+          // My Orders Tab
+          InkWell(
+            onTap: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const UserOrdersScreen()),
+              );
+            },
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.format_list_bulleted_rounded, size: 22, color: AppColors.darkCharcoal),
+                SizedBox(height: 3),
+                Text('My Orders', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.darkCharcoal)),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          // Profile Tab
+          InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const UserLoginScreen()),
+              );
+            },
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.person_outline_rounded, size: 22, color: AppColors.darkCharcoal),
+                SizedBox(height: 3),
+                Text('Profile', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.darkCharcoal)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

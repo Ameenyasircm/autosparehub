@@ -5,12 +5,14 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
+import 'user_login_screen.dart';
 import 'widgets/change_password_dialog.dart';
 
 /// Customer screen displaying the history, live status, and detailed itemized
 /// breakdowns of placed automotive spare part orders.
 class UserOrdersScreen extends StatefulWidget {
-  const UserOrdersScreen({super.key});
+  final bool showAppBar;
+  const UserOrdersScreen({super.key, this.showAppBar = true});
 
   @override
   State<UserOrdersScreen> createState() => _UserOrdersScreenState();
@@ -377,67 +379,137 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-      appBar: AppBar(
-        backgroundColor: AppColors.darkCharcoal,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'My Spare Part Orders',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            tooltip: 'Account Options',
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            onSelected: (value) async {
-              if (value == 'change_password') {
-                ChangeUserPasswordDialog.show(context);
-              } else if (value == 'logout') {
-                final auth = context.read<UserAuthProvider>();
-                await auth.logout();
-                if (context.mounted) {
-                  context.read<CartProvider>().onUserLogout();
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Logged out successfully.')),
-                  );
-                }
-              }
-            },
-            itemBuilder: (ctx) => [
-              PopupMenuItem(
-                value: 'change_password',
-                child: Row(
-                  children: const [
-                    Icon(Icons.lock_reset_rounded, size: 18, color: AppColors.primaryGold),
-                    SizedBox(width: 8),
-                    Text('Change Password', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+      appBar: widget.showAppBar
+          ? AppBar(
+              backgroundColor: AppColors.darkHeader,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: const Text(
+                'My Spare Part Orders',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
+              ),
+              actions: [
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  tooltip: 'Account Options',
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onSelected: (value) async {
+                    if (value == 'change_password') {
+                      ChangeUserPasswordDialog.show(context);
+                    } else if (value == 'logout') {
+                      final auth = context.read<UserAuthProvider>();
+                      await auth.logout();
+                      if (context.mounted) {
+                        context.read<CartProvider>().onUserLogout();
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Logged out successfully.')),
+                        );
+                      }
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    PopupMenuItem(
+                      value: 'change_password',
+                      child: Row(
+                        children: const [
+                          Icon(Icons.lock_reset_rounded, size: 18, color: AppColors.primaryGold),
+                          SizedBox(width: 8),
+                          Text('Change Password', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'logout',
+                      child: Row(
+                        children: const [
+                          Icon(Icons.logout_rounded, size: 18, color: AppColors.error),
+                          SizedBox(width: 8),
+                          Text('Log Out', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.error)),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: const [
-                    Icon(Icons.logout_rounded, size: 18, color: AppColors.error),
-                    SizedBox(width: 8),
-                    Text('Log Out', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.error)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            )
+          : null,
       body: customer == null
-          ? const Center(
-              child: Text(
-                'Please register an account to view orders.',
-                style: TextStyle(color: Colors.grey),
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        color: AppColors.darkButton,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.receipt_long_rounded,
+                        color: AppColors.warmGold,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Text(
+                      'Sign In to View Orders',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.darkHeader,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Log in with your garage mobile number and password to track orders, status updates, and view delivery remarks.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.secondaryText,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.darkButton,
+                          foregroundColor: AppColors.warmGold,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const UserLoginScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Login to Garage Account',
+                          style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             )
           : RefreshIndicator(

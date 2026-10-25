@@ -26,7 +26,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
-        manifestPlaceholders["appName"] = "Auto Spare Hub"
+        manifestPlaceholders["appName"] = "SN AutoSpare"
     }
 
     flavorDimensions += "default"
@@ -34,12 +34,12 @@ android {
         create("user") {
             dimension = "default"
             applicationId = "com.codemates.auto_spare_hub"
-            manifestPlaceholders["appName"] = "Auto Spare Hub"
+            manifestPlaceholders["appName"] = "SN AutoSpare"
         }
         create("admin") {
             dimension = "default"
             applicationId = "com.codemates.auto_spare_hub_admin"
-            manifestPlaceholders["appName"] = "Auto Spare Hub Admin"
+            manifestPlaceholders["appName"] = "SN Auto Admin"
         }
     }
 

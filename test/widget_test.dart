@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:auto_spare_hub/main.dart';
@@ -12,9 +13,8 @@ void main() {
     // Build MyApp and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
-    // Verify AdminSplashScreen renders with branding elements
+    // Verify AdminSplashScreen renders with centered branding logo
     expect(find.byType(AdminSplashScreen), findsOneWidget);
-    expect(find.text('AUTO SPARE HUB'), findsOneWidget);
-    expect(find.text('ADMIN PORTAL'), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
   });
 }

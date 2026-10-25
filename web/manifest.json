@@ -1,11 +1,11 @@
 {
-    "name": "auto_spare_hub",
-    "short_name": "auto_spare_hub",
+    "name": "SN Auto Spare Hub",
+    "short_name": "SN AutoSpare",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Auto Spare Hub",
+    "background_color": "#12151B",
+    "theme_color": "#12151B",
+    "description": "SN Auto Spare Hub - Genuine Automotive Spare Parts & Garage Ordering",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

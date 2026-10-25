@@ -87,10 +87,10 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: isAdmin ? 'Auto Spare Hub Admin' : 'Auto Spare Hub',
+        title: isAdmin ? 'SN Auto Spare Hub Admin' : 'SN Auto Spare Hub',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.adminTheme,
-        home: isAdmin ? const AdminSplashScreen() : const UserHomeScreen(),
+        theme: isAdmin ? AppTheme.adminTheme : AppTheme.userTheme,
+        home: const AdminSplashScreen(),
         routes: {
           '/admin_splash': (context) => const AdminSplashScreen(),
           '/admin_login': (context) => const AdminLoginScreen(),
