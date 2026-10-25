@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show appFlavor;
 import 'package:provider/provider.dart';
 import '../providers/admin_login_provider.dart';
+import '../providers/app_lock_provider.dart';
 import '../theme/app_theme.dart';
 import 'admin/admin_shell_screen.dart';
 import 'admin_login_screen.dart';
@@ -63,6 +64,8 @@ class _AdminSplashScreenState extends State<AdminSplashScreen>
       final bool hasValidSession = await (_sessionFuture ?? Future.value(false));
       if (!mounted) return;
       final bool isUserFlavor = appFlavor != null && appFlavor != 'admin';
+      context.read<AppLockProvider>().setAdminMode(!isUserFlavor);
+
       final Widget destination = isUserFlavor
           ? const UserHomeScreen()
           : (hasValidSession ? const AdminShellScreen() : const AdminLoginScreen());

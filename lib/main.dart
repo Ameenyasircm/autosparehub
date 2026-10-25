@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'providers/admin_dashboard_provider.dart';
 import 'providers/admin_login_provider.dart';
 import 'providers/admin_management_provider.dart';
+import 'providers/app_lock_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/company_provider.dart';
@@ -27,6 +28,7 @@ import 'screens/user/user_home_screen.dart';
 import 'screens/user/user_orders_screen.dart';
 import 'services/database_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/app_lock_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +57,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider<AppLockProvider>(
+          create: (_) => AppLockProvider()..init(isAdmin: isAdmin),
+        ),
         ChangeNotifierProvider<AdminLoginProvider>(
           create: (_) => AdminLoginProvider(),
         ),
@@ -90,6 +95,9 @@ class MyApp extends StatelessWidget {
         title: isAdmin ? 'SN Auto Spare Hub Admin' : 'SN Auto Spare Hub',
         debugShowCheckedModeBanner: false,
         theme: isAdmin ? AppTheme.adminTheme : AppTheme.userTheme,
+        builder: (context, child) {
+          return AppLockWrapper(child: child ?? const SizedBox.shrink());
+        },
         home: const AdminSplashScreen(),
         routes: {
           '/admin_splash': (context) => const AdminSplashScreen(),
