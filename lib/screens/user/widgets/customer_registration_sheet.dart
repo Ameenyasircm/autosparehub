@@ -201,7 +201,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Understood', style: TextStyle(fontWeight: FontWeight.w800)),
+              child: const Text('Ok', style: TextStyle(fontWeight: FontWeight.w800)),
             ),
           ],
         ),
@@ -263,6 +263,10 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
       setState(() {
         _isLoginMode = false;
         _phoneController.text = _loginPhoneController.text.trim();
+        if (_loginPasswordController.text.isNotEmpty) {
+          _passwordController.text = _loginPasswordController.text;
+          _confirmPasswordController.text = _loginPasswordController.text;
+        }
       });
     }
   }
@@ -362,7 +366,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Understood', style: TextStyle(fontWeight: FontWeight.w800)),
+            child: const Text('Ok', style: TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),

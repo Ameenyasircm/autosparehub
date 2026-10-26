@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
+import 'user_home_screen.dart';
+import 'widgets/approval_pending_dialog.dart';
 
 /// Full-screen Garage User Sign In and Registration adhering to the exact
 /// visual mockup theme with crisp borders, dark obsidian buttons, and warm gold accents.
@@ -93,6 +95,28 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
       );
     } else if (result == CustomerLoginResult.rejected) {
       _showRejectedDialog(phone: _loginPhoneController.text.trim());
+    } else if (result == CustomerLoginResult.userNotFound) {
+      // Auto navigate to registration form and pre-fill mobile & password
+      final enteredPhone = _loginPhoneController.text.trim();
+      final enteredPassword = _loginPasswordController.text;
+
+      _regPhoneController.text = enteredPhone;
+      if (enteredPassword.isNotEmpty) {
+        _regPasswordController.text = enteredPassword;
+        _regConfirmPasswordController.text = enteredPassword;
+      }
+
+      setState(() {
+        _isRegisterMode = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account not found with this mobile. Please enter your Garage Name to register.'),
+          backgroundColor: AppColors.darkButton,
+          duration: Duration(seconds: 4),
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -118,10 +142,26 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
 
     if (!mounted) return;
 
-    if (result == CustomerRegistrationResult.alreadyPending) {
-      _showPendingDialog(
-        phone: _regPhoneController.text.trim(),
-        dateStr: 'Recently',
+    if (result == CustomerRegistrationResult.newRequestSubmitted ||
+        result == CustomerRegistrationResult.alreadyPending) {
+      final phone = _regPhoneController.text.trim();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Garage account registered successfully! Waiting for admin approval.'),
+          backgroundColor: AppColors.darkButton,
+          duration: Duration(seconds: 4),
+        ),
+      );
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => UserHomeScreen(
+            showPendingAlertOnStart: true,
+            pendingPhone: phone,
+          ),
+        ),
+        (route) => false,
       );
     } else if (result == CustomerRegistrationResult.alreadyApproved) {
       setState(() {
@@ -136,11 +176,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
       );
     } else if (result == CustomerRegistrationResult.alreadyRejected) {
       _showRejectedDialog(phone: _regPhoneController.text.trim());
-    } else if (result == CustomerRegistrationResult.newRequestSubmitted) {
-      _showPendingDialog(
-        phone: _regPhoneController.text.trim(),
-        dateStr: 'Today',
-      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -242,52 +277,8 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
   }
 
   // --- PENDING DIALOG ---
-  void _showPendingDialog({required String phone, required String dateStr}) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: const [
-            Icon(Icons.hourglass_top_rounded, color: Colors.amber, size: 26),
-            SizedBox(width: 10),
-            Text('Approval Pending', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Mobile: +91 $phone', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-            const SizedBox(height: 8),
-            const Text(
-              'Your garage account registration has been submitted and is currently waiting for administrator authorization. Once approved, you can log in and place orders directly.',
-              style: TextStyle(fontSize: 12.5, color: Colors.black87, height: 1.4),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.amber.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.shade200),
-              ),
-              child: const Text(
-                'നിങ്ങളുടെ രജിസ്ട്രേഷൻ അഡ്മിൻ പരിശോധിച്ചുകൊണ്ടിരിക്കുകയാണ്. പരിശോധന പൂർത്തിയാക്കിയ ശേഷം അഡ്മിൻ നിങ്ങളെ നേരിട്ട് ബന്ധപ്പെടുന്നതാണ്. ദയവായി കാത്തിരിക്കുക!',
-                style: TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal, height: 1.4),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Understood', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.darkCharcoal)),
-          ),
-        ],
-      ),
-    );
+  void _showPendingDialog({required String phone, String? dateStr}) {
+    ApprovalPendingDialog.show(context, phone: phone, dateStr: dateStr);
   }
 
   // --- REJECTED DIALOG ---
@@ -591,6 +582,13 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () {
+                if (_regPhoneController.text.isEmpty && _loginPhoneController.text.isNotEmpty) {
+                  _regPhoneController.text = _loginPhoneController.text.trim();
+                }
+                if (_regPasswordController.text.isEmpty && _loginPasswordController.text.isNotEmpty) {
+                  _regPasswordController.text = _loginPasswordController.text;
+                  _regConfirmPasswordController.text = _loginPasswordController.text;
+                }
                 setState(() => _isRegisterMode = true);
               },
               child: const Text(
@@ -921,6 +919,9 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () {
+                if (_loginPhoneController.text.isEmpty && _regPhoneController.text.isNotEmpty) {
+                  _loginPhoneController.text = _regPhoneController.text.trim();
+                }
                 setState(() => _isRegisterMode = false);
               },
               child: const Text(

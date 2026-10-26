@@ -13,6 +13,7 @@ import 'cart_screen.dart';
 import 'user_login_screen.dart';
 import 'user_orders_screen.dart';
 import 'user_product_detail_screen.dart';
+import 'widgets/approval_pending_dialog.dart';
 import 'widgets/change_password_dialog.dart';
 import 'widgets/contact_us_sheet.dart';
 
@@ -23,7 +24,14 @@ import 'widgets/contact_us_sheet.dart';
 /// - 2-Column Product Grid with category tag pills, centered image, part number, bold price, and "+ Add to Cart" outlined button
 /// - 3-Tab Bottom Navigation Bar (Home, My Orders, Profile) with warm gold dot active indicator
 class UserHomeScreen extends StatefulWidget {
-  const UserHomeScreen({super.key});
+  final bool showPendingAlertOnStart;
+  final String? pendingPhone;
+
+  const UserHomeScreen({
+    super.key,
+    this.showPendingAlertOnStart = false,
+    this.pendingPhone,
+  });
 
   @override
   State<UserHomeScreen> createState() => _UserHomeScreenState();
@@ -48,6 +56,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           context.read<CartProvider>().loadCartForUser(cust.id);
         }
         context.read<OrderProvider>().fetchCustomerOrders(cust.id, userPhone: cust.phone);
+      }
+
+      if (widget.showPendingAlertOnStart) {
+        final phone = widget.pendingPhone ?? auth.currentCustomer?.phone ?? '';
+        ApprovalPendingDialog.show(context, phone: phone);
       }
 
       final compProvider = context.read<CompanyProvider>();

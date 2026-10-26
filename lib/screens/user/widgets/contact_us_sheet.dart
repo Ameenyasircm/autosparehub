@@ -257,7 +257,12 @@ class _ContactUsSheetState extends State<ContactUsSheet> {
                   'Hello SN Auto Spare Hub, I have an inquiry about automotive spare parts.',
                 );
               },
-              icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
+              icon: Image.asset(
+                'assets/member_whats_app.png',
+                width: 22,
+                height: 22,
+                fit: BoxFit.contain,
+              ),
               label: const Text(
                 'Chat on WhatsApp',
                 style: TextStyle(

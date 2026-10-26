@@ -210,7 +210,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
                 isExpanded: true,
-                initialValue: _selectedRole,
+                value: _selectedRole,
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.shield_outlined),
                 ),
@@ -326,7 +326,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
                     ),
                     Switch(
                       value: _isActive,
-                      activeThumbColor: AppColors.primaryGold,
+                      activeColor: AppColors.primaryGold,
                       onChanged: provider.isSaving
                           ? null
                           : (val) => setState(() => _isActive = val),

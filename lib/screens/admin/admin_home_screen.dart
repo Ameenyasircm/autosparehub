@@ -910,7 +910,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: Colors.teal.shade300, width: 0.8),
                         ),
-                        child: Icon(Icons.chat_bubble_outline_rounded, size: 13, color: Colors.teal.shade800),
+                        child: Image.asset(
+                          'assets/member_whats_app.png',
+                          width: 14,
+                          height: 14,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -1226,7 +1231,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               tooltip: 'Call Customer',
                             ),
                             IconButton(
-                              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Colors.teal),
+                              icon: Image.asset(
+                                'assets/member_whats_app.png',
+                                width: 18,
+                                height: 18,
+                                fit: BoxFit.contain,
+                              ),
                               onPressed: () => _contactService.launchWhatsApp(order.userPhone),
                               tooltip: 'WhatsApp Customer',
                             ),

@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:package_info_plus/package_info_plus.dart';
 
 /// Data class holding the version lock configuration from Firebase Realtime Database (/0)
 class AppLockConfig {
@@ -78,28 +78,35 @@ class AppLockService {
     return _database!;
   }
 
+  static const MethodChannel _versionChannel = MethodChannel('com.codemates.auto_spare_hub/version');
+
   /// Get app version information from platform / pubspec.yaml
   Future<Map<String, String>> getAppVersionInfo() async {
     try {
-      final info = await PackageInfo.fromPlatform();
-      final version = info.version.trim().isNotEmpty ? info.version.trim() : fallbackVersion;
-      final buildNumber = info.buildNumber.trim().isNotEmpty ? info.buildNumber.trim() : fallbackBuildNumber;
+      final dynamic result = await _versionChannel.invokeMethod('getAppVersion');
+      if (result is Map) {
+        final version = (result['version'] ?? fallbackVersion).toString().trim();
+        final buildNumber = (result['buildNumber'] ?? fallbackBuildNumber).toString().trim();
+        final effectiveVersion = version.isNotEmpty ? version : fallbackVersion;
+        final effectiveBuild = buildNumber.isNotEmpty ? buildNumber : fallbackBuildNumber;
 
-      return {
-        'version': version,
-        'buildNumber': buildNumber,
-        'major': version.split('.').first,
-        'full': '$version+$buildNumber',
-      };
+        return {
+          'version': effectiveVersion,
+          'buildNumber': effectiveBuild,
+          'major': effectiveVersion.split('.').first,
+          'full': '$effectiveVersion+$effectiveBuild',
+        };
+      }
     } catch (e) {
       debugPrint('AppLockService.getAppVersionInfo fallback: $e');
-      return {
-        'version': fallbackVersion,
-        'buildNumber': fallbackBuildNumber,
-        'major': fallbackVersion.split('.').first,
-        'full': '$fallbackVersion+$fallbackBuildNumber',
-      };
     }
+
+    return {
+      'version': fallbackVersion,
+      'buildNumber': fallbackBuildNumber,
+      'major': fallbackVersion.split('.').first,
+      'full': '$fallbackVersion+$fallbackBuildNumber',
+    };
   }
 
   /// Fetch app lock configuration from Firebase Realtime Database (/0) via fast REST
