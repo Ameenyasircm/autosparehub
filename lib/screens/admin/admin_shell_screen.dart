@@ -168,7 +168,7 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
     required String label,
   }) {
     final bool isSelected = _currentIndex == index;
-    final color = isSelected ? const Color(0xFF111317) : const Color(0xFF8C95A6);
+    final color = isSelected ? AppColors.darkCharcoal : const Color(0xFF8C95A6);
 
     return InkWell(
       onTap: () {

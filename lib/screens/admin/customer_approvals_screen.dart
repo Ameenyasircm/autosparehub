@@ -481,7 +481,7 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
           ],
 
           const SizedBox(height: 12),
-          const Divider(height: 1),
+          const Divider(height: 1, color: AppColors.dividerLight),
           const SizedBox(height: 10),
 
           // Action Buttons Bar (Always shows Change Password, plus status-specific actions)
@@ -493,7 +493,7 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.darkCharcoal,
-                  side: BorderSide(color: Colors.grey.shade400),
+                  side: const BorderSide(color: AppColors.borderSoft),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),

@@ -149,7 +149,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ],
                   ),
                 ),
-                const Divider(),
+                const Divider(color: AppColors.dividerLight),
                 _buildSortTile(
                   title: 'Newest Added First',
                   option: ProductSortOption.newest,
@@ -200,7 +200,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         title,
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-          color: isSelected ? AppColors.darkCharcoal : Colors.black87,
+          color: isSelected ? AppColors.darkCharcoal : AppColors.primaryText,
         ),
       ),
       trailing: isSelected

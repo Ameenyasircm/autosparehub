@@ -232,6 +232,12 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         behavior: SnackBarBehavior.floating,
       ),
+      dividerColor: AppColors.dividerLight,
+      dividerTheme: const DividerThemeData(
+        color: AppColors.dividerLight,
+        thickness: 1,
+        space: 1,
+      ),
     );
   }
 }

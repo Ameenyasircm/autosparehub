@@ -293,7 +293,6 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
           _buildMenuItem(
             context: context,
             title: 'Customer Approvals',
-            description: 'Review registration requests, approve buyers, and manage permissions.',
             icon: Icons.how_to_reg_rounded,
             badge: customerProvider.pendingCount > 0 ? '${customerProvider.pendingCount} PENDING' : null,
             badgeColor: customerProvider.pendingCount > 0 ? AppColors.warmGold : null,
@@ -309,7 +308,6 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
           _buildMenuItem(
             context: context,
             title: 'Admin Management',
-            description: 'Manage staff administrators, access permissions, and roles.',
             icon: Icons.admin_panel_settings_rounded,
             badge: isManager ? 'MANAGER ACCESS' : 'LOCKED',
             badgeColor: isManager ? const Color(0xFF2E7D32) : Colors.grey.shade600,
@@ -338,7 +336,6 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
           _buildMenuItem(
             context: context,
             title: 'Spare Parts & Products',
-            description: 'Catalog parts, technical specifications, photos, and stock.',
             icon: Icons.precision_manufacturing_rounded,
             onTap: () {
               Navigator.of(context).push(
@@ -352,7 +349,6 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
           _buildMenuItem(
             context: context,
             title: 'Add New Product',
-            description: 'Quickly register a new automotive spare part in the catalog.',
             icon: Icons.add_box_rounded,
             onTap: () {
               Navigator.of(context).push(
@@ -366,7 +362,6 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
           _buildMenuItem(
             context: context,
             title: 'Vehicle Brands & Companies',
-            description: 'Add and maintain vehicle manufacturers, brands, and logos.',
             icon: Icons.business_rounded,
             onTap: () {
               Navigator.of(context).push(
@@ -380,7 +375,6 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
           _buildMenuItem(
             context: context,
             title: 'Part Categories',
-            description: 'Manage automotive categories, descriptions, and icon images.',
             icon: Icons.category_rounded,
             onTap: () {
               Navigator.of(context).push(
@@ -398,7 +392,6 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
           _buildMenuItem(
             context: context,
             title: 'Customer Helpline Contact',
-            description: 'Manage store phone number used for user direct calls and WhatsApp.',
             icon: Icons.contact_phone_rounded,
             badge: _isLoadingContact ? '...' : _contactService.formatForDisplay(_activeContactPhone),
             badgeColor: AppColors.warmGold,
@@ -414,7 +407,6 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
           _buildMenuItem(
             context: context,
             title: 'Sign Out',
-            description: 'Securely sign out of this administrative portal.',
             icon: Icons.logout_rounded,
             iconColor: AppColors.error,
             onTap: () => _showLogoutDialog(context),
@@ -618,7 +610,6 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
   Widget _buildMenuItem({
     required BuildContext context,
     required String title,
-    required String description,
     required IconData icon,
     Color? iconColor,
     String? badge,
@@ -644,67 +635,53 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
           borderRadius: BorderRadius.circular(14),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(14.0),
+            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 13.0),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(9),
                   decoration: BoxDecoration(
                     color: AppColors.darkHeader,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: iconColor ?? AppColors.warmGold, size: 22),
+                  child: Icon(icon, color: iconColor ?? AppColors.warmGold, size: 20),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              title,
-                              style: const TextStyle(
-                                color: AppColors.darkHeader,
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            color: AppColors.darkHeader,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w800,
                           ),
-                          if (badge != null) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: (badgeColor ?? AppColors.darkHeader).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: (badgeColor ?? AppColors.darkHeader).withValues(alpha: 0.4),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Text(
-                                badge,
-                                style: TextStyle(
-                                  color: badgeColor ?? AppColors.darkHeader,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        description,
-                        style: const TextStyle(
-                          color: AppColors.secondaryText,
-                          fontSize: 12,
-                          height: 1.3,
                         ),
                       ),
+                      if (badge != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: (badgeColor ?? AppColors.darkHeader).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: (badgeColor ?? AppColors.darkHeader).withValues(alpha: 0.4),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            badge,
+                            style: TextStyle(
+                              color: badgeColor ?? AppColors.darkHeader,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
