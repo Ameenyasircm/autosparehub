@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 class AppColors {
   // Brand colors specified in requirements & user app mockup theme
   static const Color primaryGold = Color(0xFFE5A93C); // Vibrant warm gold from mockups
-  static const Color darkCharcoal = Color(0xFF181A20); // Obsidian dark for buttons & cards
-  static const Color darkHeader = Color(0xFF12151B); // Top app bar header dark
-  static const Color darkButton = Color(0xFF181A20); // Primary action button dark
+  static const Color darkCharcoal = Color(0xFF242834); // Softened obsidian charcoal for buttons & cards
+  static const Color darkHeader = Color(0xFF1E222B); // Softened deep slate dark for top app bar header
+  static const Color darkButton = Color(0xFF242834); // Softened charcoal for primary action buttons
   static const Color secondaryGold = Color(0xFFC3903C);
   static const Color lightGold = Color(0xFFF0CA7A);
   static const Color warmGold = Color(0xFFE5A93C);
@@ -14,7 +14,7 @@ class AppColors {
   // Suggested UI & background colors matching mockups
   static const Color backgroundLight = Color(0xFFF4F6F9); // Clean cool off-white
   static const Color cardLight = Color(0xFFFFFFFF);
-  static const Color primaryText = Color(0xFF181A20);
+  static const Color primaryText = Color(0xFF222733); // Softened deep slate text
   static const Color secondaryText = Color(0xFF6B7280);
   static const Color error = Color(0xFFD32F2F);
   static const Color success = Color(0xFF2E7D32);
@@ -26,6 +26,8 @@ class AppColors {
   static const Color stepperBg = Color(0xFFFDE8C7);
   static const Color borderLight = Color(0xFFDDE1E6);
   static const Color cardBorder = Color(0xFFEDEFF2);
+  static const Color borderSoft = Color(0xFFCBD2DD); // Gentle outline border
+  static const Color dividerLight = Color(0xFFEDEFF3); // Soft, clean light divider
 
   // Dark palette accents for Admin portal
   static const Color darkSurface = Color(0xFF1A1C20);
@@ -120,8 +122,14 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.darkButton, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.warmGold, width: 1.6),
         ),
+      ),
+      dividerColor: AppColors.dividerLight,
+      dividerTheme: const DividerThemeData(
+        color: AppColors.dividerLight,
+        thickness: 1,
+        space: 1,
       ),
     );
   }

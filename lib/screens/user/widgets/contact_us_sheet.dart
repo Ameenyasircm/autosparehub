@@ -183,7 +183,7 @@ class _ContactUsSheetState extends State<ContactUsSheet> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(color: AppColors.borderLight),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

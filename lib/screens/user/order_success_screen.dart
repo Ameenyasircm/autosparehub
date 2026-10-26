@@ -263,7 +263,7 @@ class OrderSuccessScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      const Divider(height: 1),
+                      const Divider(height: 1, color: AppColors.dividerLight),
                       const SizedBox(height: 12),
 
                       ListView.separated(
@@ -333,7 +333,7 @@ class OrderSuccessScreen extends StatelessWidget {
                       ),
 
                       const SizedBox(height: 14),
-                      const Divider(height: 1),
+                      const Divider(height: 1, color: AppColors.dividerLight),
                       const SizedBox(height: 12),
 
                       // Total Amount Row
@@ -440,7 +440,7 @@ class OrderSuccessScreen extends StatelessWidget {
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.darkCharcoal,
-                    side: const BorderSide(color: AppColors.darkCharcoal, width: 1.5),
+                    side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

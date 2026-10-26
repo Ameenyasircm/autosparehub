@@ -125,7 +125,7 @@ class _ApprovalPendingDialogWidgetState
               'Your garage account registration has been submitted and is currently waiting for administrator authorization. Once approved, you can log in and place orders directly.',
               style: TextStyle(
                 fontSize: 12.5,
-                color: Colors.black87,
+                color: AppColors.darkCharcoal,
                 height: 1.4,
               ),
             ),

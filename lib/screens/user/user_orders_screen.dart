@@ -113,7 +113,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                 ],
               ),
             ),
-            const Divider(height: 1),
+            const Divider(height: 1, color: AppColors.dividerLight),
 
             // Scrollable Content
             Expanded(
@@ -245,7 +245,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          const Divider(height: 1),
+                          const Divider(height: 1, color: AppColors.dividerLight),
                           const SizedBox(height: 10),
                           Text(
                             order.shippingAddress != null && order.shippingAddress!.isNotEmpty
@@ -343,7 +343,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                               ),
                             ],
                           ),
-                          const Divider(height: 20),
+                          const Divider(height: 20, color: AppColors.dividerLight),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -676,7 +676,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
             ),
 
             const SizedBox(height: 10),
-            const Divider(height: 1),
+            const Divider(height: 1, color: AppColors.dividerLight),
             const SizedBox(height: 10),
 
             // Product Item Details

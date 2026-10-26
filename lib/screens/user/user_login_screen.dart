@@ -303,7 +303,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
             const SizedBox(height: 8),
             const Text(
               'This registration request was not approved by the administrator. Please reach out to customer support to re-verify your garage credentials.',
-              style: TextStyle(fontSize: 12.5, color: Colors.black87, height: 1.4),
+              style: TextStyle(fontSize: 12.5, color: AppColors.darkCharcoal, height: 1.4),
             ),
           ],
         ),
@@ -450,7 +450,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.darkButton, width: 1.5),
+                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.6),
               ),
             ),
             validator: (val) {
@@ -499,7 +499,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.darkButton, width: 1.5),
+                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.6),
               ),
             ),
             validator: (val) {
@@ -578,7 +578,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.darkCharcoal,
                 backgroundColor: Colors.white,
-                side: const BorderSide(color: AppColors.darkCharcoal, width: 1.2),
+                side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () {
@@ -705,7 +705,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.darkButton, width: 1.5),
+                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.6),
               ),
             ),
             validator: (val) {
@@ -746,7 +746,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.darkButton, width: 1.5),
+                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.6),
               ),
             ),
             validator: (val) {
@@ -791,7 +791,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.darkButton, width: 1.5),
+                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.6),
               ),
             ),
             validator: (val) {
@@ -836,7 +836,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.darkButton, width: 1.5),
+                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.6),
               ),
             ),
             validator: (val) {
@@ -915,7 +915,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.darkCharcoal,
                 backgroundColor: Colors.white,
-                side: const BorderSide(color: AppColors.darkCharcoal, width: 1.2),
+                side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () {

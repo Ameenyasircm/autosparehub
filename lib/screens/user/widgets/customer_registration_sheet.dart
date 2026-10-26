@@ -179,10 +179,10 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
                   children: const [
                     Text(
                       'Once an administrator approves your account, you will be able to log in and order spare parts directly.',
-                      style: TextStyle(fontSize: 12.5, color: Colors.black87, fontWeight: FontWeight.w600, height: 1.35),
+                      style: TextStyle(fontSize: 12.5, color: AppColors.darkCharcoal, fontWeight: FontWeight.w600, height: 1.35),
                     ),
                     SizedBox(height: 8),
-                    Divider(height: 1, color: Colors.amber),
+                    Divider(height: 1, color: Color(0xFFFFE082)),
                     SizedBox(height: 8),
                     Text(
                       'നിങ്ങളുടെ അക്കൗണ്ട് അഡ്മിൻ പരിശോധിച്ച് അംഗീകരിച്ച ശേഷം മാത്രമേ ലോഗിൻ ചെയ്യാനും സ്പെയർ പാർട്സുകൾ ഓർഡർ ചെയ്യാനും സാധിക്കൂ.',
@@ -310,10 +310,10 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
                 children: const [
                   Text(
                     'Once an administrator approves your account, full ordering privileges will unlock immediately.',
-                    style: TextStyle(color: Colors.black87, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.35),
+                    style: TextStyle(color: AppColors.darkCharcoal, fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.35),
                   ),
                   SizedBox(height: 8),
-                  Divider(height: 1, color: Colors.amber),
+                  Divider(height: 1, color: Color(0xFFFFE082)),
                   SizedBox(height: 8),
                   Text(
                     'അഡ്മിന്റെ അനുമതിക്കായി കാത്തിരിക്കുന്നു. അഡ്മിൻ പരിശോധിച്ച് അംഗീകരിച്ച ശേഷം മാത്രമേ ലോഗിൻ ചെയ്യാനും ഓർഡറുകൾ നൽകാനും സാധിക്കൂ.',
@@ -483,9 +483,9 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: const Color(0xFFF1F3F6),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: const Color(0xFFE2E6EC)),
               ),
               child: Row(
                 children: [
@@ -606,7 +606,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
             ),
 
             const SizedBox(height: 14),
-            const Divider(),
+            const Divider(color: AppColors.dividerLight),
             const SizedBox(height: 10),
 
             // Form Content: Either Registration or Sign In
@@ -791,7 +791,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
                     Expanded(
                       child: Text(
                         'Admin approval is required once before ordering parts.',
-                        style: TextStyle(fontSize: 11.5, color: Colors.black87, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],

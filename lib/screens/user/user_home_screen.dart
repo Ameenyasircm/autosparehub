@@ -690,7 +690,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   style: const TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF111317),
+                    color: AppColors.primaryText,
                   ),
                 ),
 
@@ -720,7 +720,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   style: const TextStyle(
                     fontSize: 15.5,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF111317),
+                    color: AppColors.primaryText,
                   ),
                 ),
 
@@ -753,24 +753,24 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   child: Container(
                     height: 34,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: const Color(0xFFFBFBFC),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: const Color(0xFF181A20),
-                        width: 1,
+                        color: const Color(0xFFD6DAE2),
+                        width: 1.1,
                       ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
-                        Icon(Icons.add, size: 15, color: Color(0xFF111317)),
+                        Icon(Icons.add, size: 15, color: AppColors.primaryGold),
                         SizedBox(width: 4),
                         Text(
                           'Add to Cart',
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF111317),
+                            color: AppColors.darkCharcoal,
                           ),
                         ),
                       ],
@@ -832,8 +832,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             const SizedBox(height: 16),
             OutlinedButton(
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.darkHeader,
-                side: const BorderSide(color: AppColors.darkHeader),
+                foregroundColor: AppColors.darkCharcoal,
+                side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
               ),
               onPressed: () {
                 _searchController.clear();
@@ -852,8 +852,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     setState(() => _isCheckingApproval = true);
     try {
       await auth.refreshApprovalStatus();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
@@ -879,7 +879,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             duration: const Duration(seconds: 3),
           ),
         );
-      }
     } finally {
       if (mounted) setState(() => _isCheckingApproval = false);
     }
@@ -967,8 +966,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 height: 48,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.darkHeader,
-                    side: const BorderSide(color: Color(0xFF181A20), width: 1.2),
+                    foregroundColor: AppColors.darkCharcoal,
+                    side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -1301,21 +1300,21 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
                 onTap: () => setState(() => _currentTabIndex = 1),
               ),
-              const Divider(height: 1),
+              const Divider(height: 1, color: AppColors.dividerLight),
               ListTile(
                 leading: const Icon(Icons.support_agent_rounded, color: AppColors.warmGold),
                 title: const Text('Contact Us', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
                 onTap: () => ContactUsSheet.show(context),
               ),
-              const Divider(height: 1),
+              const Divider(height: 1, color: AppColors.dividerLight),
               ListTile(
                 leading: const Icon(Icons.lock_reset_rounded, color: AppColors.warmGold),
                 title: const Text('Change Password', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
                 onTap: () => ChangeUserPasswordDialog.show(context),
               ),
-              const Divider(height: 1),
+              const Divider(height: 1, color: AppColors.dividerLight),
               ListTile(
                 leading: const Icon(Icons.logout_rounded, color: AppColors.error),
                 title: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.error)),
@@ -1381,7 +1380,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     required String label,
   }) {
     final bool isSelected = _currentTabIndex == index;
-    final color = isSelected ? const Color(0xFF111317) : const Color(0xFF8C95A6);
+    final color = isSelected ? AppColors.darkCharcoal : const Color(0xFF8C95A6);
 
     return InkWell(
       onTap: () {

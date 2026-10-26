@@ -149,7 +149,7 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
           ),
 
           const SizedBox(height: 16),
-          const Divider(),
+          const Divider(color: AppColors.dividerLight),
           const SizedBox(height: 12),
 
           // Quantity Stepper Row
@@ -162,7 +162,7 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
               ),
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
+                  border: Border.all(color: AppColors.borderLight),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
