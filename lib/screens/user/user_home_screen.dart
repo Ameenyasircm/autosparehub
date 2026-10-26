@@ -41,6 +41,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   int _currentTabIndex = 0;
   final _searchController = TextEditingController();
   bool _isInitialLoading = true;
+  bool _isCheckingApproval = false;
 
   @override
   void initState() {
@@ -846,6 +847,44 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     );
   }
 
+  Future<void> _handleCheckApprovalStatus(UserAuthProvider auth) async {
+    if (_isCheckingApproval) return;
+    setState(() => _isCheckingApproval = true);
+    try {
+      await auth.refreshApprovalStatus();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  auth.isApproved ? Icons.check_circle_rounded : Icons.hourglass_top_rounded,
+                  color: auth.isApproved ? Colors.greenAccent : AppColors.warmGold,
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    auth.isApproved
+                        ? 'Account approved! You can now place orders.'
+                        : 'Still pending administrator review.',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.darkHeader,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCheckingApproval = false);
+    }
+  }
+
   // =========================================================================
   // 3. PROFILE / ACCOUNT TAB
   // =========================================================================
@@ -1058,71 +1097,188 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   ),
                 )
               else if (auth.isPending)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.shade50,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.amber.shade200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Row(
-                            children: [
-                              Icon(Icons.hourglass_top_rounded, color: Colors.amber, size: 18),
-                              SizedBox(width: 6),
-                              Text(
-                                'Awaiting Administrator Approval',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.darkCharcoal,
-                                ),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.hourglass_top_rounded,
+                              color: Color(0xFFD97706),
+                              size: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Awaiting Administrator Approval',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF92400E),
                               ),
-                            ],
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            'Your garage account registration has been submitted and is currently being reviewed. Once authorized, you can place orders directly.',
-                            style: TextStyle(fontSize: 12, color: Colors.black87, height: 1.3),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'നിങ്ങളുടെ രജിസ്ട്രേഷൻ അഡ്മിൻ പരിശോധിച്ചുകൊണ്ടിരിക്കുകയാണ്. പരിശോധന പൂർത്തിയാക്കിയ ശേഷം അഡ്മിൻ നിങ്ങളെ ഉടൻ ബന്ധപ്പെടുന്നതാണ്. ദയവായി കാത്തിരിക്കുക!',
-                            style: TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal, height: 1.4),
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.darkButton,
-                        side: const BorderSide(color: AppColors.darkButton),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Your garage account registration has been submitted and is currently being reviewed. Once authorized, you can place orders directly.',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF78350F), height: 1.35),
                       ),
-                      onPressed: () async {
-                        await auth.refreshApprovalStatus();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                auth.isApproved
-                                    ? 'Account approved! You can now place orders.'
-                                    : 'Still pending administrator review.',
+                      const SizedBox(height: 6),
+                      const Text(
+                        'നിങ്ങളുടെ രജിസ്ട്രേഷൻ അഡ്മിൻ പരിശോധിച്ചുകൊണ്ടിരിക്കുകയാണ്. പരിശോധന പൂർത്തിയാക്കിയ ശേഷം അഡ്മിൻ നിങ്ങളെ ഉടൻ ബന്ധപ്പെടുന്നതാണ്. ദയവായി കാത്തിരിക്കുക!',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF92400E), height: 1.4),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 1,
+                        color: const Color(0xFFFDE68A).withValues(alpha: 0.8),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          // InkWell(
+                          //   onTap: () => ApprovalPendingDialog.show(
+                          //     context,
+                          //     phone: customer?.phone ?? '',
+                          //   ),
+                          //   borderRadius: BorderRadius.circular(6),
+                          //   child: Padding(
+                          //     padding: const EdgeInsets.symmetric(vertical: 4),
+                          //     child: Row(
+                          //       mainAxisSize: MainAxisSize.min,
+                          //       children: [
+                          //         Image.asset(
+                          //           'assets/member_whats_app.png',
+                          //           width: 15,
+                          //           height: 15,
+                          //         ),
+                          //         const SizedBox(width: 5),
+                          //         const Text(
+                          //           'Contact Admin',
+                          //           style: TextStyle(
+                          //             fontSize: 11.5,
+                          //             fontWeight: FontWeight.w700,
+                          //             color: Color(0xFF92400E),
+                          //             decoration: TextDecoration.underline,
+                          //           ),
+                          //         ),
+                          //       ],
+                          //     ),
+                          //   ),
+                          // ), // InkWell(
+                          //   onTap: () => ApprovalPendingDialog.show(
+                          //     context,
+                          //     phone: customer?.phone ?? '',
+                          //   ),
+                          //   borderRadius: BorderRadius.circular(6),
+                          //   child: Padding(
+                          //     padding: const EdgeInsets.symmetric(vertical: 4),
+                          //     child: Row(
+                          //       mainAxisSize: MainAxisSize.min,
+                          //       children: [
+                          //         Image.asset(
+                          //           'assets/member_whats_app.png',
+                          //           width: 15,
+                          //           height: 15,
+                          //         ),
+                          //         const SizedBox(width: 5),
+                          //         const Text(
+                          //           'Contact Admin',
+                          //           style: TextStyle(
+                          //             fontSize: 11.5,
+                          //             fontWeight: FontWeight.w700,
+                          //             color: Color(0xFF92400E),
+                          //             color: Color(0xFF92400E),
+                          //             decoration: TextDecoration.underline,
+                          //           ),
+                          //         ),
+                          //       ],
+                          //     ),
+                          //   ),
+                          // ),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _isCheckingApproval ? null : () => _handleCheckApprovalStatus(auth),
+                              borderRadius: BorderRadius.circular(20),
+                              child: Ink(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7.5),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [AppColors.darkHeader, Color(0xFF2C303B)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: AppColors.warmGold.withValues(alpha: 0.4),
+                                    width: 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.darkHeader.withValues(alpha: 0.18),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (_isCheckingApproval)
+                                      const SizedBox(
+                                        width: 12,
+                                        height: 12,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.warmGold,
+                                        ),
+                                      )
+                                    else
+                                      const Icon(
+                                        Icons.sync_rounded,
+                                        size: 14,
+                                        color: AppColors.warmGold,
+                                      ),
+                                    const SizedBox(width: 6),
+                                    const Text(
+                                      'Check Approval Status',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              backgroundColor: auth.isApproved ? AppColors.success : AppColors.darkButton,
                             ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.refresh, size: 16),
-                      label: const Text('Check Approval Status'),
-                    ),
-                  ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
             ],
           ),
@@ -1149,7 +1305,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               ListTile(
                 leading: const Icon(Icons.support_agent_rounded, color: AppColors.warmGold),
                 title: const Text('Contact Us', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                subtitle: const Text('Direct call & WhatsApp support', style: TextStyle(fontSize: 11.5, color: AppColors.secondaryText)),
                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
                 onTap: () => ContactUsSheet.show(context),
               ),
