@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../models/order_model.dart';
+import '../../providers/cart_provider.dart';
 import '../../theme/app_theme.dart';
 import 'user_home_screen.dart';
 import 'user_orders_screen.dart';
@@ -10,8 +12,19 @@ import 'user_orders_screen.dart';
 /// and that an administrator will contact them directly for order confirmation and dispatch.
 class OrderSuccessScreen extends StatelessWidget {
   final OrderModel order;
+  final bool fromCart;
 
-  const OrderSuccessScreen({super.key, required this.order});
+  const OrderSuccessScreen({
+    super.key,
+    required this.order,
+    this.fromCart = false,
+  });
+
+  void _ensureCartCleared(BuildContext context) {
+    if (fromCart) {
+      context.read<CartProvider>().clearCart(isOrderPlaced: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +32,7 @@ class OrderSuccessScreen extends StatelessWidget {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
+          _ensureCartCleared(context);
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const UserHomeScreen()),
             (route) => false,
@@ -44,6 +58,7 @@ class OrderSuccessScreen extends StatelessWidget {
               icon: const Icon(Icons.home_outlined, color: AppColors.lightGold),
               tooltip: 'Return to Home',
               onPressed: () {
+                _ensureCartCleared(context);
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const UserHomeScreen()),
                   (route) => false,
@@ -416,6 +431,7 @@ class OrderSuccessScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
+                      _ensureCartCleared(context);
                       Navigator.of(context).pushReplacement(
                         MaterialPageRoute(
                           builder: (_) => const UserOrdersScreen(),
@@ -447,6 +463,7 @@ class OrderSuccessScreen extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
+                    _ensureCartCleared(context);
                     Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(builder: (_) => const UserHomeScreen()),
                       (route) => false,

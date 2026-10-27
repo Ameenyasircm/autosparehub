@@ -1,5 +1,8 @@
+import 'package:auto_spare_hub/models/order_model.dart';
+import 'package:auto_spare_hub/models/product_model.dart';
 import 'package:auto_spare_hub/providers/cart_provider.dart';
 import 'package:auto_spare_hub/providers/user_auth_provider.dart';
+import 'package:auto_spare_hub/screens/user/order_success_screen.dart';
 import 'package:auto_spare_hub/screens/user/user_login_screen.dart';
 import 'package:auto_spare_hub/screens/user/widgets/approval_pending_dialog.dart';
 import 'package:flutter/material.dart';
@@ -117,6 +120,69 @@ void main() {
 
       final crossFade = tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
       expect(crossFade.crossFadeState, CrossFadeState.showSecond);
+    });
+  });
+
+  group('OrderSuccessScreen Cart Clear Tests', () {
+    testWidgets('clears cart when navigating from OrderSuccessScreen with fromCart: true', (tester) async {
+      final cart = CartProvider();
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      final sampleProduct = ProductModel(
+        id: 'PRD_CART_01',
+        name: 'Oil Filter',
+        companyId: 'CMP_01',
+        companyName: 'Toyota',
+        categoryId: 'CAT_01',
+        categoryName: 'Filters',
+        application: 'Toyota Corolla 2015-2020',
+        imageUrl: 'https://img.com/filter.jpg',
+        price: 500.0,
+        isActive: true,
+      );
+      await cart.addToCart(sampleProduct, quantity: 2);
+      expect(cart.items.length, 1);
+      expect(cart.totalItemCount, 2);
+
+      final dummyOrder = OrderModel(
+        id: 'ORD_9999',
+        orderNumber: '#ORD-9999',
+        userId: 'USR_TEST',
+        userName: 'Garage User',
+        userPhone: '9876543210',
+        productId: 'PRD_CART_01',
+        productName: 'Oil Filter',
+        unitPrice: 500.0,
+        quantity: 2,
+        totalAmount: 1000.0,
+        createdAt: DateTime.now(),
+      );
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<CartProvider>.value(value: cart),
+          ],
+          child: MaterialApp(
+            home: OrderSuccessScreen(
+              order: dummyOrder,
+              fromCart: true,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify Continue Shopping button is present
+      expect(find.text('Continue Shopping'), findsOneWidget);
+
+      // Tapping Continue Shopping ensures the cart is cleared
+      await tester.tap(find.text('Continue Shopping'));
+      await tester.pump();
+
+      expect(cart.isEmpty, isTrue);
+      expect(cart.totalItemCount, 0);
     });
   });
 }

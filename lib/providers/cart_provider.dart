@@ -54,6 +54,7 @@ class CartProvider extends ChangeNotifier {
 
   /// Load and sync customer's cart from Firestore DB according to userId.
   Future<void> loadCartForUser(String userId) async {
+    final bool isUserChange = _currentUserId != userId;
     _currentUserId = userId;
     try {
       final doc = await _firestore.collection(cartsCollection).doc(userId).get();
@@ -71,10 +72,12 @@ class CartProvider extends ChangeNotifier {
             }
           }
 
-          // Merge any uncommitted local guest items into the cloud items
-          for (final entry in _items.entries) {
-            if (!cloudItems.containsKey(entry.key)) {
-              cloudItems[entry.key] = entry.value;
+          // Merge any uncommitted local guest items into the cloud items only during guest-to-user transition
+          if (isUserChange && _items.isNotEmpty) {
+            for (final entry in _items.entries) {
+              if (!cloudItems.containsKey(entry.key)) {
+                cloudItems[entry.key] = entry.value;
+              }
             }
           }
 
@@ -82,7 +85,9 @@ class CartProvider extends ChangeNotifier {
           _items.addAll(cloudItems);
           notifyListeners();
           await _saveCart();
-          await _syncToFirestore();
+          if (isUserChange && _items.isNotEmpty) {
+            await _syncToFirestore();
+          }
           return;
         }
       } else {
@@ -170,15 +175,13 @@ class CartProvider extends ChangeNotifier {
   }
 
   /// Clear all items from the cart.
-  /// If [isOrderPlaced] is true, also clears the remote cart in Firestore.
-  Future<void> clearCart({bool isOrderPlaced = false}) async {
-    if (_items.isNotEmpty) {
-      _items.clear();
-      notifyListeners();
-      await _saveCart();
-      if (isOrderPlaced && _currentUserId != null) {
-        await _syncToFirestore();
-      }
+  /// Automatically synchronizes the cleared empty state to local storage and remote Firestore.
+  Future<void> clearCart({bool isOrderPlaced = true}) async {
+    _items.clear();
+    notifyListeners();
+    await _saveCart();
+    if (isOrderPlaced && _currentUserId != null && _currentUserId!.isNotEmpty) {
+      await _syncToFirestore();
     }
   }
 

@@ -140,12 +140,12 @@ class _CartScreenState extends State<CartScreen> {
     if (!mounted) return;
 
     if (order != null) {
-      await cartProvider.clearCart();
+      await cartProvider.clearCart(isOrderPlaced: true);
       if (!mounted) return;
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => OrderSuccessScreen(order: order),
+          builder: (_) => OrderSuccessScreen(order: order, fromCart: true),
         ),
       );
     } else {
