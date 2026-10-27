@@ -393,10 +393,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                               child: provider.isLoading
                                   ? const Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         SizedBox(
-                                          width: 20,
-                                          height: 20,
+                                          width: 18,
+                                          height: 18,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2.2,
                                             valueColor: AlwaysStoppedAnimation<Color>(
@@ -404,28 +405,35 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                             ),
                                           ),
                                         ),
-                                        SizedBox(width: 12),
-                                        Text(
-                                          'Verifying Credentials...',
-                                          style: TextStyle(
-                                            color: AppColors.warmGold,
-                                            fontSize: 14.5,
-                                            fontWeight: FontWeight.w700,
+                                        SizedBox(width: 10),
+                                        Flexible(
+                                          child: Text(
+                                            'Verifying Credentials...',
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: AppColors.warmGold,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     )
                                   : const Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(Icons.login_rounded, size: 20),
                                         SizedBox(width: 8),
-                                        Text(
-                                          'Sign In to Admin Portal',
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 0.3,
+                                        Flexible(
+                                          child: Text(
+                                            'Sign In to Admin Portal',
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 14.5,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.3,
+                                            ),
                                           ),
                                         ),
                                       ],

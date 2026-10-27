@@ -16,5 +16,9 @@ void main() {
     // Verify AdminSplashScreen renders with centered branding logo
     expect(find.byType(AdminSplashScreen), findsOneWidget);
     expect(find.byType(Image), findsOneWidget);
+
+    // Advance clock past splash timer to avoid hanging pending timers
+    await tester.pump(const Duration(milliseconds: 2200));
+    await tester.pumpAndSettle();
   });
 }

@@ -44,6 +44,38 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     ]);
   }
 
+  Future<void> _pickCalendarDate(BuildContext context) async {
+    final orderProvider = context.read<OrderProvider>();
+    final initialDate = orderProvider.particularDate ?? DateTime.now();
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2023),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+      helpText: 'SELECT ORDER DATE',
+      confirmText: 'FILTER',
+      cancelText: 'CANCEL',
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.darkHeader,
+              onPrimary: AppColors.warmGold,
+              surface: Colors.white,
+              onSurface: AppColors.darkHeader,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      orderProvider.setParticularDate(picked);
+    }
+  }
+
   Future<void> _pickCustomDateRange(BuildContext context) async {
     final orderProvider = context.read<OrderProvider>();
     final initialRange = orderProvider.customDateRange ??
@@ -75,6 +107,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (picked != null) {
       orderProvider.setDateFilter(OrderDateFilter.custom, customRange: picked);
     }
+  }
+
+  String _formatParticularDate(DateTime dt) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
   String _formatDateTime(DateTime dt) {
@@ -518,12 +555,29 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
           const SizedBox(width: 6),
           _buildFilterChip(
-            label: orderProvider.customDateRange != null
+            label: orderProvider.dateFilter == OrderDateFilter.particularDate &&
+                    orderProvider.particularDate != null
+                ? _formatParticularDate(orderProvider.particularDate!)
+                : 'Select Date',
+            isSelected: orderProvider.dateFilter == OrderDateFilter.particularDate,
+            icon: Icons.calendar_month_rounded,
+            onTap: () => _pickCalendarDate(context),
+            onClear: orderProvider.dateFilter == OrderDateFilter.particularDate
+                ? () => orderProvider.setParticularDate(null)
+                : null,
+          ),
+          const SizedBox(width: 6),
+          _buildFilterChip(
+            label: orderProvider.dateFilter == OrderDateFilter.custom &&
+                    orderProvider.customDateRange != null
                 ? '${orderProvider.customDateRange!.start.day}/${orderProvider.customDateRange!.start.month} - ${orderProvider.customDateRange!.end.day}/${orderProvider.customDateRange!.end.month}'
-                : 'Custom Date...',
+                : 'Date Range...',
             isSelected: orderProvider.dateFilter == OrderDateFilter.custom,
             icon: Icons.date_range_rounded,
             onTap: () => _pickCustomDateRange(context),
+            onClear: orderProvider.dateFilter == OrderDateFilter.custom
+                ? () => orderProvider.setDateFilter(OrderDateFilter.all)
+                : null,
           ),
           const SizedBox(width: 10),
           Container(
@@ -559,6 +613,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     required String label,
     required bool isSelected,
     IconData? icon,
+    VoidCallback? onClear,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -592,6 +647,25 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 color: isSelected ? AppColors.warmGold : const Color(0xFF5A6271),
               ),
             ),
+            if (isSelected && onClear != null) ...[
+              const SizedBox(width: 5),
+              GestureDetector(
+                onTap: onClear,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  padding: const EdgeInsets.all(1.5),
+                  decoration: BoxDecoration(
+                    color: AppColors.warmGold.withValues(alpha: 0.25),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 11,
+                    color: AppColors.warmGold,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -606,22 +680,45 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildActiveFiltersBar(OrderProvider orderProvider) {
+    String? dateTag;
+    if (orderProvider.dateFilter == OrderDateFilter.today) {
+      dateTag = 'Today';
+    } else if (orderProvider.dateFilter == OrderDateFilter.thisWeek) {
+      dateTag = 'This Week';
+    } else if (orderProvider.dateFilter == OrderDateFilter.thisMonth) {
+      dateTag = 'This Month';
+    } else if (orderProvider.dateFilter == OrderDateFilter.particularDate &&
+        orderProvider.particularDate != null) {
+      dateTag = _formatParticularDate(orderProvider.particularDate!);
+    } else if (orderProvider.dateFilter == OrderDateFilter.custom &&
+        orderProvider.customDateRange != null) {
+      dateTag =
+          '${orderProvider.customDateRange!.start.day}/${orderProvider.customDateRange!.start.month} - ${orderProvider.customDateRange!.end.day}/${orderProvider.customDateRange!.end.month}';
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.filter_list_rounded, size: 14, color: AppColors.warmGold),
-            const SizedBox(width: 4),
-            Text(
-              'Showing ${orderProvider.filteredAdminOrders.length} of ${orderProvider.totalOrdersCount} orders',
-              style: const TextStyle(
-                fontSize: 11.5,
-                color: AppColors.secondaryText,
-                fontWeight: FontWeight.w600,
+        Expanded(
+          child: Row(
+            children: [
+              const Icon(Icons.filter_list_rounded, size: 14, color: AppColors.warmGold),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  dateTag != null
+                      ? 'Showing ${orderProvider.filteredAdminOrders.length} of ${orderProvider.totalOrdersCount} ($dateTag)'
+                      : 'Showing ${orderProvider.filteredAdminOrders.length} of ${orderProvider.totalOrdersCount} orders',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.secondaryText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         InkWell(
           onTap: () {

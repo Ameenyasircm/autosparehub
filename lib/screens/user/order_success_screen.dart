@@ -13,11 +13,13 @@ import 'user_orders_screen.dart';
 class OrderSuccessScreen extends StatelessWidget {
   final OrderModel order;
   final bool fromCart;
+  final VoidCallback? onContinueShopping;
 
   const OrderSuccessScreen({
     super.key,
     required this.order,
     this.fromCart = false,
+    this.onContinueShopping,
   });
 
   void _ensureCartCleared(BuildContext context) {
@@ -464,6 +466,10 @@ class OrderSuccessScreen extends StatelessWidget {
                   ),
                   onPressed: () {
                     _ensureCartCleared(context);
+                    if (onContinueShopping != null) {
+                      onContinueShopping!();
+                      return;
+                    }
                     Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(builder: (_) => const UserHomeScreen()),
                       (route) => false,

@@ -10,6 +10,7 @@ enum OrderDateFilter {
   today,
   thisWeek,
   thisMonth,
+  particularDate,
   custom,
 }
 
@@ -34,6 +35,7 @@ class OrderProvider extends ChangeNotifier {
   String _statusFilter = 'ALL'; // ALL, PENDING, CONFIRMED, DISPATCHED, DELIVERED, CANCELLED
   OrderDateFilter _dateFilter = OrderDateFilter.all;
   DateTimeRange? _customDateRange;
+  DateTime? _particularDate;
   String _customerFilter = '';
   String _categoryFilter = 'ALL';
 
@@ -57,6 +59,7 @@ class OrderProvider extends ChangeNotifier {
   String get statusFilter => _statusFilter;
   OrderDateFilter get dateFilter => _dateFilter;
   DateTimeRange? get customDateRange => _customDateRange;
+  DateTime? get particularDate => _particularDate;
   String get customerFilter => _customerFilter;
   String get categoryFilter => _categoryFilter;
 
@@ -122,6 +125,11 @@ class OrderProvider extends ChangeNotifier {
           return createdAt.isAfter(beginningOfWeek);
         case OrderDateFilter.thisMonth:
           return createdAt.year == now.year && createdAt.month == now.month;
+        case OrderDateFilter.particularDate:
+          if (_particularDate == null) return true;
+          return createdAt.year == _particularDate!.year &&
+              createdAt.month == _particularDate!.month &&
+              createdAt.day == _particularDate!.day;
         case OrderDateFilter.custom:
           if (_customDateRange == null) return true;
           final start = DateTime(_customDateRange!.start.year, _customDateRange!.start.month, _customDateRange!.start.day);
@@ -139,9 +147,22 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
-  void setDateFilter(OrderDateFilter filter, {DateTimeRange? customRange}) {
+  void setDateFilter(OrderDateFilter filter, {DateTimeRange? customRange, DateTime? particularDate}) {
     _dateFilter = filter;
     _customDateRange = customRange;
+    _particularDate = particularDate;
+    notifyListeners();
+  }
+
+  void setParticularDate(DateTime? date) {
+    if (date == null) {
+      _dateFilter = OrderDateFilter.all;
+      _particularDate = null;
+    } else {
+      _dateFilter = OrderDateFilter.particularDate;
+      _particularDate = DateTime(date.year, date.month, date.day);
+      _customDateRange = null;
+    }
     notifyListeners();
   }
 
@@ -159,6 +180,7 @@ class OrderProvider extends ChangeNotifier {
     _statusFilter = 'ALL';
     _dateFilter = OrderDateFilter.all;
     _customDateRange = null;
+    _particularDate = null;
     _customerFilter = '';
     _categoryFilter = 'ALL';
     notifyListeners();

@@ -516,5 +516,64 @@ void main() {
       expect(provider.customerOrders, isEmpty);
       expect(provider.isCustomerOrdersLoading, isFalse);
     });
+
+    test('filters orders by particular date from calendar accurately', () {
+      final orderToday = OrderModel(
+        id: 'ORD1',
+        orderNumber: '#ORD-1001',
+        userId: 'USR1',
+        userName: 'Customer 1',
+        userPhone: '9876543210',
+        totalAmount: 1000.0,
+        createdAt: DateTime(2026, 10, 27, 14, 30),
+      );
+
+      final orderYesterday = OrderModel(
+        id: 'ORD2',
+        orderNumber: '#ORD-1002',
+        userId: 'USR2',
+        userName: 'Customer 2',
+        userPhone: '9876543211',
+        totalAmount: 2000.0,
+        createdAt: DateTime(2026, 10, 26, 11, 15),
+      );
+
+      final orderLastWeek = OrderModel(
+        id: 'ORD3',
+        orderNumber: '#ORD-1003',
+        userId: 'USR3',
+        userName: 'Customer 3',
+        userPhone: '9876543212',
+        totalAmount: 3000.0,
+        createdAt: DateTime(2026, 10, 20, 9, 0),
+      );
+
+      final provider = OrderProvider();
+      provider.adminOrders.addAll([orderToday, orderYesterday, orderLastWeek]);
+
+      expect(provider.filteredAdminOrders.length, 3);
+
+      // Filter by particular date: 26 Oct 2026
+      provider.setParticularDate(DateTime(2026, 10, 26));
+      expect(provider.dateFilter, OrderDateFilter.particularDate);
+      expect(provider.particularDate, DateTime(2026, 10, 26));
+      expect(provider.filteredAdminOrders.length, 1);
+      expect(provider.filteredAdminOrders.first.id, 'ORD2');
+
+      // Filter by particular date: 27 Oct 2026
+      provider.setParticularDate(DateTime(2026, 10, 27));
+      expect(provider.filteredAdminOrders.length, 1);
+      expect(provider.filteredAdminOrders.first.id, 'ORD1');
+
+      // Filter by a date with no orders
+      provider.setParticularDate(DateTime(2026, 10, 25));
+      expect(provider.filteredAdminOrders.isEmpty, isTrue);
+
+      // Clear particular date filter
+      provider.setParticularDate(null);
+      expect(provider.dateFilter, OrderDateFilter.all);
+      expect(provider.particularDate, isNull);
+      expect(provider.filteredAdminOrders.length, 3);
+    });
   });
 }

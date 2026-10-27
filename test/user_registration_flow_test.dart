@@ -125,8 +125,14 @@ void main() {
 
   group('OrderSuccessScreen Cart Clear Tests', () {
     testWidgets('clears cart when navigating from OrderSuccessScreen with fromCart: true', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+      SharedPreferences.setMockInitialValues({});
       final cart = CartProvider();
-      await Future.delayed(const Duration(milliseconds: 50));
 
       final sampleProduct = ProductModel(
         id: 'PRD_CART_01',
@@ -167,12 +173,13 @@ void main() {
             home: OrderSuccessScreen(
               order: dummyOrder,
               fromCart: true,
+              onContinueShopping: () {},
             ),
           ),
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Verify Continue Shopping button is present
       expect(find.text('Continue Shopping'), findsOneWidget);
