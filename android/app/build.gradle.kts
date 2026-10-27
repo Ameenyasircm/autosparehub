@@ -39,7 +39,7 @@ android {
         create("admin") {
             dimension = "default"
             applicationId = "com.codemates.auto_spare_hub_admin"
-            manifestPlaceholders["appName"] = "SN Auto Admin"
+            manifestPlaceholders["appName"] = "SNAuto Admin"
         }
     }
 

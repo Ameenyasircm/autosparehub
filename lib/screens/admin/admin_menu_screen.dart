@@ -144,12 +144,12 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.darkHeader,
+                    color: const Color(0xFFCCFBF1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.contact_phone_rounded,
-                    color: AppColors.warmGold,
+                    color: Color(0xFF0D9488),
                     size: 22,
                   ),
                 ),
@@ -294,8 +294,10 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
             context: context,
             title: 'Customer Approvals',
             icon: Icons.how_to_reg_rounded,
+            iconColor: const Color(0xFF2563EB),
+            iconBgColor: const Color(0xFFEEF4FF),
             badge: customerProvider.pendingCount > 0 ? '${customerProvider.pendingCount} PENDING' : null,
-            badgeColor: customerProvider.pendingCount > 0 ? AppColors.warmGold : null,
+            badgeColor: customerProvider.pendingCount > 0 ? const Color(0xFFD97706) : null,
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const CustomerApprovalsScreen()),
@@ -309,6 +311,8 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
             context: context,
             title: 'Admin Management',
             icon: Icons.admin_panel_settings_rounded,
+            iconColor: const Color(0xFF7C3AED),
+            iconBgColor: const Color(0xFFF3E8FF),
             badge: isManager ? 'MANAGER ACCESS' : 'LOCKED',
             badgeColor: isManager ? const Color(0xFF2E7D32) : Colors.grey.shade600,
             onTap: () {
@@ -337,6 +341,8 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
             context: context,
             title: 'Spare Parts & Products',
             icon: Icons.precision_manufacturing_rounded,
+            iconColor: const Color(0xFFD97706),
+            iconBgColor: const Color(0xFFFEF3C7),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProductsScreen()),
@@ -350,6 +356,8 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
             context: context,
             title: 'Add New Product',
             icon: Icons.add_box_rounded,
+            iconColor: const Color(0xFF16A34A),
+            iconBgColor: const Color(0xFFDCFCE7),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const ProductFormScreen()),
@@ -363,6 +371,8 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
             context: context,
             title: 'Vehicle Brands & Companies',
             icon: Icons.business_rounded,
+            iconColor: const Color(0xFF0284C7),
+            iconBgColor: const Color(0xFFE0F2FE),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const CompaniesScreen()),
@@ -376,6 +386,8 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
             context: context,
             title: 'Part Categories',
             icon: Icons.category_rounded,
+            iconColor: const Color(0xFFEA580C),
+            iconBgColor: const Color(0xFFFFEDD5),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const CategoriesScreen()),
@@ -393,8 +405,10 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
             context: context,
             title: 'Customer Helpline Contact',
             icon: Icons.contact_phone_rounded,
+            iconColor: const Color(0xFF0D9488),
+            iconBgColor: const Color(0xFFCCFBF1),
             badge: _isLoadingContact ? '...' : _contactService.formatForDisplay(_activeContactPhone),
-            badgeColor: AppColors.warmGold,
+            badgeColor: const Color(0xFF0D9488),
             onTap: () => _showEditContactDialog(context),
           ),
 
@@ -409,6 +423,7 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
             title: 'Sign Out',
             icon: Icons.logout_rounded,
             iconColor: AppColors.error,
+            iconBgColor: const Color(0xFFFEE2E2),
             onTap: () => _showLogoutDialog(context),
           ),
 
@@ -612,10 +627,14 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
     required String title,
     required IconData icon,
     Color? iconColor,
+    Color? iconBgColor,
     String? badge,
     Color? badgeColor,
     required VoidCallback onTap,
   }) {
+    final effectiveIconColor = iconColor ?? const Color(0xFFC48618);
+    final effectiveBgColor = iconBgColor ?? effectiveIconColor.withValues(alpha: 0.12);
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -623,7 +642,7 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
         border: Border.all(color: const Color(0xFFEDEFF2), width: 1.1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: 0.025),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -639,12 +658,15 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(9),
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.darkHeader,
+                    color: effectiveBgColor,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: iconColor ?? AppColors.warmGold, size: 20),
+                  child: Center(
+                    child: Icon(icon, color: effectiveIconColor, size: 20),
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -656,7 +678,7 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
                           style: const TextStyle(
                             color: AppColors.darkHeader,
                             fontSize: 14.5,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -665,10 +687,10 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: (badgeColor ?? AppColors.darkHeader).withValues(alpha: 0.12),
+                            color: (badgeColor ?? AppColors.darkHeader).withValues(alpha: 0.10),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: (badgeColor ?? AppColors.darkHeader).withValues(alpha: 0.4),
+                              color: (badgeColor ?? AppColors.darkHeader).withValues(alpha: 0.35),
                               width: 0.8,
                             ),
                           ),
@@ -688,7 +710,7 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
                 const SizedBox(width: 8),
                 const Icon(
                   Icons.arrow_forward_ios_rounded,
-                  size: 14,
+                  size: 13,
                   color: Color(0xFFB0B7C3),
                 ),
               ],
