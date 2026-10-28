@@ -38,7 +38,7 @@ class AdminAuthService {
     final cleanPhone = usernameOrPhone.trim();
 
     if (cleanPhone.isEmpty) {
-      return const AdminAuthResult.failure('Username or phone number cannot be empty.');
+      return const AdminAuthResult.failure('Username cannot be empty.');
     }
 
     if (password.isEmpty) {

@@ -164,7 +164,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   ),
                   const SizedBox(height: 6),
 
-                  // Pill Badge: "ADMIN PORTAL • MANJERI"
+                  // Pill Badge: "ADMIN PORTAL"
                   Center(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -177,7 +177,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         ),
                       ),
                       child: const Text(
-                        'ADMIN PORTAL • MANJERI',
+                        'ADMIN PORTAL',
                         style: TextStyle(
                           color: AppColors.warmGold,
                           fontSize: 10,
@@ -259,7 +259,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
                           // Username / Phone Field
                           const Text(
-                            'Username or Mobile Number',
+                            'Mobile Number',
                             style: TextStyle(
                               color: AppColors.darkHeader,
                               fontSize: 13,
@@ -280,7 +280,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Please enter username or phone number';
+                                return 'Please enter  phone number';
                               }
                               return null;
                             },

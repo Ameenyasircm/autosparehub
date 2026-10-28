@@ -25,14 +25,14 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndFetchOrders();
+      _checkAndFetchOrders(force: true);
     });
   }
 
-  void _checkAndFetchOrders() {
+  void _checkAndFetchOrders({bool force = false}) {
     if (!mounted) return;
     final customer = context.read<UserAuthProvider>().currentCustomer;
-    if (customer != null && _lastFetchedCustomerId != customer.id) {
+    if (customer != null && (force || _lastFetchedCustomerId != customer.id)) {
       _lastFetchedCustomerId = customer.id;
       context.read<OrderProvider>().fetchCustomerOrders(customer.id, userPhone: customer.phone);
     }

@@ -171,7 +171,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
 
               // Phone Number Field
               const Text(
-                'Phone Number / Username *',
+                'Phone Number *',
                 style: TextStyle(
                   color: AppColors.darkCharcoal,
                   fontSize: 13.5,

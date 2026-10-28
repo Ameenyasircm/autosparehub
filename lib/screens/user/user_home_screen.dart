@@ -40,6 +40,7 @@ class UserHomeScreen extends StatefulWidget {
 
 class _UserHomeScreenState extends State<UserHomeScreen> {
   int _currentTabIndex = 0;
+  final List<int> _tabHistory = [];
   final _searchController = TextEditingController();
   bool _isInitialLoading = true;
   bool _isCheckingApproval = false;
@@ -192,7 +193,25 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           return;
         }
 
-        // If user is on Orders or Profile tab, switch back to Home tab first
+        // If user is searching on categories view, clear search query first
+        if (_searchController.text.isNotEmpty) {
+          setState(() {
+            _searchController.clear();
+            context.read<ProductProvider>().setSearchQuery('');
+          });
+          return;
+        }
+
+        // If user navigated between tabs, pop previous tab from history
+        while (_tabHistory.isNotEmpty) {
+          final prevTab = _tabHistory.removeLast();
+          if (prevTab != _currentTabIndex) {
+            setState(() => _currentTabIndex = prevTab);
+            return;
+          }
+        }
+
+        // If user is on Orders or Profile tab without history, switch back to Home tab first
         if (_currentTabIndex != 0) {
           setState(() => _currentTabIndex = 0);
           return;
@@ -1996,7 +2015,13 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 leading: const Icon(Icons.receipt_long_rounded, color: AppColors.warmGold),
                 title: const Text('My Orders', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
-                onTap: () => setState(() => _currentTabIndex = 1),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const UserOrdersScreen(showAppBar: true),
+                    ),
+                  );
+                },
               ),
               const Divider(height: 1, color: AppColors.dividerLight),
               ListTile(
@@ -2090,6 +2115,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             context.read<ProductProvider>().setSearchQuery('');
           });
           return;
+        }
+        if (_currentTabIndex != index) {
+          _tabHistory.add(_currentTabIndex);
         }
         setState(() => _currentTabIndex = index);
         if (index == 1) {
