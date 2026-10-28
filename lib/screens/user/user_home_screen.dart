@@ -426,19 +426,35 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   ) {
     final activeCategories = categoryProvider.categories.where((c) => c.isActive).toList();
     final query = _searchController.text.trim().toLowerCase();
+    final isSearching = query.isNotEmpty;
 
-    final filteredCategories = query.isEmpty
-        ? activeCategories
-        : activeCategories.where((c) {
+    // Matching products globally across all categories
+    final searchProducts = isSearching
+        ? productProvider.products.where((p) {
+            if (!p.isActive) return false;
+            return p.name.toLowerCase().contains(query) ||
+                (p.refNo?.toLowerCase().contains(query) ?? false) ||
+                p.application.toLowerCase().contains(query) ||
+                (p.description?.toLowerCase().contains(query) ?? false) ||
+                p.companyName.toLowerCase().contains(query) ||
+                p.categoryName.toLowerCase().contains(query) ||
+                p.searchKeywords.any((k) => k.contains(query));
+          }).toList()
+        : <ProductModel>[];
+
+    // Matching categories
+    final filteredCategories = isSearching
+        ? activeCategories.where((c) {
             final nameMatch = c.name.toLowerCase().contains(query);
             final descMatch = c.description?.toLowerCase().contains(query) ?? false;
             return nameMatch || descMatch;
-          }).toList();
+          }).toList()
+        : activeCategories;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Search Bar for Categories
+        // Global Search Bar
         Container(
           margin: const EdgeInsets.fromLTRB(16, 14, 16, 10),
           height: 48,
@@ -472,10 +488,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                   onChanged: (val) {
+                    productProvider.setSearchQuery(val);
                     setState(() {});
                   },
                   decoration: const InputDecoration(
-                    hintText: 'Search Categories...',
+                    hintText: 'Search spare parts, part no, model...',
                     hintStyle: TextStyle(
                       color: Color(0xFF8C95A6),
                       fontSize: 14,
@@ -499,6 +516,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   icon: const Icon(Icons.clear, color: Color(0xFF8C95A6), size: 18),
                   onPressed: () {
                     _searchController.clear();
+                    productProvider.setSearchQuery('');
                     setState(() {});
                   },
                 ),
@@ -506,73 +524,220 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           ),
         ),
 
-        // Section Title & Counter Row
-        Padding(
-          padding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Spare Categories',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.darkHeader,
-                  letterSpacing: -0.2,
-                ),
+        // When user is searching and products match: show global products search results
+        if (isSearching && searchProducts.isNotEmpty) ...[
+          // Matching categories quick jump strip (if any category name matches)
+          if (filteredCategories.isNotEmpty) ...[
+            SizedBox(
+              height: 32,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  ...filteredCategories.map((cat) {
+                    return _buildCategoryPill(
+                      label: cat.name,
+                      isSelected: false,
+                      onTap: () {
+                        setState(() {
+                          _selectedCategory = cat;
+                          _searchController.clear();
+                          productProvider.setSelectedCategoryId(cat.id);
+                          productProvider.setSearchQuery('');
+                        });
+                      },
+                      isCompact: true,
+                    );
+                  }),
+                ],
               ),
-              Text(
-                '${filteredCategories.length} Categories',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.secondaryText,
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+            const SizedBox(height: 6),
+          ],
 
-        // Categories Grid
-        Expanded(
-          child: RefreshIndicator(
-            color: AppColors.warmGold,
-            backgroundColor: AppColors.darkHeader,
-            onRefresh: () async {
-              await Future.wait([
-                categoryProvider.fetchCategories(),
-                productProvider.fetchProducts(),
-              ]);
-            },
-            child: filteredCategories.isEmpty
-                ? _buildEmptyCategoriesState(query)
-                : GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.84,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemCount: filteredCategories.length,
-                    itemBuilder: (context, index) {
-                      final category = filteredCategories[index];
-                      final spareCount = productProvider.products
-                          .where((p) => p.isActive && p.categoryId == category.id)
-                          .length;
-                      return _buildCategoryCard(
-                        context,
-                        category,
-                        spareCount,
-                        productProvider,
-                      );
-                    },
+          // Search Results Header Row
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${searchProducts.length} Spares Found (All Categories)',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.darkHeader,
+                    letterSpacing: -0.2,
                   ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    _searchController.clear();
+                    productProvider.setSearchQuery('');
+                    setState(() {});
+                  },
+                  child: const Text(
+                    'Clear Search ×',
+                    style: TextStyle(
+                      color: AppColors.error,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+
+          // 2-Column Global Product Grid
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.67,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: searchProducts.length,
+              itemBuilder: (context, index) {
+                return _buildProductCard(context, searchProducts[index]);
+              },
+            ),
+          ),
+        ] else if (isSearching && searchProducts.isEmpty && filteredCategories.isNotEmpty) ...[
+          // When searching matched categories but no specific products
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${filteredCategories.length} Categories matching "$query"',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.darkHeader,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    _searchController.clear();
+                    productProvider.setSearchQuery('');
+                    setState(() {});
+                  },
+                  child: const Text(
+                    'Clear Search ×',
+                    style: TextStyle(
+                      color: AppColors.error,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.84,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: filteredCategories.length,
+              itemBuilder: (context, index) {
+                final category = filteredCategories[index];
+                final spareCount = productProvider.products
+                    .where((p) => p.isActive && p.categoryId == category.id)
+                    .length;
+                return _buildCategoryCard(
+                  context,
+                  category,
+                  spareCount,
+                  productProvider,
+                );
+              },
+            ),
+          ),
+        ] else if (isSearching && searchProducts.isEmpty && filteredCategories.isEmpty) ...[
+          Expanded(child: _buildEmptyCategoriesState(query)),
+        ] else ...[
+          // Default Browsing State: Section Title & Counter Row
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Spare Categories',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.darkHeader,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                Text(
+                  '${filteredCategories.length} Categories',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Categories Grid
+          Expanded(
+            child: RefreshIndicator(
+              color: AppColors.warmGold,
+              backgroundColor: AppColors.darkHeader,
+              onRefresh: () async {
+                await Future.wait([
+                  categoryProvider.fetchCategories(),
+                  productProvider.fetchProducts(),
+                ]);
+              },
+              child: GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.84,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: filteredCategories.length,
+                itemBuilder: (context, index) {
+                  final category = filteredCategories[index];
+                  final spareCount = productProvider.products
+                      .where((p) => p.isActive && p.categoryId == category.id)
+                      .length;
+                  return _buildCategoryCard(
+                    context,
+                    category,
+                    spareCount,
+                    productProvider,
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -716,10 +881,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         .toList();
     final bool showCompanyFilter = availableCompanies.length >= 2;
 
-    // Filtered products for display
-    final displayedProducts = productProvider.filteredProducts
-        .where((p) => p.isActive && p.categoryId == category.id)
-        .toList();
+    final isSearching = productProvider.searchQuery.trim().isNotEmpty;
+
+    // Filtered products for display:
+    // When searching, product search is global across all categories without restriction!
+    // When not searching, display parts belonging to this selected category.
+    final displayedProducts = isSearching
+        ? productProvider.filteredProducts.where((p) => p.isActive).toList()
+        : productProvider.filteredProducts
+            .where((p) => p.isActive && p.categoryId == category.id)
+            .toList();
 
     return Column(
       children: [
@@ -853,9 +1024,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                   onChanged: (val) => productProvider.setSearchQuery(val),
-                  decoration: InputDecoration(
-                    hintText: 'Search in ${category.name}...',
-                    hintStyle: const TextStyle(
+                  decoration: const InputDecoration(
+                    hintText: 'Search spare parts across all categories...',
+                    hintStyle: TextStyle(
                       color: Color(0xFF8C95A6),
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
@@ -951,7 +1122,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${displayedProducts.length} Parts in ${category.name}',
+                isSearching
+                    ? '${displayedProducts.length} Spares Found (All Categories)'
+                    : '${displayedProducts.length} Parts in ${category.name}',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -967,7 +1140,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     productProvider.setSelectedCategoryId(category.id);
                   },
                   child: const Text(
-                    'Clear Filters ×',
+                    'Clear Search ×',
                     style: TextStyle(
                       color: AppColors.error,
                       fontSize: 11.5,
@@ -1073,6 +1246,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   }
 
   Widget _buildEmptyCategorySparesState(CategoryModel category, ProductProvider provider) {
+    final isSearching = provider.searchQuery.trim().isNotEmpty;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -1082,16 +1256,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             const Icon(Icons.search_off_rounded, size: 52, color: Colors.grey),
             const SizedBox(height: 14),
             Text(
-              provider.searchQuery.isNotEmpty
-                  ? 'No Matching Spares'
+              isSearching
+                  ? 'No Matching Spares Found'
                   : 'No Spares in ${category.name}',
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
             Text(
-              provider.searchQuery.isNotEmpty
-                  ? 'No parts in "${category.name}" match "${provider.searchQuery}".'
+              isSearching
+                  ? 'No parts match "${provider.searchQuery}" across any category.'
                   : 'Parts in this category will be available soon.',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -1100,7 +1274,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (provider.searchQuery.isNotEmpty || provider.selectedCompanyId != 'ALL') ...[
+                if (isSearching || provider.selectedCompanyId != 'ALL') ...[
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.darkCharcoal,
@@ -1111,7 +1285,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       provider.clearFilters();
                       provider.setSelectedCategoryId(category.id);
                     },
-                    child: const Text('Reset Filters'),
+                    child: const Text('Clear Search'),
                   ),
                   const SizedBox(width: 10),
                 ],

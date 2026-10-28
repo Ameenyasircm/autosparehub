@@ -47,15 +47,20 @@ class ProductProvider extends ChangeNotifier {
   String get selectedCategoryId => _selectedCategoryId;
   ProductSortOption get sortOption => _sortOption;
 
-  /// Returns products matching active search query, company filter, category filter, and sort order
+  /// Returns products matching active search query, company filter, category filter, and sort order.
+  /// When a search query is active, category restriction is lifted so that search is global across
+  /// all categories without restriction.
   List<ProductModel> get filteredProducts {
+    final hasSearch = _searchQuery.trim().isNotEmpty;
+
     final list = _products.where((product) {
       // Company Filter
       final matchesCompany = _selectedCompanyId == 'ALL' ||
           product.companyId == _selectedCompanyId;
 
-      // Category Filter
-      final matchesCategory = _selectedCategoryId == 'ALL' ||
+      // Category Filter (Lifted when search query is active so search is global across all categories)
+      final matchesCategory = hasSearch ||
+          _selectedCategoryId == 'ALL' ||
           product.categoryId == _selectedCategoryId;
 
       // Search Query Filter (Matches Name, Ref No, Application, or Search Keywords)
