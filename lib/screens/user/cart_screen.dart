@@ -626,9 +626,51 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
 
             const SizedBox(height: 22),
 
+            // 3-Step Simple Garage Order Guide
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.cardBorder, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  _buildEmptyGuideRow(
+                    icon: Icons.category_outlined,
+                    title: '1. Select Category',
+                    subtitle: 'Brakes, Filters, Engine, Electrical, etc.',
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Divider(color: Colors.grey.shade100, height: 1),
+                  ),
+                  _buildEmptyGuideRow(
+                    icon: Icons.add_shopping_cart_rounded,
+                    title: '2. Add to Cart',
+                    subtitle: 'Set quantities matching your job requirements',
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Divider(color: Colors.grey.shade100, height: 1),
+                  ),
+                  _buildEmptyGuideRow(
+                    icon: Icons.send_rounded,
+                    title: '3. Submit Order',
+                    subtitle: 'Direct pricing & prompt delivery dispatch',
+                  ),
+                ],
+              ),
+            ),
 
-
-            // Browse Spare Parts Action Button
+            const SizedBox(height: 22),
             SizedBox(
               width: double.infinity,
               height: 50,
