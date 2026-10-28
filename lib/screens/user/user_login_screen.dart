@@ -389,6 +389,79 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                       secondChild: _buildRegisterForm(authProvider),
                     ),
                   ),
+
+                  const SizedBox(height: 20),
+
+                  // "Or" Separator Outside Card
+                  _buildOrDivider(),
+                  const SizedBox(height: 16),
+
+                  // "Don't have a account?" / "Already have a account?"
+                  Center(
+                    child: Text(
+                      _isRegisterMode
+                          ? 'Already have a account?'
+                          : "Don't have a account?",
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.darkCharcoal,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // "Register" Button (Outlined)
+                  SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.darkCharcoal,
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        if (_isRegisterMode) {
+                          if (_loginPhoneController.text.isEmpty && _regPhoneController.text.isNotEmpty) {
+                            _loginPhoneController.text = _regPhoneController.text.trim();
+                          }
+                          setState(() => _isRegisterMode = false);
+                        } else {
+                          if (_regPhoneController.text.isEmpty && _loginPhoneController.text.isNotEmpty) {
+                            _regPhoneController.text = _loginPhoneController.text.trim();
+                          }
+                          if (_regPasswordController.text.isEmpty && _loginPasswordController.text.isNotEmpty) {
+                            _regPasswordController.text = _loginPasswordController.text;
+                            _regConfirmPasswordController.text = _loginPasswordController.text;
+                          }
+                          setState(() => _isRegisterMode = true);
+                        }
+                      },
+                      child: Text(
+                        _isRegisterMode ? 'Sign In to Existing Account' : 'Register',
+                        style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Contact Admin Link
+                  Center(
+                    child: TextButton(
+                      onPressed: _showContactAdminModal,
+                      child: const Text(
+                        'Contact to Admin',
+                        style: TextStyle(
+                          color: Color(0xFF1976D2),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -615,68 +688,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                         ),
                       ],
                     ),
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // "Or" Separator
-          _buildOrDivider(),
-          const SizedBox(height: 16),
-
-          // "Don't have a garage account?"
-          const Center(
-            child: Text(
-              "Don't have a account?",
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.darkCharcoal,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // "Register" Button (Outlined)
-          SizedBox(
-            height: 48,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.darkCharcoal,
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () {
-                if (_regPhoneController.text.isEmpty && _loginPhoneController.text.isNotEmpty) {
-                  _regPhoneController.text = _loginPhoneController.text.trim();
-                }
-                if (_regPasswordController.text.isEmpty && _loginPasswordController.text.isNotEmpty) {
-                  _regPasswordController.text = _loginPasswordController.text;
-                  _regConfirmPasswordController.text = _loginPasswordController.text;
-                }
-                setState(() => _isRegisterMode = true);
-              },
-              child: const Text(
-                'Register',
-                style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Contact Admin Link
-          Center(
-            child: TextButton(
-              onPressed: _showContactAdminModal,
-              child: const Text(
-                'Contact to Admin',
-                style: TextStyle(
-                  color: Color(0xFF1976D2),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
             ),
           ),
         ],
@@ -1024,64 +1035,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                         ),
                       ],
                     ),
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // "Or" Separator
-          _buildOrDivider(),
-          const SizedBox(height: 16),
-
-          // "Already have a garage account?"
-          const Center(
-            child: Text(
-              'Already have a garage account?',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.darkCharcoal,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // "Sign In" Button (Outlined)
-          SizedBox(
-            height: 48,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.darkCharcoal,
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () {
-                if (_loginPhoneController.text.isEmpty && _regPhoneController.text.isNotEmpty) {
-                  _loginPhoneController.text = _regPhoneController.text.trim();
-                }
-                setState(() => _isRegisterMode = false);
-              },
-              child: const Text(
-                'Sign In to Existing Account',
-                style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Contact Admin Link
-          Center(
-            child: TextButton(
-              onPressed: _showContactAdminModal,
-              child: const Text(
-                'Contact to Admin',
-                style: TextStyle(
-                  color: Color(0xFF1976D2),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
             ),
           ),
         ],
