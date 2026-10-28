@@ -124,8 +124,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         label: const Text('Add Category', style: TextStyle(fontWeight: FontWeight.w800)),
         onPressed: () => _openCategoryForm(),
       ),
-      body: Column(
-        children: [
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
           // Search Bar
           Container(
             padding: const EdgeInsets.all(16),
@@ -160,6 +162,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

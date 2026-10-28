@@ -219,10 +219,15 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
             ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(context),
-      body: cartProvider.isEmpty
-          ? _buildEmptyCart(context)
-          : SingleChildScrollView(
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: _buildBottomNav(context),
+      ),
+      body: SafeArea(
+        top: false,
+        child: cartProvider.isEmpty
+            ? _buildEmptyCart(context)
+            : SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               physics: const BouncingScrollPhysics(),
               child: Column(
@@ -318,6 +323,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                 ],
               ),
             ),
+      ),
     );
   }
 

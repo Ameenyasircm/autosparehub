@@ -458,9 +458,10 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
     final authProvider = context.watch<UserAuthProvider>();
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 20),
-      child: SingleChildScrollView(
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 20),
+        child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -634,6 +635,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
             ],
           ],
         ),
+      ),
       ),
     );
   }

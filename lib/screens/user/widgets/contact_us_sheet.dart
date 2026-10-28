@@ -46,8 +46,9 @@ class _ContactUsSheetState extends State<ContactUsSheet> {
   Widget build(BuildContext context) {
     final formattedPhone = _contactService.formatForDisplay(_phoneNumber);
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -289,6 +290,7 @@ class _ContactUsSheetState extends State<ContactUsSheet> {
             ],
           ),
         ],
+      ),
       ),
     );
   }

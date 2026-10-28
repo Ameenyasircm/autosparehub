@@ -206,15 +206,21 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
       child: Scaffold(
         backgroundColor: AppColors.backgroundLight,
         appBar: _buildTopAppBar(context, cart, auth),
-        body: IndexedStack(
-          index: _currentTabIndex,
-          children: [
-            _buildStorefrontCatalogTab(context),
-            const UserOrdersScreen(showAppBar: false),
-            _buildProfileTab(context, auth),
-          ],
+        body: SafeArea(
+          top: false,
+          child: IndexedStack(
+            index: _currentTabIndex,
+            children: [
+              _buildStorefrontCatalogTab(context),
+              const UserOrdersScreen(showAppBar: false),
+              _buildProfileTab(context, auth),
+            ],
+          ),
         ),
-        bottomNavigationBar: _buildBottomNav(context),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: _buildBottomNav(context),
+        ),
       ),
     );
   }

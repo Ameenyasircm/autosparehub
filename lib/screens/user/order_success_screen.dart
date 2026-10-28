@@ -69,7 +69,9 @@ class OrderSuccessScreen extends StatelessWidget {
             ),
           ],
         ),
-        body: SingleChildScrollView(
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 20.0),
           child: ConstrainedBox(
@@ -486,6 +488,7 @@ class OrderSuccessScreen extends StatelessWidget {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

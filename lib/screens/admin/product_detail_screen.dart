@@ -103,7 +103,9 @@ class ProductDetailScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         physics: const BouncingScrollPhysics(),
         child: Column(
@@ -425,6 +427,7 @@ class ProductDetailScreen extends StatelessWidget {
             ],
           ],
         ),
+      ),
       ),
     );
   }

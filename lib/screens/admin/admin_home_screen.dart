@@ -132,53 +132,56 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: _buildTopAppBar(context, orderProvider),
-      body: RefreshIndicator(
-        color: AppColors.warmGold,
-        backgroundColor: AppColors.darkHeader,
-        onRefresh: _refreshData,
-        child: Column(
-          children: [
-            // Sticky Filter & Search Control Panel
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 1. Search Bar
-                  _buildSearchBar(orderProvider),
+      body: SafeArea(
+        top: false,
+        child: RefreshIndicator(
+          color: AppColors.warmGold,
+          backgroundColor: AppColors.darkHeader,
+          onRefresh: _refreshData,
+          child: Column(
+            children: [
+              // Sticky Filter & Search Control Panel
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 1. Search Bar
+                    _buildSearchBar(orderProvider),
 
-                  const SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
-                  // 2. Status Filter Strip
-                  _buildStatusFilterRow(orderProvider),
+                    // 2. Status Filter Strip
+                    _buildStatusFilterRow(orderProvider),
 
-                  const SizedBox(height: 8),
-
-                  // 3. Category & Date Filters Row
-                  _buildSecondaryFiltersRow(orderProvider, categoryProvider),
-
-                  // 4. Active Filters Indicator
-                  if (_hasActiveFilters(orderProvider)) ...[
                     const SizedBox(height: 8),
-                    _buildActiveFiltersBar(orderProvider),
+
+                    // 3. Category & Date Filters Row
+                    _buildSecondaryFiltersRow(orderProvider, categoryProvider),
+
+                    // 4. Active Filters Indicator
+                    if (_hasActiveFilters(orderProvider)) ...[
+                      const SizedBox(height: 8),
+                      _buildActiveFiltersBar(orderProvider),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
 
-            const Divider(height: 1, thickness: 1, color: Color(0xFFECEFF3)),
+              const Divider(height: 1, thickness: 1, color: Color(0xFFECEFF3)),
 
-            // Orders List
-            Expanded(
-              child: orderProvider.isLoading
-                  ? _buildLoadingState()
-                  : orderProvider.filteredAdminOrders.isEmpty
-                      ? _buildEmptyState(orderProvider)
-                      : _buildOrdersList(orderProvider),
-            ),
-          ],
+              // Orders List
+              Expanded(
+                child: orderProvider.isLoading
+                    ? _buildLoadingState()
+                    : orderProvider.filteredAdminOrders.isEmpty
+                        ? _buildEmptyState(orderProvider)
+                        : _buildOrdersList(orderProvider),
+              ),
+            ],
+          ),
         ),
       ),
     );

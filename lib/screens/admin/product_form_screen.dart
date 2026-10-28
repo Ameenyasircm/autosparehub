@@ -280,7 +280,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         ),
       ),
       bottomNavigationBar: _buildBottomActionBar(provider),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         physics: const BouncingScrollPhysics(),
         child: Form(
@@ -335,6 +337,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

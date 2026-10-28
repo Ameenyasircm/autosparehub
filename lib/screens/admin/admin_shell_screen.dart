@@ -123,12 +123,18 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
         }
       },
       child: Scaffold(
-        body: IndexedStack(
-          index: _currentIndex,
-          children: _screens,
+        body: SafeArea(
+          top: false,
+          child: IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
         ),
-      bottomNavigationBar: _buildBottomNav(context),
-    ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: _buildBottomNav(context),
+        ),
+      ),
   );
 }
 

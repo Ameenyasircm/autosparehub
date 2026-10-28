@@ -51,8 +51,9 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
+      builder: (ctx) => SafeArea(
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.85,
         decoration: const BoxDecoration(
           color: AppColors.backgroundLight,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -376,6 +377,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -454,7 +456,9 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
               ],
             )
           : null,
-      body: !auth.isSessionInitialized
+      body: SafeArea(
+        top: !widget.showAppBar,
+        child: !auth.isSessionInitialized
           ? const Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -606,6 +610,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                           },
                         ),
                 ),
+      ),
     );
   }
 

@@ -138,8 +138,10 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
         label: const Text('Add Admin', style: TextStyle(fontWeight: FontWeight.w800)),
         onPressed: () => _openAdminForm(),
       ),
-      body: Column(
-        children: [
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
           // Search & Filter Header
           Container(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -200,6 +202,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -96,12 +96,13 @@ class _AdminSplashScreenState extends State<AdminSplashScreen>
 
     return Scaffold(
       backgroundColor: AppColors.darkHeader,
-      body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: Container(
+      body: SafeArea(
+        child: Center(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: ScaleTransition(
+              scale: _scaleAnimation,
+              child: Container(
               width: logoSize,
               height: logoSize,
               decoration: BoxDecoration(
@@ -140,6 +141,7 @@ class _AdminSplashScreenState extends State<AdminSplashScreen>
           ),
         ),
       ),
+    ),
     );
   }
 }

@@ -124,8 +124,10 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
         label: const Text('Add Company', style: TextStyle(fontWeight: FontWeight.w800)),
         onPressed: () => _openCompanyForm(),
       ),
-      body: Column(
-        children: [
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
           // Search Bar
           Container(
             padding: const EdgeInsets.all(16),
@@ -160,6 +162,7 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

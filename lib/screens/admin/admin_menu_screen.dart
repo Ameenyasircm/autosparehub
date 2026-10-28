@@ -277,10 +277,12 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: _buildTopAppBar(context),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-        physics: const BouncingScrollPhysics(),
-        children: [
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+          physics: const BouncingScrollPhysics(),
+          children: [
           // Current Admin Profile Card
           _buildAdminProfileCard(currentAdmin),
 
@@ -441,6 +443,7 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
           ),
           const SizedBox(height: 20),
         ],
+      ),
       ),
     );
   }

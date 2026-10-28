@@ -282,8 +282,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
         label: const Text('Add Product', style: TextStyle(fontWeight: FontWeight.w800)),
         onPressed: () => _openProductForm(),
       ),
-      body: Column(
-        children: [
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
           // --- TOP SEARCH & HORIZONTAL FILTER STRIPS ---
           Container(
             color: AppColors.darkCharcoal,
@@ -458,6 +460,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

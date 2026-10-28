@@ -86,8 +86,9 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final price = widget.product.price ?? 0.0;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 20),
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -312,6 +313,7 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
           ),
         ],
       ),
+    ),
     );
   }
 }

@@ -149,7 +149,9 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         physics: const BouncingScrollPhysics(),
         child: Form(
@@ -421,6 +423,7 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

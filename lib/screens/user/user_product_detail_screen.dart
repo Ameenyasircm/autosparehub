@@ -82,20 +82,23 @@ class _UserProductDetailScreenState extends State<UserProductDetailScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.cardBorder, width: 1.2),
-          ),
-          padding: const EdgeInsets.all(20),
-          child: _ProductDetailContent(
-            product: widget.product,
-            quantity: _quantity,
-            onQuantityChanged: (q) => setState(() => _quantity = q),
-            onAdded: () => Navigator.of(context).pop(),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.cardBorder, width: 1.2),
+            ),
+            padding: const EdgeInsets.all(20),
+            child: _ProductDetailContent(
+              product: widget.product,
+              quantity: _quantity,
+              onQuantityChanged: (q) => setState(() => _quantity = q),
+              onAdded: () => Navigator.of(context).pop(),
+            ),
           ),
         ),
       ),
@@ -118,42 +121,44 @@ class _UserProductDetailSheetState extends State<UserProductDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.90,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag Handle bar
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 44,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+    return SafeArea(
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.90,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag Handle bar
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              physics: const BouncingScrollPhysics(),
-              child: _ProductDetailContent(
-                product: widget.product,
-                quantity: _quantity,
-                onQuantityChanged: (q) => setState(() => _quantity = q),
-                onAdded: () => Navigator.of(context).pop(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                physics: const BouncingScrollPhysics(),
+                child: _ProductDetailContent(
+                  product: widget.product,
+                  quantity: _quantity,
+                  onQuantityChanged: (q) => setState(() => _quantity = q),
+                  onAdded: () => Navigator.of(context).pop(),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

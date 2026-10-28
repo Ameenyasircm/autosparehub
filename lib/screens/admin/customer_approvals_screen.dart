@@ -259,40 +259,43 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
           ],
         ),
       ),
-      body: provider.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGold),
+      body: SafeArea(
+        top: false,
+        child: provider.isLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGold),
+                ),
+              )
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  // 1. Pending Tab
+                  _buildCustomerList(
+                    customers: pendingList,
+                    emptyMessage: 'No pending customer approval requests.',
+                    adminId: currentAdmin?.id,
+                    isPendingTab: true,
+                  ),
+
+                  // 2. Approved Tab
+                  _buildCustomerList(
+                    customers: approvedList,
+                    emptyMessage: 'No approved customers yet.',
+                    adminId: currentAdmin?.id,
+                    isPendingTab: false,
+                  ),
+
+                  // 3. Rejected Tab
+                  _buildCustomerList(
+                    customers: rejectedList,
+                    emptyMessage: 'No rejected requests.',
+                    adminId: currentAdmin?.id,
+                    isPendingTab: false,
+                  ),
+                ],
               ),
-            )
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                // 1. Pending Tab
-                _buildCustomerList(
-                  customers: pendingList,
-                  emptyMessage: 'No pending customer approval requests.',
-                  adminId: currentAdmin?.id,
-                  isPendingTab: true,
-                ),
-
-                // 2. Approved Tab
-                _buildCustomerList(
-                  customers: approvedList,
-                  emptyMessage: 'No approved customers yet.',
-                  adminId: currentAdmin?.id,
-                  isPendingTab: false,
-                ),
-
-                // 3. Rejected Tab
-                _buildCustomerList(
-                  customers: rejectedList,
-                  emptyMessage: 'No rejected requests.',
-                  adminId: currentAdmin?.id,
-                  isPendingTab: false,
-                ),
-              ],
-            ),
+      ),
     );
   }
 
