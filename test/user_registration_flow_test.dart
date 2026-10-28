@@ -19,6 +19,9 @@ void main() {
     testWidgets('renders Approval Pending alert with phone and Malayalam notice', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          theme: ThemeData(
+            splashFactory: InkRipple.splashFactory,
+          ),
           home: Builder(
             builder: (context) => Scaffold(
               body: ElevatedButton(
@@ -54,6 +57,9 @@ void main() {
     testWidgets('ApprovalPendingDialog formats 10 digit phone cleanly', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          theme: ThemeData(
+            splashFactory: InkRipple.splashFactory,
+          ),
           home: Builder(
             builder: (context) => Scaffold(
               body: ElevatedButton(
@@ -83,8 +89,9 @@ void main() {
             ChangeNotifierProvider<UserAuthProvider>(create: (_) => UserAuthProvider()),
             ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
           ],
-          child: const MaterialApp(
-            home: UserLoginScreen(),
+          child: MaterialApp(
+            theme: ThemeData(splashFactory: InkRipple.splashFactory),
+            home: const UserLoginScreen(),
           ),
         ),
       );
@@ -170,6 +177,7 @@ void main() {
             ChangeNotifierProvider<CartProvider>.value(value: cart),
           ],
           child: MaterialApp(
+            theme: ThemeData(splashFactory: InkRipple.splashFactory),
             home: OrderSuccessScreen(
               order: dummyOrder,
               fromCart: true,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:provider/provider.dart';
+import '../../models/category_model.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/category_provider.dart';
@@ -42,6 +43,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   final _searchController = TextEditingController();
   bool _isInitialLoading = true;
   bool _isCheckingApproval = false;
+  CategoryModel? _selectedCategory;
 
   @override
   void initState() {
@@ -178,6 +180,17 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+
+        // If user is inside a category view, back button returns to categories grid
+        if (_selectedCategory != null) {
+          setState(() {
+            _selectedCategory = null;
+            _searchController.clear();
+            context.read<ProductProvider>().setSelectedCategoryId('ALL');
+            context.read<ProductProvider>().setSearchQuery('');
+          });
+          return;
+        }
 
         // If user is on Orders or Profile tab, switch back to Home tab first
         if (_currentTabIndex != 0) {
@@ -375,19 +388,51 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   }
 
   // =========================================================================
-  // 2. STOREFRONT CATALOG TAB (MATCHING IMAGE 5)
+  // 2. STOREFRONT CATALOG TAB (CATEGORY-FIRST BROWSING)
   // =========================================================================
   Widget _buildStorefrontCatalogTab(BuildContext context) {
     final productProvider = context.watch<ProductProvider>();
     final companyProvider = context.watch<CompanyProvider>();
     final categoryProvider = context.watch<CategoryProvider>();
 
-    final bool showCompanyFilter = companyProvider.companies.length >= 2;
-    final products = productProvider.filteredProducts.where((p) => p.isActive).toList();
+    if (_isInitialLoading || categoryProvider.isLoading) {
+      return _buildLoadingState();
+    }
+
+    if (_selectedCategory == null) {
+      return _buildCategoriesView(context, categoryProvider, productProvider);
+    } else {
+      return _buildCategorySparesView(
+        context,
+        _selectedCategory!,
+        categoryProvider,
+        companyProvider,
+        productProvider,
+      );
+    }
+  }
+
+  // --- 2A. CATEGORIES BROWSING VIEW ---
+  Widget _buildCategoriesView(
+    BuildContext context,
+    CategoryProvider categoryProvider,
+    ProductProvider productProvider,
+  ) {
+    final activeCategories = categoryProvider.categories.where((c) => c.isActive).toList();
+    final query = _searchController.text.trim().toLowerCase();
+
+    final filteredCategories = query.isEmpty
+        ? activeCategories
+        : activeCategories.where((c) {
+            final nameMatch = c.name.toLowerCase().contains(query);
+            final descMatch = c.description?.toLowerCase().contains(query) ?? false;
+            return nameMatch || descMatch;
+          }).toList();
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // --- SEARCH BAR (MATCHING IMAGE 5) ---
+        // Search Bar for Categories
         Container(
           margin: const EdgeInsets.fromLTRB(16, 14, 16, 10),
           height: 48,
@@ -420,9 +465,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     color: AppColors.darkHeader,
                     fontWeight: FontWeight.w500,
                   ),
-                  onChanged: (val) => productProvider.setSearchQuery(val),
+                  onChanged: (val) {
+                    setState(() {});
+                  },
                   decoration: const InputDecoration(
-                    hintText: 'Search Spare',
+                    hintText: 'Search Categories...',
                     hintStyle: TextStyle(
                       color: Color(0xFF8C95A6),
                       fontSize: 14,
@@ -435,6 +482,386 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     disabledBorder: InputBorder.none,
                     focusedErrorBorder: InputBorder.none,
                     filled: false,
+                    fillColor: Colors.transparent,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+              if (_searchController.text.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.clear, color: Color(0xFF8C95A6), size: 18),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                ),
+            ],
+          ),
+        ),
+
+        // Section Title & Counter Row
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Spare Categories',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.darkHeader,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              Text(
+                '${filteredCategories.length} Categories',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Categories Grid
+        Expanded(
+          child: RefreshIndicator(
+            color: AppColors.warmGold,
+            backgroundColor: AppColors.darkHeader,
+            onRefresh: () async {
+              await Future.wait([
+                categoryProvider.fetchCategories(),
+                productProvider.fetchProducts(),
+              ]);
+            },
+            child: filteredCategories.isEmpty
+                ? _buildEmptyCategoriesState(query)
+                : GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.84,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: filteredCategories.length,
+                    itemBuilder: (context, index) {
+                      final category = filteredCategories[index];
+                      final spareCount = productProvider.products
+                          .where((p) => p.isActive && p.categoryId == category.id)
+                          .length;
+                      return _buildCategoryCard(
+                        context,
+                        category,
+                        spareCount,
+                        productProvider,
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- CATEGORY CARD ITEM ---
+  Widget _buildCategoryCard(
+    BuildContext context,
+    CategoryModel category,
+    int spareCount,
+    ProductProvider productProvider,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E9F0), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            setState(() {
+              _selectedCategory = category;
+              _searchController.clear();
+              productProvider.setSelectedCategoryId(category.id);
+              productProvider.setSearchQuery('');
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Category Image Frame
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F8FA),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: category.imageUrl.isNotEmpty
+                          ? Image.network(
+                              category.imageUrl,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => _buildCategoryFallbackIcon(),
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.warmGold,
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
+                          : _buildCategoryFallbackIcon(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Category Name
+                Text(
+                  category.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.darkHeader,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                // Spare Count and Forward Arrow
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '$spareCount ${spareCount == 1 ? 'Part' : 'Parts'}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: const BoxDecoration(
+                        color: AppColors.badgeGoldBg,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 10,
+                        color: AppColors.badgeGoldText,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- 2B. CATEGORY SPARES VIEW (LISTING ALL SPARES IN SELECTED CATEGORY) ---
+  Widget _buildCategorySparesView(
+    BuildContext context,
+    CategoryModel category,
+    CategoryProvider categoryProvider,
+    CompanyProvider companyProvider,
+    ProductProvider productProvider,
+  ) {
+    // Products belonging to this category
+    final categoryProducts = productProvider.products
+        .where((p) => p.isActive && p.categoryId == category.id)
+        .toList();
+
+    // Companies present within this category
+    final categoryCompanyIds = categoryProducts.map((p) => p.companyId).toSet();
+    final availableCompanies = companyProvider.companies
+        .where((c) => categoryCompanyIds.contains(c.id))
+        .toList();
+    final bool showCompanyFilter = availableCompanies.length >= 2;
+
+    // Filtered products for display
+    final displayedProducts = productProvider.filteredProducts
+        .where((p) => p.isActive && p.categoryId == category.id)
+        .toList();
+
+    return Column(
+      children: [
+        // Top Category Navigation Header
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Back Button to Categories
+              InkWell(
+                onTap: () => _onBackToCategories(productProvider),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.darkHeader,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.arrow_back_rounded, color: AppColors.warmGold, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        'Categories',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Category Title and Count
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      category.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.darkHeader,
+                      ),
+                    ),
+                    Text(
+                      '${categoryProducts.length} Parts Available',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Category Image Thumbnail
+              if (category.imageUrl.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    color: const Color(0xFFF1F5F9),
+                    child: Image.network(
+                      category.imageUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.category_outlined,
+                        size: 20,
+                        color: AppColors.warmGold,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        // Search Bar (Within Category)
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: const Color(0xFFDDE1E6), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 14),
+              const Icon(
+                Icons.search_rounded,
+                color: Color(0xFF8C95A6),
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.darkHeader,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  onChanged: (val) => productProvider.setSearchQuery(val),
+                  decoration: InputDecoration(
+                    hintText: 'Search in ${category.name}...',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF8C95A6),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    filled: false,
+                    fillColor: Colors.transparent,
                     isDense: true,
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -452,31 +879,37 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           ),
         ),
 
-        // --- CATEGORY PILLS STRIP (MATCHING IMAGE 5) ---
+        // Quick Category Jump Bar
         SizedBox(
-          height: 36,
+          height: 34,
           child: ListView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
-              _buildCategoryPill(
-                label: 'All Categories',
-                isSelected: productProvider.selectedCategoryId == 'ALL',
-                onTap: () => productProvider.setSelectedCategoryId('ALL'),
-              ),
-              ...categoryProvider.categories.map((cat) {
+              ...categoryProvider.categories.where((c) => c.isActive).map((cat) {
+                final isSelected = cat.id == category.id;
                 return _buildCategoryPill(
                   label: cat.name,
-                  isSelected: productProvider.selectedCategoryId == cat.id,
-                  onTap: () => productProvider.setSelectedCategoryId(cat.id),
+                  isSelected: isSelected,
+                  onTap: () {
+                    if (!isSelected) {
+                      setState(() {
+                        _selectedCategory = cat;
+                        _searchController.clear();
+                        productProvider.setSelectedCategoryId(cat.id);
+                        productProvider.setSearchQuery('');
+                      });
+                    }
+                  },
+                  isCompact: true,
                 );
               }),
             ],
           ),
         ),
 
-        // --- CONDITIONAL COMPANY FILTER STRIP (IF >= 2 COMPANIES) ---
+        // Conditional Company Filter Strip (if >= 2 companies in this category)
         if (showCompanyFilter) ...[
           const SizedBox(height: 8),
           SizedBox(
@@ -492,7 +925,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   onTap: () => productProvider.setSelectedCompanyId('ALL'),
                   isCompact: true,
                 ),
-                ...companyProvider.companies.map((comp) {
+                ...availableCompanies.map((comp) {
                   return _buildCategoryPill(
                     label: comp.name,
                     isSelected: productProvider.selectedCompanyId == comp.id,
@@ -505,14 +938,14 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           ),
         ],
 
-        // --- FILTER STATUS ROW ---
+        // Filter Status Row
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${products.length} Parts Available',
+                '${displayedProducts.length} Parts in ${category.name}',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -520,12 +953,12 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 ),
               ),
               if (productProvider.selectedCompanyId != 'ALL' ||
-                  productProvider.selectedCategoryId != 'ALL' ||
                   productProvider.searchQuery.isNotEmpty)
                 GestureDetector(
                   onTap: () {
                     _searchController.clear();
                     productProvider.clearFilters();
+                    productProvider.setSelectedCategoryId(category.id);
                   },
                   child: const Text(
                     'Clear Filters ×',
@@ -540,16 +973,14 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           ),
         ),
 
-        // --- 2-COLUMN STOREFRONT PRODUCT GRID (MATCHING IMAGE 5) ---
+        // 2-Column Product Grid
         Expanded(
           child: RefreshIndicator(
             color: AppColors.warmGold,
             backgroundColor: AppColors.darkHeader,
             onRefresh: () => productProvider.fetchProducts(),
-            child: (_isInitialLoading || productProvider.isLoading)
-                ? _buildLoadingState()
-                : products.isEmpty
-                    ? _buildEmptyState(productProvider)
+            child: displayedProducts.isEmpty
+                ? _buildEmptyCategorySparesState(category, productProvider)
                 : GridView.builder(
                     padding: const EdgeInsets.fromLTRB(14, 4, 14, 16),
                     physics: const AlwaysScrollableScrollPhysics(
@@ -561,14 +992,137 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                     ),
-                    itemCount: products.length,
+                    itemCount: displayedProducts.length,
                     itemBuilder: (context, index) {
-                      return _buildProductCard(context, products[index]);
+                      return _buildProductCard(context, displayedProducts[index]);
                     },
                   ),
           ),
         ),
       ],
+    );
+  }
+
+  void _onBackToCategories(ProductProvider productProvider) {
+    setState(() {
+      _selectedCategory = null;
+      _searchController.clear();
+      productProvider.setSelectedCategoryId('ALL');
+      productProvider.setSearchQuery('');
+    });
+  }
+
+  Widget _buildCategoryFallbackIcon() {
+    return Container(
+      color: const Color(0xFFF7F8FA),
+      child: const Center(
+        child: Icon(
+          Icons.category_outlined,
+          color: AppColors.warmGold,
+          size: 38,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyCategoriesState(String query) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.category_outlined, size: 52, color: Colors.grey),
+            const SizedBox(height: 14),
+            Text(
+              query.isNotEmpty ? 'No Matching Categories' : 'No Categories Found',
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              query.isNotEmpty
+                  ? 'No categories match "$query". Try searching with another keyword.'
+                  : 'Spare parts categories will appear here once added.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+            if (query.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.darkCharcoal,
+                  side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
+                ),
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {});
+                },
+                child: const Text('Clear Search'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyCategorySparesState(CategoryModel category, ProductProvider provider) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.search_off_rounded, size: 52, color: Colors.grey),
+            const SizedBox(height: 14),
+            Text(
+              provider.searchQuery.isNotEmpty
+                  ? 'No Matching Spares'
+                  : 'No Spares in ${category.name}',
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              provider.searchQuery.isNotEmpty
+                  ? 'No parts in "${category.name}" match "${provider.searchQuery}".'
+                  : 'Parts in this category will be available soon.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (provider.searchQuery.isNotEmpty || provider.selectedCompanyId != 'ALL') ...[
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.darkCharcoal,
+                      side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
+                    ),
+                    onPressed: () {
+                      _searchController.clear();
+                      provider.clearFilters();
+                      provider.setSelectedCategoryId(category.id);
+                    },
+                    child: const Text('Reset Filters'),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.darkButton,
+                    foregroundColor: AppColors.warmGold,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () => _onBackToCategories(provider),
+                  child: const Text('All Categories'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -809,43 +1363,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     );
   }
 
-  // --- EMPTY CATALOG STATE ---
-  Widget _buildEmptyState(ProductProvider provider) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.search_off_rounded, size: 52, color: Colors.grey),
-            const SizedBox(height: 14),
-            const Text(
-              'No Matching Spare Parts',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Try searching with another keyword or reset your filters.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.darkCharcoal,
-                side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
-              ),
-              onPressed: () {
-                _searchController.clear();
-                provider.clearFilters();
-              },
-              child: const Text('Reset All Filters'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Future<void> _handleCheckApprovalStatus(UserAuthProvider auth) async {
     if (_isCheckingApproval) return;
@@ -1384,6 +1902,15 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
     return InkWell(
       onTap: () {
+        if (_currentTabIndex == index && index == 0 && _selectedCategory != null) {
+          setState(() {
+            _selectedCategory = null;
+            _searchController.clear();
+            context.read<ProductProvider>().setSelectedCategoryId('ALL');
+            context.read<ProductProvider>().setSearchQuery('');
+          });
+          return;
+        }
         setState(() => _currentTabIndex = index);
         if (index == 1) {
           final auth = context.read<UserAuthProvider>();
