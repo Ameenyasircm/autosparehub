@@ -6,6 +6,7 @@ import '../../providers/order_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
 import 'order_success_screen.dart';
+import 'user_home_screen.dart';
 import 'user_login_screen.dart';
 import 'user_orders_screen.dart';
 
@@ -23,11 +24,37 @@ class CartScreen extends StatefulWidget {
   State<CartScreen> createState() => _CartScreenState();
 }
 
-class _CartScreenState extends State<CartScreen> {
+class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateMixin {
   final _noteController = TextEditingController();
+  late final AnimationController _animController;
+  late final Animation<double> _floatingAnim;
+  late final Animation<double> _pulseScale;
+  late final Animation<double> _pulseOpacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+
+    _floatingAnim = Tween<double>(begin: -7.0, end: 7.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeInOutCubic),
+    );
+
+    _pulseScale = Tween<double>(begin: 0.94, end: 1.06).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeInOutCubic),
+    );
+
+    _pulseOpacity = Tween<double>(begin: 0.35, end: 0.85).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeInOutCubic),
+    );
+  }
 
   @override
   void dispose() {
+    _animController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -476,51 +503,210 @@ class _CartScreenState extends State<CartScreen> {
 
   Widget _buildEmptyCart(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: AppColors.primaryGold.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.shopping_cart_outlined,
-                size: 56,
-                color: AppColors.primaryGold,
-              ),
+            // Animated Pulsing Halo & Floating Cart Illustration
+            AnimatedBuilder(
+              animation: _animController,
+              builder: (context, child) {
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Outer pulsating warm halo ring
+                    Transform.scale(
+                      scale: _pulseScale.value,
+                      child: Container(
+                        width: 136,
+                        height: 136,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.warmGold.withValues(alpha: 0.08 * _pulseOpacity.value),
+                          border: Border.all(
+                            color: AppColors.warmGold.withValues(alpha: 0.28 * _pulseOpacity.value),
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Deep Slate Obsidian container with elevation shadow
+                    Container(
+                      width: 98,
+                      height: 98,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.darkHeader,
+                            Color(0xFF282E3A),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.darkHeader.withValues(alpha: 0.25),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Floating cart icon with mini badge
+                    Transform.translate(
+                      offset: Offset(0, _floatingAnim.value),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          const Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 48,
+                            color: AppColors.warmGold,
+                          ),
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Container(
+                              padding: const EdgeInsets.all(3.5),
+                              decoration: BoxDecoration(
+                                color: AppColors.warmGold,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.darkHeader, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.add_rounded,
+                                size: 12,
+                                color: AppColors.darkHeader,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-            const SizedBox(height: 18),
+
+            const SizedBox(height: 22),
+
+            // Clear, Understandable Headline
             const Text(
               'Your Cart is Empty',
               style: TextStyle(
-                fontSize: 19,
+                fontSize: 21,
                 fontWeight: FontWeight.w800,
                 color: AppColors.darkCharcoal,
+                letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
+
+            // Plain, helpful garage explanation
             const Text(
-              'Browse genuine spare parts and submit your request directly to the supplier.',
+              'No spare parts have been added to your order list yet.\nBrowse our catalog to select parts for your garage or vehicle.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.darkButton,
-                foregroundColor: AppColors.warmGold,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              style: TextStyle(
+                color: AppColors.secondaryText,
+                fontSize: 13.5,
+                height: 1.45,
+                fontWeight: FontWeight.w400,
               ),
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Browse Spare Parts', style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+
+            const SizedBox(height: 22),
+
+
+
+            // Browse Spare Parts Action Button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.darkButton,
+                  foregroundColor: AppColors.warmGold,
+                  elevation: 2,
+                  shadowColor: AppColors.darkButton.withValues(alpha: 0.3),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const UserHomeScreen()),
+                    );
+
+                },
+                // icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                label: const Text(
+                  'Browse Spare Parts',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildEmptyGuideRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: AppColors.badgeGoldBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.badgeGoldBorder.withValues(alpha: 0.4), width: 1),
+          ),
+          child: Icon(icon, size: 17, color: AppColors.badgeGoldText),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.darkCharcoal,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

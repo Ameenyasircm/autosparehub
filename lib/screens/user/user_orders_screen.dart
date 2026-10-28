@@ -497,7 +497,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                         ),
                         const SizedBox(height: 18),
                         const Text(
-                          'Sign In to View Orders',
+                          'View Your Orders',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -506,7 +506,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Log in with your garage mobile number and password to track orders, status updates, and view delivery remarks.',
+                          'Log in to check your orders, track their status, and read delivery updates.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 13,
@@ -534,11 +534,16 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                               );
                             },
                             child: const Text(
-                              'Login to Garage Account',
-                              style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800),
+                              'Login to View Orders',
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ),
+                        const SizedBox(height: 22),
+
                       ],
                     ),
                   ),
