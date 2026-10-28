@@ -207,75 +207,40 @@ class _ContactUsSheetState extends State<ContactUsSheet> {
             ),
           ),
 
-          const SizedBox(height: 20),
-
-          // --- ACTION BUTTON 1: DIRECT PHONE CALL ---
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.darkButton,
-                foregroundColor: AppColors.warmGold,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              onPressed: () {
-                _contactService.launchPhoneCall(_phoneNumber);
-              },
-              icon: const Icon(Icons.phone_in_talk_rounded, color: AppColors.warmGold, size: 20),
-              label: const Text(
-                'Direct Phone Call',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.warmGold,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // --- ACTION BUTTON 2: WHATSAPP CHAT INTENT ---
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF25D366),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              onPressed: () {
-                _contactService.launchWhatsApp(
-                  _phoneNumber,
-                  'Hello SN Auto Spare Hub, I have an inquiry about automotive spare parts.',
-                );
-              },
-              icon: Image.asset(
-                'assets/member_whats_app.png',
-                width: 22,
-                height: 22,
-                fit: BoxFit.contain,
-              ),
-              label: const Text(
-                'Chat on WhatsApp',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-
           const SizedBox(height: 14),
+
+          // Simple Action Buttons: Call & WhatsApp
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
+                  icon: const Icon(Icons.phone_in_talk_rounded, size: 16, color: AppColors.darkCharcoal),
+                  label: 'Call',
+                  onTap: () => _contactService.launchPhoneCall(_phoneNumber),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildActionButton(
+                  icon: Image.asset(
+                    'assets/member_whats_app.png',
+                    width: 16,
+                    height: 16,
+                    fit: BoxFit.contain,
+                  ),
+                  label: 'WhatsApp',
+                  onTap: () {
+                    _contactService.launchWhatsApp(
+                      _phoneNumber,
+                      'Hello SN Auto Spare Hub, I have an inquiry about automotive spare parts.',
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
 
           // Store Hours Note
           Row(
@@ -291,6 +256,43 @@ class _ContactUsSheetState extends State<ContactUsSheet> {
           ),
         ],
       ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required Widget icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: 44,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.borderLight, width: 1.1),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              icon,
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.darkCharcoal,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
