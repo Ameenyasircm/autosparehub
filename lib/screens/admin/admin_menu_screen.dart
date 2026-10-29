@@ -259,7 +259,7 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.warmGold),
                       )
-                    : const Text('Save Number', style: TextStyle(fontWeight: FontWeight.w800)),
+                    : const Text('Change & Save', style: TextStyle(fontWeight: FontWeight.w800)),
               ),
             ],
           );
