@@ -330,7 +330,7 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final customer = customers[index];
-        return _buildCard(customer, adminId, isPendingTab);
+        return _buildCard(customer, adminId, isPendingTab, index + 1);
       },
     );
   }
@@ -345,7 +345,7 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
     return '${dt.day} $month, $hour:$minute $ampm';
   }
 
-  Widget _buildCard(CustomerModel customer, String? adminId, bool isPendingTab) {
+  Widget _buildCard(CustomerModel customer, String? adminId, bool isPendingTab, int serialNumber) {
     Color badgeColor;
     Color badgeBg;
     if (customer.isApproved) {
@@ -406,15 +406,37 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      customer.name,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.darkCharcoal,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          margin: const EdgeInsets.only(right: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.darkCharcoal.withValues(alpha: 0.07),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '#$serialNumber',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.darkCharcoal,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            customer.name,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.darkCharcoal,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     InkWell(
