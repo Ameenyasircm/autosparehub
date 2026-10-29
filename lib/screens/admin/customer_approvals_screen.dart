@@ -5,6 +5,7 @@ import '../../models/customer_model.dart';
 import '../../providers/admin_login_provider.dart';
 import '../../providers/customer_management_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../services/contact_service.dart';
 import '../../utils/phone_helper.dart';
 
 /// Screen for administrators to review, approve, and reject customer account requests.
@@ -19,6 +20,7 @@ class CustomerApprovalsScreen extends StatefulWidget {
 class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final _contactService = ContactService();
 
   @override
   void initState() {
@@ -322,15 +324,25 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       physics: const BouncingScrollPhysics(),
       itemCount: customers.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final customer = customers[index];
         return _buildCard(customer, adminId, isPendingTab);
       },
     );
+  }
+
+  String _formatDate(DateTime? dt) {
+    if (dt == null) return '--';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final month = months[dt.month - 1];
+    final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    return '${dt.day} $month, $hour:$minute $ampm';
   }
 
   Widget _buildCard(CustomerModel customer, String? adminId, bool isPendingTab) {
@@ -347,222 +359,375 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
       badgeBg = Colors.amber.shade50;
     }
 
-    final requestedDate = customer.requestedAt;
-    final dateStr = requestedDate != null
-        ? '${requestedDate.day}/${requestedDate.month}/${requestedDate.year} at ${requestedDate.hour.toString().padLeft(2, '0')}:${requestedDate.minute.toString().padLeft(2, '0')}'
-        : '--';
+    final dateStr = _formatDate(customer.requestedAt);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderSoft),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 6,
+            offset: const Offset(0, 1.5),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // Header Row: Avatar, Name & Phone & Date, Status Badge & Call/WhatsApp
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.primaryGold.withValues(alpha: 0.2),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGold.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                alignment: Alignment.center,
                 child: Text(
                   customer.name.isNotEmpty ? customer.name[0].toUpperCase() : 'U',
                   style: const TextStyle(
                     color: AppColors.darkCharcoal,
                     fontWeight: FontWeight.w800,
+                    fontSize: 16,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            customer.name,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.darkCharcoal,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: badgeBg,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
-                          ),
-                          child: Text(
-                            customer.status,
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              color: badgeColor,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      customer.name,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.darkCharcoal,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(Icons.phone_outlined, size: 13, color: AppColors.secondaryText),
-                        const SizedBox(width: 4),
-                        Text(
-                          PhoneHelper.formatForDisplay(customer.phone),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.secondaryText,
-                            fontWeight: FontWeight.w600,
+                    InkWell(
+                      borderRadius: BorderRadius.circular(4),
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: customer.phone));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Copied ${customer.phone} to clipboard'),
+                            duration: const Duration(seconds: 1),
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.copy_rounded, size: 14, color: AppColors.primaryGold),
-                          tooltip: 'Copy Phone',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: customer.phone));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Copied ${customer.phone} to clipboard'),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 4),
-                        IconButton(
-                          icon: const Icon(Icons.lock_reset_rounded, size: 16, color: AppColors.secondaryGold),
-                          tooltip: 'Change Password',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () => _showChangePasswordDialog(context, customer),
-                        ),
-                      ],
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.phone_outlined, size: 12, color: AppColors.secondaryText),
+                          const SizedBox(width: 3),
+                          Text(
+                            PhoneHelper.formatForDisplay(customer.phone),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.secondaryText,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.copy_rounded, size: 11, color: AppColors.primaryGold),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Requested: $dateStr',
+                      dateStr,
                       style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: badgeBg,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: badgeColor.withValues(alpha: 0.25)),
+                    ),
+                    child: Text(
+                      customer.status,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: badgeColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Tooltip(
+                        message: 'Call ${customer.name}',
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(6),
+                          onTap: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final ok = await _contactService.launchPhoneCall(customer.phone);
+                            if (!ok && mounted) {
+                              messenger.showSnackBar(
+                                const SnackBar(content: Text('Could not open phone dialer')),
+                              );
+                            }
+                          },
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: AppColors.darkCharcoal.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: AppColors.borderSoft, width: 0.8),
+                            ),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.phone_in_talk_rounded,
+                              size: 14,
+                              color: AppColors.darkCharcoal,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Tooltip(
+                        message: 'WhatsApp ${customer.name}',
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(6),
+                          onTap: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final ok = await _contactService.launchWhatsApp(
+                              customer.phone,
+                              'Hello ${customer.name}, contacting you regarding your Auto Spare Hub account.',
+                            );
+                            if (!ok && mounted) {
+                              messenger.showSnackBar(
+                                const SnackBar(content: Text('Could not open WhatsApp')),
+                              );
+                            }
+                          },
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF25D366).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFF25D366).withValues(alpha: 0.3), width: 0.8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Image.asset(
+                              'assets/member_whats_app.png',
+                              width: 15,
+                              height: 15,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ],
           ),
 
+          // Rejection reason snippet if rejected
           if (customer.rejectionReason != null && customer.rejectionReason!.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.all(8),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.shade200),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.red.shade100),
               ),
               child: Text(
-                'Rejection Reason: ${customer.rejectionReason}',
-                style: const TextStyle(color: AppColors.error, fontSize: 11.5),
+                'Reason: ${customer.rejectionReason}',
+                style: const TextStyle(color: AppColors.error, fontSize: 11, fontWeight: FontWeight.w500),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
 
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: AppColors.dividerLight),
           const SizedBox(height: 10),
+          const Divider(height: 1, color: AppColors.dividerLight),
+          const SizedBox(height: 8),
 
-          // Action Buttons Bar (Always shows Change Password, plus status-specific actions)
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.end,
-            children: [
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.darkCharcoal,
-                  side: const BorderSide(color: AppColors.borderSoft),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                onPressed: () => _showChangePasswordDialog(context, customer),
-                icon: const Icon(Icons.lock_reset_rounded, size: 16, color: AppColors.primaryGold),
-                label: const Text('Change Password', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-              ),
-
-              if (isPendingTab) ...[
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () => _showRejectDialog(context, customer),
-                  icon: const Icon(Icons.close_rounded, size: 16),
-                  label: const Text('Reject', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () async {
-                    final provider = context.read<CustomerManagementProvider>();
-                    final messenger = ScaffoldMessenger.of(context);
-                    final ok = await provider.approveCustomer(customer.id, adminId: adminId);
-                    if (mounted && ok) {
-                      messenger.showSnackBar(
-                        SnackBar(content: Text('Approved ${customer.name}! They can now place orders.')),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.check_rounded, size: 16),
-                  label: const Text('Approve Account', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
-              ] else if (customer.isRejected) ...[
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.success,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () async {
-                    final provider = context.read<CustomerManagementProvider>();
-                    final messenger = ScaffoldMessenger.of(context);
-                    final ok = await provider.approveCustomer(customer.id, adminId: adminId);
-                    if (mounted && ok) {
-                      messenger.showSnackBar(
-                        SnackBar(content: Text('Re-approved ${customer.name}!')),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.check_rounded, size: 16),
-                  label: const Text('Approve', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                ),
-              ],
-            ],
-          ),
+          // Action row
+          _buildActionRow(context, customer, adminId, isPendingTab),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionRow(BuildContext context, CustomerModel customer, String? adminId, bool isPendingTab) {
+    if (isPendingTab) {
+      return Row(
+        children: [
+          SizedBox(
+            height: 28,
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.darkCharcoal,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                visualDensity: VisualDensity.compact,
+              ),
+              onPressed: () => _showChangePasswordDialog(context, customer),
+              icon: const Icon(Icons.lock_reset_rounded, size: 15, color: AppColors.primaryGold),
+              label: const Text('Password', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const Spacer(),
+          SizedBox(
+            height: 28,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: BorderSide(color: AppColors.error.withValues(alpha: 0.35)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                visualDensity: VisualDensity.compact,
+              ),
+              onPressed: () => _showRejectDialog(context, customer),
+              child: const Text('Reject', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 28,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                visualDensity: VisualDensity.compact,
+              ),
+              onPressed: () async {
+                final provider = context.read<CustomerManagementProvider>();
+                final messenger = ScaffoldMessenger.of(context);
+                final ok = await provider.approveCustomer(customer.id, adminId: adminId);
+                if (mounted && ok) {
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('Approved ${customer.name}!')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.check_rounded, size: 14),
+              label: const Text('Approve', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (customer.isApproved) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          SizedBox(
+            height: 28,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.darkCharcoal,
+                side: const BorderSide(color: AppColors.borderSoft),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                visualDensity: VisualDensity.compact,
+              ),
+              onPressed: () => _showChangePasswordDialog(context, customer),
+              icon: const Icon(Icons.lock_reset_rounded, size: 14, color: AppColors.primaryGold),
+              label: const Text('Change Password', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 28,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: BorderSide(color: AppColors.error.withValues(alpha: 0.35)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                visualDensity: VisualDensity.compact,
+              ),
+              onPressed: () => _showRejectDialog(context, customer),
+              icon: const Icon(Icons.block_rounded, size: 13),
+              label: const Text('Revoke', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Rejected Tab
+    return Row(
+      children: [
+        SizedBox(
+          height: 28,
+          child: TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.darkCharcoal,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              visualDensity: VisualDensity.compact,
+            ),
+            onPressed: () => _showChangePasswordDialog(context, customer),
+            icon: const Icon(Icons.lock_reset_rounded, size: 15, color: AppColors.primaryGold),
+            label: const Text('Password', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+          ),
+        ),
+        const Spacer(),
+        SizedBox(
+          height: 28,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              visualDensity: VisualDensity.compact,
+            ),
+            onPressed: () async {
+              final provider = context.read<CustomerManagementProvider>();
+              final messenger = ScaffoldMessenger.of(context);
+              final ok = await provider.approveCustomer(customer.id, adminId: adminId);
+              if (mounted && ok) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Re-approved ${customer.name}!')),
+                );
+              }
+            },
+            icon: const Icon(Icons.check_rounded, size: 14),
+            label: const Text('Re-Approve', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+          ),
+        ),
+      ],
     );
   }
 }
