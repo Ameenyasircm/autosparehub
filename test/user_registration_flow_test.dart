@@ -16,7 +16,9 @@ void main() {
   });
 
   group('ApprovalPendingDialog Tests', () {
-    testWidgets('renders Approval Pending alert with phone and Malayalam notice', (tester) async {
+    testWidgets(
+        'renders Approval Pending alert with phone and Malayalam notice',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData(
@@ -41,8 +43,12 @@ void main() {
 
       expect(find.text('Approval Pending'), findsOneWidget);
       expect(find.text('Your Mobile: +91 9876543210'), findsOneWidget);
-      expect(find.textContaining('waiting for administrator authorization'), findsOneWidget);
-      expect(find.textContaining('നിങ്ങളുടെ രജിസ്ട്രേഷൻ അഡ്മിൻ പരിശോധിച്ചുകൊണ്ടിരിക്കുകയാണ്'), findsOneWidget);
+      expect(find.textContaining('waiting for administrator authorization'),
+          findsOneWidget);
+      expect(
+          find.textContaining(
+              'നിങ്ങളുടെ രജിസ്ട്രേഷൻ അഡ്മിൻ പരിശോധിച്ചുകൊണ്ടിരിക്കുകയാണ്'),
+          findsOneWidget);
       expect(find.text('Admin Helpline'), findsOneWidget);
       expect(find.text('Call'), findsOneWidget);
       expect(find.text('WhatsApp'), findsOneWidget);
@@ -54,7 +60,8 @@ void main() {
       expect(find.text('Approval Pending'), findsNothing);
     });
 
-    testWidgets('ApprovalPendingDialog formats 10 digit phone cleanly', (tester) async {
+    testWidgets('ApprovalPendingDialog formats 10 digit phone cleanly',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData(
@@ -82,11 +89,13 @@ void main() {
   });
 
   group('UserLoginScreen Form Switching Tests', () {
-    testWidgets('switches to register mode when Register button is pressed', (tester) async {
+    testWidgets('switches to register mode when Register button is pressed',
+        (tester) async {
       await tester.pumpWidget(
         MultiProvider(
           providers: [
-            ChangeNotifierProvider<UserAuthProvider>(create: (_) => UserAuthProvider()),
+            ChangeNotifierProvider<UserAuthProvider>(
+                create: (_) => UserAuthProvider()),
             ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
           ],
           child: MaterialApp(
@@ -97,7 +106,8 @@ void main() {
       );
 
       // Verify initially in login mode
-      final crossFadeBefore = tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
+      final crossFadeBefore =
+          tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
       expect(crossFadeBefore.crossFadeState, CrossFadeState.showFirst);
 
       // Tap Register button
@@ -108,15 +118,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // Now on registration mode
-      final crossFadeAfter = tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
+      final crossFadeAfter =
+          tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
       expect(crossFadeAfter.crossFadeState, CrossFadeState.showSecond);
     });
 
-    testWidgets('starts in registration mode when initialIsRegister is true', (tester) async {
+    testWidgets('starts in registration mode when initialIsRegister is true',
+        (tester) async {
       await tester.pumpWidget(
         MultiProvider(
           providers: [
-            ChangeNotifierProvider<UserAuthProvider>(create: (_) => UserAuthProvider()),
+            ChangeNotifierProvider<UserAuthProvider>(
+                create: (_) => UserAuthProvider()),
             ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
           ],
           child: const MaterialApp(
@@ -125,13 +138,16 @@ void main() {
         ),
       );
 
-      final crossFade = tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
+      final crossFade =
+          tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
       expect(crossFade.crossFadeState, CrossFadeState.showSecond);
     });
   });
 
   group('OrderSuccessScreen Cart Clear Tests', () {
-    testWidgets('clears cart when navigating from OrderSuccessScreen with fromCart: true', (tester) async {
+    testWidgets(
+        'clears cart when navigating from OrderSuccessScreen with fromCart: true',
+        (tester) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
