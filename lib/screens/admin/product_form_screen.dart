@@ -40,7 +40,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   String? _selectedCompanyName;
   String? _selectedCategoryId;
   String? _selectedCategoryName;
-  String? _selectedRotation;
+  // String? _selectedRotation; // Skipped with technical specs
 
   File? _pickedImageFile;
   String? _existingImageUrl;
@@ -48,11 +48,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   final ImagePicker _picker = ImagePicker();
 
+  /*
   static const List<String> _rotationOptions = [
     'Right (Clockwise)',
     'Left (Counter-Clockwise)',
     'Bi-directional / Reversible',
   ];
+  */
 
   @override
   void initState() {
@@ -75,7 +77,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _selectedCompanyName = p?.companyName;
     _selectedCategoryId = p?.categoryId;
     _selectedCategoryName = p?.categoryName;
-    _selectedRotation = p?.rotation;
+    // _selectedRotation = p?.rotation;
 
     _existingImageUrl = p?.imageUrl;
     _isActive = p?.isActive ?? true;
@@ -193,13 +195,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         categoryName: _selectedCategoryName ?? '',
         application: _applicationController.text.trim(),
         description: _descriptionController.text.trim(),
-        refNo: _refNoController.text.trim(),
-        displacement: _displacementController.text.trim(),
-        maxPressure: _maxPressureController.text.trim(),
-        controlledFlow: _controlledFlowController.text.trim(),
-        speedRange: _speedRangeController.text.trim(),
-        rotation: _selectedRotation,
-        fuelFeedHole: _fuelFeedHoleController.text.trim(),
+        // Technical specs skipped / commented out - retain existing values if editing
+        refNo: widget.productToEdit?.refNo,
+        displacement: widget.productToEdit?.displacement,
+        maxPressure: widget.productToEdit?.maxPressure,
+        controlledFlow: widget.productToEdit?.controlledFlow,
+        speedRange: widget.productToEdit?.speedRange,
+        rotation: widget.productToEdit?.rotation,
+        fuelFeedHole: widget.productToEdit?.fuelFeedHole,
         price: price,
         stockQuantity: stock,
         isActive: _isActive,
@@ -214,13 +217,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         categoryName: _selectedCategoryName ?? '',
         application: _applicationController.text.trim(),
         description: _descriptionController.text.trim(),
-        refNo: _refNoController.text.trim(),
-        displacement: _displacementController.text.trim(),
-        maxPressure: _maxPressureController.text.trim(),
-        controlledFlow: _controlledFlowController.text.trim(),
-        speedRange: _speedRangeController.text.trim(),
-        rotation: _selectedRotation,
-        fuelFeedHole: _fuelFeedHoleController.text.trim(),
+        // Technical specs skipped - pass null
+        refNo: null,
+        displacement: null,
+        maxPressure: null,
+        controlledFlow: null,
+        speedRange: null,
+        rotation: null,
+        fuelFeedHole: null,
         price: price,
         stockQuantity: stock,
         isActive: _isActive,
@@ -316,21 +320,20 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
               const SizedBox(height: 20),
 
-              // --- 5. TECHNICAL SPECIFICATIONS (OEM) ---
-              _buildSectionHeader('Technical Specifications', Icons.tune_outlined, isMandatory: false),
-              const SizedBox(height: 10),
-              _buildTechnicalSpecsCard(provider),
-
-              const SizedBox(height: 20),
-
-              // --- 6. DESCRIPTION & REVIEWS ---
-              _buildSectionHeader('Description & Review Notes', Icons.notes_rounded, isMandatory: false),
+              // --- 5. DESCRIPTION (OPTIONAL) ---
+              _buildSectionHeader('Description (Optional)', Icons.notes_rounded, isMandatory: false),
               const SizedBox(height: 10),
               _buildDescriptionCard(provider),
 
               const SizedBox(height: 20),
 
-              // --- 7. CATALOG VISIBILITY TOGGLE ---
+              // --- TECHNICAL SPECIFICATIONS (SKIPPED FOR NOW AS PER REQUIREMENT) ---
+              // _buildSectionHeader('Technical Specifications', Icons.tune_outlined, isMandatory: false),
+              // const SizedBox(height: 10),
+              // _buildTechnicalSpecsCard(provider),
+              // const SizedBox(height: 20),
+
+              // --- 6. CATALOG VISIBILITY TOGGLE ---
               _buildPublishingStatusCard(provider),
 
               const SizedBox(height: 32),
@@ -783,7 +786,35 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
   }
 
-  // --- 5. TECHNICAL SPECIFICATIONS CARD ---
+  // --- 5. DESCRIPTION CARD ---
+  Widget _buildDescriptionCard(ProductProvider provider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildFieldLabel('Product Description / Notes (Optional)'),
+          TextFormField(
+            controller: _descriptionController,
+            maxLines: 4,
+            enabled: !provider.isSaving,
+            decoration: const InputDecoration(
+              hintText: 'Enter part description, details, warranty, or notes...',
+              prefixIcon: Icon(Icons.notes_rounded),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /*
+  // --- TECHNICAL SPECIFICATIONS CARD (SKIPPED FOR NOW AS PER REQUIREMENT) ---
   Widget _buildTechnicalSpecsCard(ProductProvider provider) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -926,33 +957,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       ),
     );
   }
-
-  // --- 6. DESCRIPTION & REVIEW NOTES CARD ---
-  Widget _buildDescriptionCard(ProductProvider provider) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildFieldLabel('Detailed Description, Material Grade & Notes (Optional)'),
-          TextFormField(
-            controller: _descriptionController,
-            maxLines: 3,
-            enabled: !provider.isSaving,
-            decoration: const InputDecoration(
-              hintText: 'e.g. OEM grade alloy casting, 1-year warranty, includes mounting O-rings...',
-              prefixIcon: Icon(Icons.notes_rounded),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  */
 
   // --- 7. CATALOG PUBLISHING STATUS TOGGLE ---
   Widget _buildPublishingStatusCard(ProductProvider provider) {

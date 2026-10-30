@@ -242,14 +242,14 @@ class _ProductDetailContent extends StatelessWidget {
         ),
         const SizedBox(height: 4),
 
-        // Part No
-        Text(
-          product.refNo != null && product.refNo!.isNotEmpty
-              ? 'Part No. ${product.refNo}'
-              : 'Part No. N/A',
-          style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
-        ),
-        const SizedBox(height: 2),
+        // Part No (if available)
+        if (product.refNo != null && product.refNo!.trim().isNotEmpty) ...[
+          Text(
+            'Part No. ${product.refNo}',
+            style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
+          ),
+          const SizedBox(height: 2),
+        ],
 
         // Brand
         Text(
@@ -281,12 +281,6 @@ class _ProductDetailContent extends StatelessWidget {
         _buildSpecRow(
           'Vehicle compatibility',
           product.application.isNotEmpty ? product.application : 'See compatible models',
-        ),
-        _buildSpecRow(
-          'Material',
-          product.displacement != null && product.displacement!.isNotEmpty
-              ? product.displacement!
-              : 'As specified by supplier',
         ),
 
         const SizedBox(height: 18),

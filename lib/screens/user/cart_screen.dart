@@ -9,6 +9,7 @@ import 'order_success_screen.dart';
 import 'user_home_screen.dart';
 import 'user_login_screen.dart';
 import 'user_orders_screen.dart';
+import 'user_product_detail_screen.dart';
 
 /// Customer shopping cart screen matching Image 2 with precision:
 /// - Dark AppBar with "My Cart" and white back button
@@ -186,13 +187,14 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final cartProvider = context.watch<CartProvider>();
     final orderProvider = context.watch<OrderProvider>();
     final isPlacing = orderProvider.isLoading;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: const Color(0xFFF1F2F4), // Clean Flipkart light-grey surface
       appBar: AppBar(
         backgroundColor: AppColors.darkHeader,
         elevation: 0,
@@ -200,12 +202,12 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'My Cart',
-          style: TextStyle(
+        title: Text(
+          cartProvider.isNotEmpty ? 'My Cart (${cartProvider.distinctItemCount})' : 'My Cart',
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,
-            fontSize: 19,
+            fontSize: 18,
           ),
         ),
         actions: [
@@ -221,122 +223,66 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
       ),
       bottomNavigationBar: SafeArea(
         top: false,
-        child: _buildBottomNav(context),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (cartProvider.isNotEmpty)
+              _buildStickyCheckoutBar(context, cartProvider, isPlacing),
+            _buildBottomNav(context),
+          ],
+        ),
       ),
       body: SafeArea(
         top: false,
         child: cartProvider.isEmpty
             ? _buildEmptyCart(context)
             : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // --- ITEM CARDS LIST ---
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: cartProvider.items.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final item = cartProvider.items[index];
-                      return _buildCartItemCard(item, cartProvider);
-                    },
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Optional customer note
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.cardBorder, width: 1.2),
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Item Cards List (Flipkart Style Dual-Column Layout)
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: cartProvider.items.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final item = cartProvider.items[index];
+                        return _buildCartItemCard(item, cartProvider);
+                      },
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Order Remarks / Model Note (Optional)',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.darkCharcoal,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _noteController,
-                          maxLines: 2,
-                          style: const TextStyle(fontSize: 13, color: AppColors.darkCharcoal),
-                          decoration: InputDecoration(
-                            hintText: 'e.g. Need 2018 model compatible, urgent dispatch',
-                            hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
-                            filled: true,
-                            fillColor: AppColors.backgroundLight,
-                            contentPadding: const EdgeInsets.all(12),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 14),
 
-                  // --- "Order Submit  (X Item)" BUTTON (EXACT TO IMAGE 2) ---
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.darkButton,
-                        foregroundColor: AppColors.warmGold,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: isPlacing ? null : _handleCheckout,
-                      child: isPlacing
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.warmGold),
-                            )
-                          : Text(
-                              'Order Submit  (${cartProvider.totalItemCount} Item)',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.warmGold,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
+                    // Optional Customer Remarks Card
+                    _buildRemarksCard(),
+
+                    const SizedBox(height: 14),
+
+                    // Authentic Price Details Breakdown (Real Data Only)
+                    _buildPriceDetailsCard(cartProvider),
+                  ],
+                ),
               ),
-            ),
       ),
     );
   }
 
-  // --- CART ITEM CARD (EXACT MATCH TO IMAGE 2) ---
+  // --- 1. CART ITEM CARD (FLIPKART DUAL-COLUMN LAYOUT) ---
   Widget _buildCartItemCard(CartItemModel item, CartProvider cartProvider) {
     final p = item.product;
+    final unitPrice = p.price ?? 0.0;
+    final hasRefNo = p.refNo != null && p.refNo!.trim().isNotEmpty;
+    final hasApp = p.application.trim().isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder, width: 1.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -346,79 +292,169 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Main Info Row: [Thumbnail + Stepper] on left, [Title + Genuine Details + Price] on right
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Product Image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  width: 68,
-                  height: 68,
-                  color: Colors.grey.shade50,
-                  child: p.imageUrl.isNotEmpty
-                      ? Image.network(
-                          p.imageUrl,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) => const Icon(
-                            Icons.precision_manufacturing_outlined,
-                            color: AppColors.primaryGold,
-                            size: 32,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.precision_manufacturing_outlined,
-                          color: AppColors.primaryGold,
-                          size: 32,
-                        ),
-                ),
-              ),
-              const SizedBox(width: 14),
+              // Left Column: Image (82x82) + Quantity Stepper directly beneath
+              Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: 82,
+                      height: 82,
+                      color: const Color(0xFFF7F8FA),
+                      child: p.imageUrl.isNotEmpty
+                          ? Image.network(
+                              p.imageUrl,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => const Icon(
+                                Icons.precision_manufacturing_outlined,
+                                color: AppColors.primaryGold,
+                                size: 36,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.precision_manufacturing_outlined,
+                              color: AppColors.primaryGold,
+                              size: 36,
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
 
-              // Title, Part No & Category Pill
+                  // Flipkart-style Quantity Stepper directly under image
+                  Container(
+                    width: 82,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFD1D5DB), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        InkWell(
+                          onTap: () => cartProvider.decrementQuantity(p.id),
+                          borderRadius: const BorderRadius.horizontal(left: Radius.circular(5)),
+                          child: const SizedBox(
+                            width: 25,
+                            height: 30,
+                            child: Icon(Icons.remove, size: 14, color: AppColors.darkCharcoal),
+                          ),
+                        ),
+                        Text(
+                          '${item.quantity}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.darkCharcoal,
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => cartProvider.incrementQuantity(p.id),
+                          borderRadius: const BorderRadius.horizontal(right: Radius.circular(5)),
+                          child: const SizedBox(
+                            width: 25,
+                            height: 30,
+                            child: Icon(Icons.add, size: 14, color: AppColors.darkCharcoal),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 12),
+
+              // Right Column: Title, Brand & Category, Part No, Application, Genuine Price
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       p.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.darkCharcoal,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Brand & Category
+                    Text(
+                      '${p.companyName} • ${p.categoryName}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.darkCharcoal,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      p.refNo != null && p.refNo!.isNotEmpty
-                          ? 'Part No. ${p.refNo}'
-                          : 'Part No. OF-1024',
-                      style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.secondaryText,
                       ),
                     ),
-                    const SizedBox(height: 6),
 
-                    // Category Tag Pill (Warm gold outline + cream fill)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2.5),
-                      decoration: BoxDecoration(
-                        color: AppColors.badgeGoldBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.badgeGoldBorder, width: 1),
-                      ),
-                      child: Text(
-                        p.categoryName,
+                    if (hasRefNo) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        'Part No: ${p.refNo}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.badgeGoldText,
+                          color: AppColors.darkCharcoal,
                         ),
                       ),
+                    ],
+
+                    if (hasApp) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        'App: ${p.application}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 8),
+
+                    // Authentic Price Display
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '₹${unitPrice.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            color: AppColors.darkCharcoal,
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        if (item.quantity > 1) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            '(Total: ₹${item.totalPrice.toStringAsFixed(0)})',
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -428,79 +464,256 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
 
           const SizedBox(height: 12),
 
-          // Price & Stepper Row
+          // Action Buttons: Remove & View Part
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Total Line Item Price
+              Expanded(
+                child: SizedBox(
+                  height: 36,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.darkCharcoal,
+                      side: const BorderSide(color: Color(0xFFD1D5DB)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: EdgeInsets.zero,
+                    ),
+                    onPressed: () => cartProvider.removeFromCart(p.id),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFDC2626)),
+                    label: const Text(
+                      'Remove',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 36,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.darkCharcoal,
+                      side: const BorderSide(color: Color(0xFFD1D5DB)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: EdgeInsets.zero,
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => UserProductDetailScreen(product: p),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.darkCharcoal),
+                    label: const Text(
+                      'View Part',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 2. OPTIONAL REMARKS CARD ---
+  Widget _buildRemarksCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.notes_rounded, size: 16, color: AppColors.darkCharcoal),
+              SizedBox(width: 6),
               Text(
-                '₹${(item.totalPrice).toStringAsFixed(0)}',
+                'Order Remarks / Model Note (Optional)',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.darkCharcoal,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _noteController,
+            maxLines: 2,
+            style: const TextStyle(fontSize: 13, color: AppColors.darkCharcoal),
+            decoration: InputDecoration(
+              hintText: 'e.g. Need 2018 model compatible, urgent dispatch',
+              hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+              filled: true,
+              fillColor: const Color(0xFFF7F8FA),
+              contentPadding: const EdgeInsets.all(10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 3. PRICE DETAILS CARD (AUTHENTIC CART DATA ONLY) ---
+  Widget _buildPriceDetailsCard(CartProvider cartProvider) {
+    final subtotal = cartProvider.subtotalAmount;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'PRICE DETAILS',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: AppColors.secondaryText,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildPriceRow(
+            'Distinct Items',
+            '${cartProvider.distinctItemCount} parts',
+          ),
+          const SizedBox(height: 8),
+          _buildPriceRow(
+            'Total Quantity',
+            '${cartProvider.totalItemCount} units',
+          ),
+          const Divider(height: 20, color: Color(0xFFEEEEEE)),
+          _buildPriceRow(
+            'Total Amount',
+            '₹${subtotal.toStringAsFixed(0)}',
+            isTotal: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceRow(String label, String value, {bool isTotal = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isTotal ? 14.5 : 12.5,
+            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
+            color: isTotal ? AppColors.darkCharcoal : const Color(0xFF5A6271),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isTotal ? 16 : 12.5,
+            fontWeight: isTotal ? FontWeight.w900 : FontWeight.w700,
+            color: isTotal ? AppColors.darkCharcoal : const Color(0xFF2C323E),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- 4. STICKY BOTTOM CHECKOUT BAR (FLIPKART STYLE) ---
+  Widget _buildStickyCheckoutBar(BuildContext context, CartProvider cartProvider, bool isPlacing) {
+    final subtotal = cartProvider.subtotalAmount;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Total Amount on left
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Total Amount',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '₹${subtotal.toStringAsFixed(0)}',
                 style: const TextStyle(
-                  fontSize: 16.5,
+                  fontSize: 20,
                   fontWeight: FontWeight.w900,
                   color: AppColors.darkCharcoal,
                 ),
               ),
+            ],
+          ),
 
-              // Stepper: - [5] + in warm peach/cream container
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.stepperBg,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    InkWell(
-                      onTap: () => cartProvider.decrementQuantity(p.id),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        width: 32,
-                        height: 28,
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.remove,
-                          size: 16,
-                          color: AppColors.darkCharcoal,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: 40,
-                      height: 26,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${item.quantity}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.darkCharcoal,
-                        ),
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () => cartProvider.incrementQuantity(p.id),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        width: 32,
-                        height: 28,
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.add,
-                          size: 16,
-                          color: AppColors.darkCharcoal,
-                        ),
-                      ),
-                    ),
-                  ],
+          // Vibrant Yellow / Gold CTA button (Flipkart style)
+          SizedBox(
+            height: 44,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFC200), // Flipkart vibrant yellow CTA
+                foregroundColor: AppColors.darkCharcoal,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
                 ),
               ),
-            ],
+              onPressed: isPlacing ? null : _handleCheckout,
+              child: isPlacing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.darkCharcoal),
+                    )
+                  : Text(
+                      'Proceed to Order (${cartProvider.totalItemCount})',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.darkCharcoal,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+            ),
           ),
         ],
       ),
@@ -670,7 +883,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                   _buildEmptyGuideRow(
                     icon: Icons.send_rounded,
                     title: '3. Submit Order',
-                    subtitle: 'Direct pricing & prompt delivery dispatch',
+                    subtitle: 'Direct pricing & prompt order processing',
                   ),
                 ],
               ),

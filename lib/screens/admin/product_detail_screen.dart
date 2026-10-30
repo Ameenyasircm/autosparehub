@@ -337,7 +337,8 @@ class ProductDetailScreen extends StatelessWidget {
               const SizedBox(height: 18),
             ],
 
-            // --- TECHNICAL SPECIFICATIONS SHEET ---
+            /*
+            // --- TECHNICAL SPECIFICATIONS SHEET (SKIPPED FOR NOW AS PER REQUIREMENT) ---
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -373,8 +374,8 @@ class ProductDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 18),
+            */
 
             // --- COMMERCIAL & INVENTORY ---
             if (product.price != null || product.stockQuantity != null) ...[
@@ -458,6 +459,7 @@ class ProductDetailScreen extends StatelessWidget {
     );
   }
 
+  /*
   Widget _buildSpecRow(String label, String? value, {bool isLast = false}) {
     final displayValue = (value != null && value.trim().isNotEmpty) ? value : '—';
     return Padding(
@@ -484,4 +486,5 @@ class ProductDetailScreen extends StatelessWidget {
       ),
     );
   }
+  */
 }
