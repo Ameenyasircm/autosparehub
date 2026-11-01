@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../models/company_model.dart';
 import '../../providers/company_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_submit_button.dart';
+import '../../widgets/app_text_field.dart';
 
 /// Form screen to add or edit a vehicle company / brand with Cloudinary logo upload.
 class CompanyFormScreen extends StatefulWidget {
@@ -300,23 +302,15 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
               const SizedBox(height: 24),
 
               // Company Name Field
-              const Text(
-                'Company / Brand Name *',
-                style: TextStyle(
-                  color: AppColors.darkCharcoal,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextFormField(
+              AppTextField(
+                label: 'Company / Brand Name',
+                hint: 'Enter vehicle company or brand name',
                 controller: _nameController,
+                isRequired: true,
                 textCapitalization: TextCapitalization.words,
                 enabled: !provider.isSaving,
-                decoration: const InputDecoration(
-                  hintText: 'e.g. Toyota, Honda, Hyundai...',
-                  prefixIcon: Icon(Icons.business_outlined),
-                ),
+                prefixIcon: Icons.business_outlined,
+                isDarkTheme: true,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
                     return 'Company name is required';
@@ -328,23 +322,14 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
               const SizedBox(height: 18),
 
               // Description Field (Optional)
-              const Text(
-                'Description (Optional)',
-                style: TextStyle(
-                  color: AppColors.darkCharcoal,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextFormField(
+              AppTextField(
+                label: 'Description (Optional)',
+                hint: 'Enter manufacturer description or notes',
                 controller: _descController,
                 maxLines: 3,
                 enabled: !provider.isSaving,
-                decoration: const InputDecoration(
-                  hintText: 'Brief notes on manufacturer, origins, or parts series...',
-                  alignLabelWithHint: true,
-                ),
+                prefixIcon: Icons.notes_rounded,
+                isDarkTheme: true,
               ),
 
               const SizedBox(height: 20),
@@ -389,36 +374,16 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
 
               const SizedBox(height: 32),
 
-              // Submit Button
-              SizedBox(
+              // Submit Button with modern spinner and informative text
+              AppSubmitButton(
+                label: widget.isEditing ? 'Update Company' : 'Save Company',
+                loadingLabel: 'Uploading & Saving Company...',
+                isLoading: provider.isSaving,
+                icon: widget.isEditing ? Icons.check_circle_outline : Icons.save_outlined,
+                backgroundColor: AppColors.primaryGold,
+                foregroundColor: AppColors.darkCharcoal,
                 height: 52,
-                child: ElevatedButton(
-                  onPressed: provider.isSaving ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGold,
-                    foregroundColor: AppColors.darkCharcoal,
-                  ),
-                  child: provider.isSaving
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.darkCharcoal,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Text('Uploading & Saving Company...'),
-                          ],
-                        )
-                      : Text(
-                          widget.isEditing ? 'Update Company' : 'Save Company',
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                        ),
-                ),
+                onPressed: _submit,
               ),
             ],
           ),

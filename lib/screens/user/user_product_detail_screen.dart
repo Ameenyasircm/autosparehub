@@ -242,10 +242,10 @@ class _ProductDetailContent extends StatelessWidget {
         ),
         const SizedBox(height: 4),
 
-        // Part No (if available)
+        // Product Code / Sorl No (if available)
         if (product.refNo != null && product.refNo!.trim().isNotEmpty) ...[
           Text(
-            'Part No. ${product.refNo}',
+            'Product Code / Sorl No: ${product.refNo}',
             style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
           ),
           const SizedBox(height: 2),
@@ -279,8 +279,8 @@ class _ProductDetailContent extends StatelessWidget {
 
         _buildSpecRow('Part category', product.categoryName),
         _buildSpecRow(
-          'Vehicle compatibility',
-          product.application.isNotEmpty ? product.application : 'See compatible models',
+          'Application No',
+          product.application.isNotEmpty ? product.application : 'Not specified',
         ),
 
         const SizedBox(height: 18),

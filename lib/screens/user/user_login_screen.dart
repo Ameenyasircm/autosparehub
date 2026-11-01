@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_submit_button.dart';
+import '../../widgets/app_text_field.dart';
 import 'user_home_screen.dart';
 import 'widgets/approval_pending_dialog.dart';
 import 'widgets/contact_us_sheet.dart';
@@ -508,30 +510,21 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
           ],
 
           // Mobile Number Field
-          const Text(
-            'Mobile Number',
-            style: TextStyle(
-              color: AppColors.darkHeader,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          AppTextField(
+            label: 'Mobile Number',
+            hint: '10-digit mobile number',
             controller: _loginPhoneController,
+            isRequired: true,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
             enabled: !authProvider.isLoading,
             onChanged: (_) => authProvider.clearError(),
+            maxLength: 10,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(10),
             ],
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.darkHeader,
-            ),
+            prefixIcon: Icons.phone_android_rounded,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Please enter mobile number';
@@ -541,54 +534,29 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               }
               return null;
             },
-            decoration: InputDecoration(
-              hintText: 'Enter registered mobile',
-              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9EA3AC)),
-              prefixIcon: const Icon(Icons.phone_android_rounded, color: AppColors.warmGold, size: 20),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              filled: true,
-              fillColor: const Color(0xFFF7F8FA),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.8),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.error, width: 1.2),
-              ),
-            ),
           ),
           const SizedBox(height: 16),
 
           // Password Field
-          const Text(
-            'Password',
-            style: TextStyle(
-              color: AppColors.darkHeader,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          AppTextField(
+            label: 'Password',
+            hint: 'Enter password',
             controller: _loginPasswordController,
+            isRequired: true,
             obscureText: _obscureLoginPassword,
             textInputAction: TextInputAction.done,
             enabled: !authProvider.isLoading,
             onFieldSubmitted: (_) => _handleLogin(),
             onChanged: (_) => authProvider.clearError(),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.darkHeader,
+            prefixIcon: Icons.lock_rounded,
+            suffixWidget: IconButton(
+              icon: Icon(
+                _obscureLoginPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                color: const Color(0xFF8C95A6),
+                size: 20,
+              ),
+              tooltip: _obscureLoginPassword ? 'Show password' : 'Hide password',
+              onPressed: () => setState(() => _obscureLoginPassword = !_obscureLoginPassword),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -596,99 +564,18 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               }
               return null;
             },
-            decoration: InputDecoration(
-              hintText: 'Enter your account password',
-              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9EA3AC)),
-              prefixIcon: const Icon(Icons.lock_rounded, color: AppColors.warmGold, size: 20),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              filled: true,
-              fillColor: const Color(0xFFF7F8FA),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.8),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.error, width: 1.2),
-              ),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureLoginPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: const Color(0xFF8C95A6),
-                  size: 20,
-                ),
-                tooltip: _obscureLoginPassword ? 'Show password' : 'Hide password',
-                onPressed: () => setState(() => _obscureLoginPassword = !_obscureLoginPassword),
-              ),
-            ),
           ),
           const SizedBox(height: 22),
 
           // Submit Button (Matching Admin Login)
-          SizedBox(
-            height: 50,
-            child: ElevatedButton(
-              onPressed: authProvider.isLoading ? null : _handleLogin,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.darkButton,
-                foregroundColor: AppColors.warmGold,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: authProvider.isLoading
-                  ? const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.warmGold),
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Verifying...',
-                          style: TextStyle(
-                            color: AppColors.warmGold,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    )
-                  : const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.login_rounded, size: 20),
-                        SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            'Login',
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
+          AppSubmitButton(
+            label: 'Login',
+            loadingLabel: 'Verifying...',
+            isLoading: authProvider.isLoading,
+            onPressed: _handleLogin,
+            icon: Icons.login_rounded,
+            backgroundColor: AppColors.darkButton,
+            foregroundColor: AppColors.warmGold,
           ),
         ],
       ),
@@ -731,88 +618,53 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
             const SizedBox(height: 16),
           ],
 
-          // Garage / Contact Name
-          const Text(
-            'Garage or Contact Name',
-            style: TextStyle(
-              color: AppColors.darkHeader,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          // Full Name
+          AppTextField(
+            label: 'Full Name',
+            hint: 'Enter your full name',
             controller: _regNameController,
+            isRequired: true,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
             enabled: !authProvider.isLoading,
             onChanged: (_) => authProvider.clearError(),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.darkHeader,
-            ),
+            prefixIcon: Icons.person_outline,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Please enter garage or contact name';
+                return 'Please enter your full name';
               }
               if (value.trim().length < 3) {
                 return 'Name must be at least 3 characters';
               }
               return null;
             },
-            decoration: InputDecoration(
-              hintText: 'e.g. Speed Motors / Rahul',
-              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9EA3AC)),
-              prefixIcon: const Icon(Icons.storefront_rounded, color: AppColors.warmGold, size: 20),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              filled: true,
-              fillColor: const Color(0xFFF7F8FA),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.8),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.error, width: 1.2),
-              ),
-            ),
           ),
           const SizedBox(height: 16),
 
           // Mobile Number
-          const Text(
-            'Mobile Number',
-            style: TextStyle(
-              color: AppColors.darkHeader,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          AppTextField(
+            label: 'Mobile Number',
+            hint: '10-digit mobile number',
             controller: _regPhoneController,
+            isRequired: true,
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
             enabled: !authProvider.isLoading,
             onChanged: (_) => authProvider.clearError(),
+            maxLength: 10,
+            badge: const Text(
+              '10 Digits',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.secondaryText,
+              ),
+            ),
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(10),
             ],
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.darkHeader,
-            ),
+            prefixIcon: Icons.phone_android_rounded,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Please enter mobile number';
@@ -822,53 +674,28 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               }
               return null;
             },
-            decoration: InputDecoration(
-              hintText: 'Enter 10-digit mobile',
-              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9EA3AC)),
-              prefixIcon: const Icon(Icons.phone_android_rounded, color: AppColors.warmGold, size: 20),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              filled: true,
-              fillColor: const Color(0xFFF7F8FA),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.8),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.error, width: 1.2),
-              ),
-            ),
           ),
           const SizedBox(height: 16),
 
           // Password
-          const Text(
-            'Password',
-            style: TextStyle(
-              color: AppColors.darkHeader,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          AppTextField(
+            label: 'Password',
+            hint: 'Enter password (min 4 characters)',
             controller: _regPasswordController,
+            isRequired: true,
             obscureText: _obscureRegPassword,
             textInputAction: TextInputAction.next,
             enabled: !authProvider.isLoading,
             onChanged: (_) => authProvider.clearError(),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.darkHeader,
+            prefixIcon: Icons.lock_rounded,
+            suffixWidget: IconButton(
+              icon: Icon(
+                _obscureRegPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                color: const Color(0xFF8C95A6),
+                size: 20,
+              ),
+              tooltip: _obscureRegPassword ? 'Show password' : 'Hide password',
+              onPressed: () => setState(() => _obscureRegPassword = !_obscureRegPassword),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -879,63 +706,29 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               }
               return null;
             },
-            decoration: InputDecoration(
-              hintText: 'Create a password (min 4 characters)',
-              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9EA3AC)),
-              prefixIcon: const Icon(Icons.lock_rounded, color: AppColors.warmGold, size: 20),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              filled: true,
-              fillColor: const Color(0xFFF7F8FA),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.8),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.error, width: 1.2),
-              ),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureRegPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: const Color(0xFF8C95A6),
-                  size: 20,
-                ),
-                tooltip: _obscureRegPassword ? 'Show password' : 'Hide password',
-                onPressed: () => setState(() => _obscureRegPassword = !_obscureRegPassword),
-              ),
-            ),
           ),
           const SizedBox(height: 16),
 
           // Confirm Password
-          const Text(
-            'Confirm Password',
-            style: TextStyle(
-              color: AppColors.darkHeader,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          AppTextField(
+            label: 'Confirm Password',
+            hint: 'Re-enter your password',
             controller: _regConfirmPasswordController,
+            isRequired: true,
             obscureText: _obscureConfirmPassword,
             textInputAction: TextInputAction.done,
             enabled: !authProvider.isLoading,
             onFieldSubmitted: (_) => _handleRegistration(),
             onChanged: (_) => authProvider.clearError(),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.darkHeader,
+            prefixIcon: Icons.lock_reset_rounded,
+            suffixWidget: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                color: const Color(0xFF8C95A6),
+                size: 20,
+              ),
+              tooltip: _obscureConfirmPassword ? 'Show password' : 'Hide password',
+              onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
             ),
             validator: (value) {
               if (value != _regPasswordController.text) {
@@ -943,99 +736,18 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               }
               return null;
             },
-            decoration: InputDecoration(
-              hintText: 'Re-enter your password',
-              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9EA3AC)),
-              prefixIcon: const Icon(Icons.lock_reset_rounded, color: AppColors.warmGold, size: 20),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              filled: true,
-              fillColor: const Color(0xFFF7F8FA),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.8),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.error, width: 1.2),
-              ),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: const Color(0xFF8C95A6),
-                  size: 20,
-                ),
-                tooltip: _obscureConfirmPassword ? 'Show password' : 'Hide password',
-                onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-              ),
-            ),
           ),
           const SizedBox(height: 22),
 
           // Register Action Button (Matching Admin Login)
-          SizedBox(
-            height: 50,
-            child: ElevatedButton(
-              onPressed: authProvider.isLoading ? null : _handleRegistration,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.darkButton,
-                foregroundColor: AppColors.warmGold,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: authProvider.isLoading
-                  ? const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.warmGold),
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Registering...',
-                          style: TextStyle(
-                            color: AppColors.warmGold,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    )
-                  : const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.app_registration_rounded, size: 20),
-                        SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            'Register Garage Account',
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
+          AppSubmitButton(
+            label: 'Register Garage Account',
+            loadingLabel: 'Registering...',
+            isLoading: authProvider.isLoading,
+            onPressed: _handleRegistration,
+            icon: Icons.app_registration_rounded,
+            backgroundColor: AppColors.darkButton,
+            foregroundColor: AppColors.warmGold,
           ),
         ],
       ),

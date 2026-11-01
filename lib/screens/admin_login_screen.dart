@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_login_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_submit_button.dart';
+import '../widgets/app_text_field.dart';
 import 'admin/admin_shell_screen.dart';
 
 /// Redesigned Admin Login Screen matching the modern brand identity:
@@ -258,80 +261,54 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           ],
 
                           // Username / Phone Field
-                          const Text(
-                            'Mobile Number',
-                            style: TextStyle(
-                              color: AppColors.darkHeader,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextFormField(
+                          AppTextField(
+                            label: 'Mobile Number',
+                            hint: 'Enter registered mobile',
                             controller: _usernameController,
+                            isRequired: true,
                             keyboardType: TextInputType.phone,
                             textInputAction: TextInputAction.next,
                             enabled: !provider.isLoading,
                             onChanged: (_) => provider.clearError(),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.darkHeader,
-                            ),
+                            prefixIcon: Icons.phone_android_rounded,
+                            isDarkTheme: true,
+                            maxLength: 10,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(10),
+                            ],
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Please enter  phone number';
                               }
                               return null;
                             },
-                            decoration: InputDecoration(
-                              hintText: 'Enter registered mobile',
-                              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9EA3AC)),
-                              prefixIcon: const Icon(Icons.phone_android_rounded, color: AppColors.warmGold, size: 20),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                              filled: true,
-                              fillColor: const Color(0xFFF7F8FA),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.8),
-                              ),
-                              errorBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.error, width: 1.2),
-                              ),
-                            ),
                           ),
                           const SizedBox(height: 16),
 
                           // Password Field
-                          const Text(
-                            'Password',
-                            style: TextStyle(
-                              color: AppColors.darkHeader,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          TextFormField(
+                          AppTextField(
+                            label: 'Password',
+                            hint: 'Enter your account password',
                             controller: _passwordController,
+                            isRequired: true,
                             obscureText: _obscurePassword,
                             textInputAction: TextInputAction.done,
                             enabled: !provider.isLoading,
                             onFieldSubmitted: (_) => _handleLogin(),
                             onChanged: (_) => provider.clearError(),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.darkHeader,
+                            prefixIcon: Icons.lock_rounded,
+                            isDarkTheme: true,
+                            suffixWidget: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: const Color(0xFF8C95A6),
+                                size: 20,
+                              ),
+                              tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                              onPressed: _togglePasswordVisibility,
                             ),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -339,106 +316,18 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                               }
                               return null;
                             },
-                            decoration: InputDecoration(
-                              hintText: 'Enter your account password',
-                              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF9EA3AC)),
-                              prefixIcon: const Icon(Icons.lock_rounded, color: AppColors.warmGold, size: 20),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                              filled: true,
-                              fillColor: const Color(0xFFF7F8FA),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.warmGold, width: 1.8),
-                              ),
-                              errorBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.error, width: 1.2),
-                              ),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_off_outlined
-                                      : Icons.visibility_outlined,
-                                  color: const Color(0xFF8C95A6),
-                                  size: 20,
-                                ),
-                                tooltip: _obscurePassword ? 'Show password' : 'Hide password',
-                                onPressed: _togglePasswordVisibility,
-                              ),
-                            ),
                           ),
                           const SizedBox(height: 22),
 
                           // Submit Button
-                          SizedBox(
-                            height: 50,
-                            child: ElevatedButton(
-                              onPressed: provider.isLoading ? null : _handleLogin,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.darkButton,
-                                foregroundColor: AppColors.warmGold,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: provider.isLoading
-                                  ? const Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(
-                                              AppColors.warmGold,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(width: 10),
-                                        Flexible(
-                                          child: Text(
-                                            'Verifying Credentials...',
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color: AppColors.warmGold,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  : const Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.login_rounded, size: 20),
-                                        SizedBox(width: 8),
-                                        Flexible(
-                                          child: Text(
-                                            'Sign In to Admin Portal',
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 14.5,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 0.3,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ),
+                          AppSubmitButton(
+                            label: 'Sign In to Admin Portal',
+                            loadingLabel: 'Verifying Credentials...',
+                            isLoading: provider.isLoading,
+                            onPressed: _handleLogin,
+                            icon: Icons.login_rounded,
+                            backgroundColor: AppColors.darkButton,
+                            foregroundColor: AppColors.warmGold,
                           ),
                         ],
                       ),

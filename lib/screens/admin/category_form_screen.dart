@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../models/category_model.dart';
 import '../../providers/category_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_submit_button.dart';
+import '../../widgets/app_text_field.dart';
 
 /// Form screen to add or edit a spare parts category with Cloudinary image upload.
 class CategoryFormScreen extends StatefulWidget {
@@ -299,23 +301,15 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
               const SizedBox(height: 24),
 
               // Category Name Field
-              const Text(
-                'Category Name *',
-                style: TextStyle(
-                  color: AppColors.darkCharcoal,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextFormField(
+              AppTextField(
+                label: 'Category Name',
+                hint: 'Enter category name',
                 controller: _nameController,
+                isRequired: true,
                 textCapitalization: TextCapitalization.words,
                 enabled: !provider.isSaving,
-                decoration: const InputDecoration(
-                  hintText: 'e.g. Engine Parts, Brake Systems, Transmission...',
-                  prefixIcon: Icon(Icons.category_outlined),
-                ),
+                prefixIcon: Icons.category_outlined,
+                isDarkTheme: true,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
                     return 'Category name is required';
@@ -327,23 +321,14 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
               const SizedBox(height: 18),
 
               // Description Field (Optional)
-              const Text(
-                'Description (Optional)',
-                style: TextStyle(
-                  color: AppColors.darkCharcoal,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextFormField(
+              AppTextField(
+                label: 'Description (Optional)',
+                hint: 'Enter category description or notes',
                 controller: _descController,
                 maxLines: 3,
                 enabled: !provider.isSaving,
-                decoration: const InputDecoration(
-                  hintText: 'Notes regarding components, sub-assemblies, or vehicle systems...',
-                  alignLabelWithHint: true,
-                ),
+                prefixIcon: Icons.notes_rounded,
+                isDarkTheme: true,
               ),
 
               const SizedBox(height: 20),
@@ -388,36 +373,16 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
 
               const SizedBox(height: 32),
 
-              // Submit Button
-              SizedBox(
+              // Submit Button with modern spinner and informative text
+              AppSubmitButton(
+                label: widget.isEditing ? 'Update Category' : 'Save Category',
+                loadingLabel: 'Uploading & Saving Category...',
+                isLoading: provider.isSaving,
+                icon: widget.isEditing ? Icons.check_circle_outline : Icons.save_outlined,
+                backgroundColor: AppColors.primaryGold,
+                foregroundColor: AppColors.darkCharcoal,
                 height: 52,
-                child: ElevatedButton(
-                  onPressed: provider.isSaving ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGold,
-                    foregroundColor: AppColors.darkCharcoal,
-                  ),
-                  child: provider.isSaving
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.darkCharcoal,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Text('Uploading & Saving Category...'),
-                          ],
-                        )
-                      : Text(
-                          widget.isEditing ? 'Update Category' : 'Save Category',
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                        ),
-                ),
+                onPressed: _submit,
               ),
             ],
           ),

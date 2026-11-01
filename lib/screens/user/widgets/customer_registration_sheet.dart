@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/user_auth_provider.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/app_submit_button.dart';
+import '../../../widgets/app_text_field.dart';
 import '../user_login_screen.dart';
 
 /// Modal bottom sheet providing seamless customer account Registration & Sign In.
@@ -647,19 +649,14 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Name Field
-          const Text(
-            'Full Name *',
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          AppTextField(
+            label: 'Full Name',
+            hint: 'Enter your full name',
             controller: _nameController,
+            isRequired: true,
             textCapitalization: TextCapitalization.words,
             enabled: !authProvider.isLoading,
-            decoration: const InputDecoration(
-              hintText: 'e.g. Mohammed Ameen',
-              prefixIcon: Icon(Icons.person_outline, size: 20),
-            ),
+            prefixIcon: Icons.person_outline,
             validator: (val) =>
                 val == null || val.trim().isEmpty ? 'Please enter your full name' : null,
           ),
@@ -667,22 +664,11 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
           const SizedBox(height: 14),
 
           // Phone Field
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'Indian Mobile Number *',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
-              ),
-              Text(
-                '10 Digits',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.secondaryText),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          AppTextField(
+            label: 'Phone Number',
+            hint: '10-digit mobile number',
             controller: _phoneController,
+            isRequired: true,
             keyboardType: TextInputType.phone,
             enabled: !authProvider.isLoading,
             maxLength: 10,
@@ -690,26 +676,22 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(10),
             ],
-            decoration: InputDecoration(
-              hintText: '9876543210',
-              counterText: '',
-              prefixIcon: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.phone_android_outlined, size: 18, color: AppColors.primaryGold),
-                    SizedBox(width: 4),
-                    Text(
-                      '+91 ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.darkCharcoal,
-                        fontSize: 13.5,
-                      ),
+            prefixWidget: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.phone_android_outlined, size: 18, color: AppColors.primaryGold),
+                  SizedBox(width: 4),
+                  Text(
+                    '+91 ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.darkCharcoal,
+                      fontSize: 13.5,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             validator: (val) {
@@ -724,22 +706,21 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
           const SizedBox(height: 14),
 
           // Password Field
-          const Text(
-            'Set Account Password *',
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          AppTextField(
+            label: 'Password',
+            hint: 'Enter password',
             controller: _passwordController,
+            isRequired: true,
             obscureText: _obscureRegPassword,
             enabled: !authProvider.isLoading,
-            decoration: InputDecoration(
-              hintText: 'Minimum 6 characters',
-              prefixIcon: const Icon(Icons.lock_outline, size: 20),
-              suffixIcon: IconButton(
-                icon: Icon(_obscureRegPassword ? Icons.visibility_off : Icons.visibility, size: 18),
-                onPressed: () => setState(() => _obscureRegPassword = !_obscureRegPassword),
+            prefixIcon: Icons.lock_outline,
+            suffixWidget: IconButton(
+              icon: Icon(
+                _obscureRegPassword ? Icons.visibility_off : Icons.visibility,
+                size: 18,
+                color: AppColors.secondaryText,
               ),
+              onPressed: () => setState(() => _obscureRegPassword = !_obscureRegPassword),
             ),
             validator: (val) {
               if (val == null || val.trim().isEmpty) return 'Please set a password';
@@ -751,22 +732,21 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
           const SizedBox(height: 14),
 
           // Confirm Password Field
-          const Text(
-            'Confirm Password *',
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          AppTextField(
+            label: 'Confirm Password',
+            hint: 'Re-enter password',
             controller: _confirmPasswordController,
+            isRequired: true,
             obscureText: _obscureConfirmPassword,
             enabled: !authProvider.isLoading,
-            decoration: InputDecoration(
-              hintText: 'Re-enter password',
-              prefixIcon: const Icon(Icons.lock_reset_outlined, size: 20),
-              suffixIcon: IconButton(
-                icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility, size: 18),
-                onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+            prefixIcon: Icons.lock_reset_outlined,
+            suffixWidget: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                size: 18,
+                color: AppColors.secondaryText,
               ),
+              onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
             ),
             validator: (val) {
               if (val != _passwordController.text) return 'Passwords do not match';
@@ -778,32 +758,20 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
 
           // Notice Container
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: const Color(0xFFF7F8FA),
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFECEFF3)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: const [
-                    Icon(Icons.shield_outlined, size: 16, color: AppColors.secondaryGold),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Admin approval is required once before ordering parts.',
-                        style: TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Padding(
-                  padding: EdgeInsets.only(left: 24),
+            child: Row(
+              children: const [
+                Icon(Icons.shield_outlined, size: 16, color: AppColors.secondaryGold),
+                SizedBox(width: 8),
+                Expanded(
                   child: Text(
-                    'പാർട്സുകൾ ഓർഡർ ചെയ്യുന്നതിന് മുൻപ് അഡ്മിന്റെ അനുമതി ആവശ്യമാണ്.',
-                    style: TextStyle(fontSize: 10.5, color: AppColors.secondaryText),
+                    'Admin approval is required once before ordering parts.',
+                    style: TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -812,45 +780,15 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
 
           const SizedBox(height: 18),
 
-          // Submit Button
-          Container(
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [AppColors.primaryGold, AppColors.lightGold]),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primaryGold.withValues(alpha: 0.35),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: authProvider.isLoading ? null : _submitRegistration,
-              child: authProvider.isLoading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.darkCharcoal),
-                      ),
-                    )
-                  : const Text(
-                      'Register & Request Approval',
-                      style: TextStyle(
-                        color: AppColors.darkCharcoal,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-            ),
+          // Submit Button with loader & informative text
+          AppSubmitButton(
+            label: 'Register & Request Approval',
+            loadingLabel: 'Submitting Registration...',
+            isLoading: authProvider.isLoading,
+            onPressed: _submitRegistration,
+            icon: Icons.how_to_reg_outlined,
+            backgroundColor: AppColors.primaryGold,
+            foregroundColor: AppColors.darkCharcoal,
           ),
 
           const SizedBox(height: 10),
@@ -880,22 +818,11 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Phone Field
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'Indian Mobile Number *',
-                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
-              ),
-              Text(
-                '10 Digits',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.secondaryText),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          AppTextField(
+            label: 'Phone Number',
+            hint: '10-digit mobile number',
             controller: _loginPhoneController,
+            isRequired: true,
             keyboardType: TextInputType.phone,
             enabled: !authProvider.isLoading,
             maxLength: 10,
@@ -903,26 +830,22 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(10),
             ],
-            decoration: InputDecoration(
-              hintText: '9876543210',
-              counterText: '',
-              prefixIcon: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.phone_android_outlined, size: 18, color: AppColors.primaryGold),
-                    SizedBox(width: 4),
-                    Text(
-                      '+91 ',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.darkCharcoal,
-                        fontSize: 13.5,
-                      ),
+            prefixWidget: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.phone_android_outlined, size: 18, color: AppColors.primaryGold),
+                  SizedBox(width: 4),
+                  Text(
+                    '+91 ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.darkCharcoal,
+                      fontSize: 13.5,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             validator: (val) {
@@ -936,22 +859,21 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
           const SizedBox(height: 14),
 
           // Password Field
-          const Text(
-            'Password *',
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
-          ),
-          const SizedBox(height: 6),
-          TextFormField(
+          AppTextField(
+            label: 'Password',
+            hint: 'Enter your password',
             controller: _loginPasswordController,
+            isRequired: true,
             obscureText: _obscureLoginPassword,
             enabled: !authProvider.isLoading,
-            decoration: InputDecoration(
-              hintText: 'Enter your password',
-              prefixIcon: const Icon(Icons.lock_outline, size: 20),
-              suffixIcon: IconButton(
-                icon: Icon(_obscureLoginPassword ? Icons.visibility_off : Icons.visibility, size: 18),
-                onPressed: () => setState(() => _obscureLoginPassword = !_obscureLoginPassword),
+            prefixIcon: Icons.lock_outline,
+            suffixWidget: IconButton(
+              icon: Icon(
+                _obscureLoginPassword ? Icons.visibility_off : Icons.visibility,
+                size: 18,
+                color: AppColors.secondaryText,
               ),
+              onPressed: () => setState(() => _obscureLoginPassword = !_obscureLoginPassword),
             ),
             validator: (val) =>
                 val == null || val.trim().isEmpty ? 'Please enter your password' : null,
@@ -960,32 +882,20 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
           const SizedBox(height: 14),
 
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: const Color(0xFFF7F8FA),
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFECEFF3)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: const [
-                    Icon(Icons.info_outline, size: 16, color: AppColors.secondaryText),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Once approved by admin, sign in to order spare parts.',
-                        style: TextStyle(fontSize: 11.5, color: AppColors.secondaryText, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Padding(
-                  padding: EdgeInsets.only(left: 24),
+            child: Row(
+              children: const [
+                Icon(Icons.info_outline, size: 16, color: AppColors.secondaryText),
+                SizedBox(width: 8),
+                Expanded(
                   child: Text(
-                    'അഡ്മിൻ അനുമതി നൽകിയ ശേഷം മാത്രമേ ലോഗിൻ ചെയ്യാൻ സാധിക്കൂ.',
-                    style: TextStyle(fontSize: 10.5, color: AppColors.secondaryText),
+                    'Once approved by admin, sign in to order spare parts.',
+                    style: TextStyle(fontSize: 11.5, color: AppColors.secondaryText, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -995,44 +905,14 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
           const SizedBox(height: 20),
 
           // Sign In Button
-          Container(
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [AppColors.primaryGold, AppColors.lightGold]),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primaryGold.withValues(alpha: 0.35),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: authProvider.isLoading ? null : _submitLogin,
-              child: authProvider.isLoading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.darkCharcoal),
-                      ),
-                    )
-                  : const Text(
-                      'Sign In to Account',
-                      style: TextStyle(
-                        color: AppColors.darkCharcoal,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-            ),
+          AppSubmitButton(
+            label: 'Sign In to Account',
+            loadingLabel: 'Signing In...',
+            isLoading: authProvider.isLoading,
+            onPressed: _submitLogin,
+            icon: Icons.login_rounded,
+            backgroundColor: AppColors.primaryGold,
+            foregroundColor: AppColors.darkCharcoal,
           ),
 
           const SizedBox(height: 10),

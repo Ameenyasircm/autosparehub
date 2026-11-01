@@ -220,7 +220,7 @@ class ProductProvider extends ChangeNotifier {
       return false;
     }
     if (application.trim().isEmpty) {
-      _errorMessage = 'Vehicle application details are required.';
+      _errorMessage = 'Application number is required.';
       notifyListeners();
       return false;
     }

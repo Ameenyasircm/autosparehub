@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/admin_model.dart';
 import '../../providers/admin_management_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_dropdown_field.dart';
+import '../../widgets/app_submit_button.dart';
+import '../../widgets/app_text_field.dart';
 
 /// Form screen for creating or editing administrator accounts.
 class AdminFormScreen extends StatefulWidget {
@@ -142,23 +146,16 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
               ],
 
               // Full Name Field
-              const Text(
-                'Full Name *',
-                style: TextStyle(
-                  color: AppColors.darkCharcoal,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextFormField(
+              // Full Name Field
+              AppTextField(
+                label: 'Administrator Full Name',
+                hint: 'Enter full name',
                 controller: _nameController,
+                isRequired: true,
                 textCapitalization: TextCapitalization.words,
                 enabled: !provider.isSaving,
-                decoration: const InputDecoration(
-                  hintText: 'e.g. John Doe',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
+                prefixIcon: Icons.person_outline,
+                isDarkTheme: true,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
                     return 'Administrator full name is required';
@@ -170,23 +167,20 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
               const SizedBox(height: 18),
 
               // Phone Number Field
-              const Text(
-                'Phone Number *',
-                style: TextStyle(
-                  color: AppColors.darkCharcoal,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextFormField(
+              AppTextField(
+                label: 'Phone Number',
+                hint: '10-digit mobile number',
                 controller: _phoneController,
+                isRequired: true,
                 keyboardType: TextInputType.phone,
                 enabled: !provider.isSaving,
-                decoration: const InputDecoration(
-                  hintText: 'e.g. 9090001002',
-                  prefixIcon: Icon(Icons.phone_android_outlined),
-                ),
+                prefixIcon: Icons.phone_android_outlined,
+                isDarkTheme: true,
+                maxLength: 10,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
                     return 'Registered phone number is required';
@@ -201,21 +195,14 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
               const SizedBox(height: 18),
 
               // Role Selector Dropdown
-              const Text(
-                'Administrator Role *',
-                style: TextStyle(
-                  color: AppColors.darkCharcoal,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: _selectedRole,
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.shield_outlined),
-                ),
+              AppDropdownField<String>(
+                label: 'Administrator Role',
+                hint: 'Select role',
+                value: _selectedRole,
+                isRequired: true,
+                enabled: !provider.isSaving,
+                prefixIcon: Icons.shield_outlined,
+                isDarkTheme: true,
                 items: const [
                   DropdownMenuItem(
                     value: 'MANAGER',
@@ -232,7 +219,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
                     ),
                   ),
                 ],
-                onChanged: provider.isSaving ? null : (val) {
+                onChanged: (val) {
                   if (val != null) setState(() => _selectedRole = val);
                 },
               ),
@@ -240,28 +227,21 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
               // Password Field (Only when creating new admin)
               if (!widget.isEditing) ...[
                 const SizedBox(height: 18),
-                const Text(
-                  'Initial Password *',
-                  style: TextStyle(
-                    color: AppColors.darkCharcoal,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
+                AppTextField(
+                  label: 'Initial Password',
+                  hint: 'Enter initial login password',
                   controller: _passwordController,
+                  isRequired: true,
                   obscureText: _obscurePassword,
                   enabled: !provider.isSaving,
-                  decoration: InputDecoration(
-                    hintText: 'Enter login password',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  prefixIcon: Icons.lock_outline,
+                  isDarkTheme: true,
+                  suffixWidget: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: AppColors.secondaryText,
                     ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                   validator: (val) {
                     if (val == null || val.isEmpty) {
@@ -339,36 +319,16 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
 
               const SizedBox(height: 32),
 
-              // Submit Button
-              SizedBox(
+              // Submit Button with modern spinner and informative text
+              AppSubmitButton(
+                label: widget.isEditing ? 'Update Administrator' : 'Create Administrator',
+                loadingLabel: widget.isEditing ? 'Updating Administrator...' : 'Creating Administrator...',
+                isLoading: provider.isSaving,
+                icon: widget.isEditing ? Icons.check_circle_outline : Icons.person_add_outlined,
+                backgroundColor: AppColors.primaryGold,
+                foregroundColor: AppColors.darkCharcoal,
                 height: 52,
-                child: ElevatedButton(
-                  onPressed: provider.isSaving ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGold,
-                    foregroundColor: AppColors.darkCharcoal,
-                  ),
-                  child: provider.isSaving
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.darkCharcoal,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Text('Saving Administrator...'),
-                          ],
-                        )
-                      : Text(
-                          widget.isEditing ? 'Update Administrator' : 'Create Administrator',
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                        ),
-                ),
+                onPressed: _submit,
               ),
             ],
           ),

@@ -73,13 +73,19 @@ class ProductDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<ProductProvider>();
+    final currentProduct = provider.products.cast<ProductModel?>().firstWhere(
+      (p) => p?.id == product.id,
+      orElse: () => product,
+    ) ?? product;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
         backgroundColor: AppColors.darkCharcoal,
         elevation: 0,
         title: Text(
-          product.name,
+          currentProduct.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
@@ -91,7 +97,7 @@ class ProductDetailScreen extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => ProductFormScreen(productToEdit: product),
+                  builder: (_) => ProductFormScreen(productToEdit: currentProduct),
                 ),
               );
             },
@@ -129,7 +135,7 @@ class ProductDetailScreen extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(17),
                 child: Image.network(
-                  product.imageUrl,
+                  currentProduct.imageUrl,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) => Container(
                     color: Colors.grey.shade100,
@@ -165,7 +171,7 @@ class ProductDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          product.id,
+                          currentProduct.id,
                           style: const TextStyle(
                             color: AppColors.lightGold,
                             fontSize: 11,
@@ -178,16 +184,16 @@ class ProductDetailScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: (product.isActive ? AppColors.success : AppColors.error).withValues(alpha: 0.12),
+                          color: (currentProduct.isActive ? AppColors.success : AppColors.error).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: (product.isActive ? AppColors.success : AppColors.error).withValues(alpha: 0.3),
+                            color: (currentProduct.isActive ? AppColors.success : AppColors.error).withValues(alpha: 0.3),
                           ),
                         ),
                         child: Text(
-                          product.isActive ? 'Active' : 'Inactive',
+                          currentProduct.isActive ? 'Active' : 'Inactive',
                           style: TextStyle(
-                            color: product.isActive ? AppColors.success : AppColors.error,
+                            color: currentProduct.isActive ? AppColors.success : AppColors.error,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
@@ -202,7 +208,7 @@ class ProductDetailScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          product.name,
+                          currentProduct.name,
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
@@ -210,7 +216,7 @@ class ProductDetailScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (product.price != null) ...[
+                      if (currentProduct.price != null) ...[
                         const SizedBox(width: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -228,7 +234,7 @@ class ProductDetailScreen extends StatelessWidget {
                             ],
                           ),
                           child: Text(
-                            '₹ ${product.price!.toStringAsFixed(2)}',
+                            '₹ ${currentProduct.price!.toStringAsFixed(2)}',
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w900,
@@ -244,10 +250,10 @@ class ProductDetailScreen extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 6,
                     children: [
-                      _buildTag(Icons.business_outlined, product.companyName),
-                      _buildTag(Icons.category_outlined, product.categoryName),
-                      if (product.refNo != null && product.refNo!.isNotEmpty)
-                        _buildTag(Icons.tag_rounded, 'Ref: ${product.refNo!}'),
+                      _buildTag(Icons.business_outlined, currentProduct.companyName),
+                      _buildTag(Icons.category_outlined, currentProduct.categoryName),
+                      if (currentProduct.refNo != null && currentProduct.refNo!.isNotEmpty)
+                        _buildTag(Icons.tag_rounded, 'Sorl No: ${currentProduct.refNo!}'),
                     ],
                   ),
                 ],
@@ -256,7 +262,7 @@ class ProductDetailScreen extends StatelessWidget {
 
             const SizedBox(height: 18),
 
-            // --- APPLICATION COMPATIBILITY ---
+            // --- APPLICATION NO ---
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -272,7 +278,7 @@ class ProductDetailScreen extends StatelessWidget {
                       Icon(Icons.directions_car_outlined, color: AppColors.primaryGold, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        'Vehicle Application Compatibility',
+                        'Application No',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
@@ -283,7 +289,7 @@ class ProductDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    product.application,
+                    currentProduct.application.isNotEmpty ? currentProduct.application : 'Not specified',
                     style: const TextStyle(
                       color: AppColors.darkCharcoal,
                       fontSize: 14,
@@ -297,7 +303,7 @@ class ProductDetailScreen extends StatelessWidget {
             const SizedBox(height: 18),
 
             // --- DETAILED DESCRIPTION & REVIEW ---
-            if (product.description != null && product.description!.isNotEmpty) ...[
+            if (currentProduct.description != null && currentProduct.description!.isNotEmpty) ...[
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -324,7 +330,7 @@ class ProductDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      product.description!,
+                      currentProduct.description!,
                       style: const TextStyle(
                         color: AppColors.darkCharcoal,
                         fontSize: 13.5,
@@ -364,13 +370,13 @@ class ProductDetailScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  _buildSpecRow('OEM Reference No', product.refNo),
-                  _buildSpecRow('Displacement', product.displacement),
-                  _buildSpecRow('Max Pressure', product.maxPressure),
-                  _buildSpecRow('Controlled Flow', product.controlledFlow),
-                  _buildSpecRow('Speed Range', product.speedRange),
-                  _buildSpecRow('Rotation Direction', product.rotation),
-                  _buildSpecRow('Fuel Feed Hole', product.fuelFeedHole, isLast: true),
+                  _buildSpecRow('Product Code (Sorl No)', currentProduct.refNo),
+                  _buildSpecRow('Displacement', currentProduct.displacement),
+                  _buildSpecRow('Max Pressure', currentProduct.maxPressure),
+                  _buildSpecRow('Controlled Flow', currentProduct.controlledFlow),
+                  _buildSpecRow('Speed Range', currentProduct.speedRange),
+                  _buildSpecRow('Rotation Direction', currentProduct.rotation),
+                  _buildSpecRow('Fuel Feed Hole', currentProduct.fuelFeedHole, isLast: true),
                 ],
               ),
             ),
@@ -378,7 +384,7 @@ class ProductDetailScreen extends StatelessWidget {
             */
 
             // --- COMMERCIAL & INVENTORY ---
-            if (product.price != null || product.stockQuantity != null) ...[
+            if (currentProduct.price != null || currentProduct.stockQuantity != null) ...[
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -389,13 +395,13 @@ class ProductDetailScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    if (product.price != null)
+                    if (currentProduct.price != null)
                       Column(
                         children: [
                           const Text('Unit Price', style: TextStyle(color: Colors.grey, fontSize: 12)),
                           const SizedBox(height: 4),
                           Text(
-                            '₹ ${product.price!.toStringAsFixed(2)}',
+                            '₹ ${currentProduct.price!.toStringAsFixed(2)}',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,
@@ -404,15 +410,15 @@ class ProductDetailScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                    if (product.price != null && product.stockQuantity != null)
+                    if (currentProduct.price != null && currentProduct.stockQuantity != null)
                       Container(height: 30, width: 1, color: Colors.grey.shade300),
-                    if (product.stockQuantity != null)
+                    if (currentProduct.stockQuantity != null)
                       Column(
                         children: [
                           const Text('Stock Quantity', style: TextStyle(color: Colors.grey, fontSize: 12)),
                           const SizedBox(height: 4),
                           Text(
-                            '${product.stockQuantity} units',
+                            '${currentProduct.stockQuantity} units',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,

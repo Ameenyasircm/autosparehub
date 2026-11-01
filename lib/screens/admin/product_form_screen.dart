@@ -7,6 +7,10 @@ import '../../providers/category_provider.dart';
 import '../../providers/company_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_dropdown_field.dart';
+import '../../widgets/app_form_card.dart';
+import '../../widgets/app_submit_button.dart';
+import '../../widgets/app_text_field.dart';
 
 /// Professional automotive spare parts product studio form with modern e-commerce UX,
 /// dedicated photography studio uploader, live stock preview, and organized specification cards.
@@ -82,10 +86,25 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _existingImageUrl = p?.imageUrl;
     _isActive = p?.isActive ?? true;
 
+    // Auto-select brand if exactly one brand is already available
+    final initialCompanies = context.read<CompanyProvider>().companies;
+    if (_selectedCompanyId == null && initialCompanies.length == 1) {
+      _selectedCompanyId = initialCompanies.first.id;
+      _selectedCompanyName = initialCompanies.first.name;
+    }
+
     // Ensure company and category catalogs are loaded
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final compProvider = context.read<CompanyProvider>();
-      if (compProvider.companies.isEmpty) compProvider.fetchCompanies();
+      if (compProvider.companies.isEmpty) {
+        await compProvider.fetchCompanies();
+        if (mounted && _selectedCompanyId == null && compProvider.companies.length == 1) {
+          setState(() {
+            _selectedCompanyId = compProvider.companies.first.id;
+            _selectedCompanyName = compProvider.companies.first.name;
+          });
+        }
+      }
 
       final catProvider = context.read<CategoryProvider>();
       if (catProvider.categories.isEmpty) catProvider.fetchCategories();
@@ -195,8 +214,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         categoryName: _selectedCategoryName ?? '',
         application: _applicationController.text.trim(),
         description: _descriptionController.text.trim(),
-        // Technical specs skipped / commented out - retain existing values if editing
-        refNo: widget.productToEdit?.refNo,
+        refNo: _refNoController.text.trim(),
         displacement: widget.productToEdit?.displacement,
         maxPressure: widget.productToEdit?.maxPressure,
         controlledFlow: widget.productToEdit?.controlledFlow,
@@ -217,8 +235,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         categoryName: _selectedCategoryName ?? '',
         application: _applicationController.text.trim(),
         description: _descriptionController.text.trim(),
-        // Technical specs skipped - pass null
-        refNo: null,
+        refNo: _refNoController.text.trim(),
         displacement: null,
         maxPressure: null,
         controlledFlow: null,
@@ -251,6 +268,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     final provider = context.watch<ProductProvider>();
     final companyProvider = context.watch<CompanyProvider>();
     final categoryProvider = context.watch<CategoryProvider>();
+
+    // If there is only one brand, make it default selected automatically
+    if (companyProvider.companies.length == 1 &&
+        (_selectedCompanyId == null || !companyProvider.companies.any((c) => c.id == _selectedCompanyId))) {
+      final singleCompany = companyProvider.companies.first;
+      _selectedCompanyId = singleCompany.id;
+      _selectedCompanyName = singleCompany.name;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -297,41 +322,31 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               // --- 1. PHOTOGRAPHY STUDIO HERO ---
               _buildPhotographyStudio(),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
               // --- 2. GENERAL PRODUCT INFORMATION ---
-              _buildSectionHeader('General Information', Icons.info_outline, isMandatory: true),
-              const SizedBox(height: 10),
               _buildGeneralInfoCard(companyProvider, categoryProvider, provider),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
               // --- 3. COMMERCIAL PRICING & INVENTORY ---
-              _buildSectionHeader('Pricing & Inventory', Icons.payments_outlined, isMandatory: false),
-              const SizedBox(height: 10),
               _buildPricingAndInventoryCard(provider),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
               // --- 4. VEHICLE APPLICATION & FITMENT ---
-              _buildSectionHeader('Vehicle Application & Compatibility', Icons.directions_car_outlined, isMandatory: true),
-              const SizedBox(height: 10),
               _buildFitmentCard(provider),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
               // --- 5. DESCRIPTION (OPTIONAL) ---
-              _buildSectionHeader('Description (Optional)', Icons.notes_rounded, isMandatory: false),
-              const SizedBox(height: 10),
               _buildDescriptionCard(provider),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
               // --- TECHNICAL SPECIFICATIONS (SKIPPED FOR NOW AS PER REQUIREMENT) ---
-              // _buildSectionHeader('Technical Specifications', Icons.tune_outlined, isMandatory: false),
-              // const SizedBox(height: 10),
               // _buildTechnicalSpecsCard(provider),
-              // const SizedBox(height: 20),
+              // const SizedBox(height: 16),
 
               // --- 6. CATALOG VISIBILITY TOGGLE ---
               _buildPublishingStatusCard(provider),
@@ -342,42 +357,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         ),
       ),
       ),
-    );
-  }
-
-  // --- SECTION HEADER ---
-  Widget _buildSectionHeader(String title, IconData icon, {bool isMandatory = false}) {
-    return Row(
-      children: [
-        Icon(icon, color: AppColors.primaryGold, size: 18),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14.5,
-            fontWeight: FontWeight.w800,
-            color: AppColors.darkCharcoal,
-          ),
-        ),
-        if (isMandatory) ...[
-          const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.primaryGold.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Text(
-              'Required',
-              style: TextStyle(
-                fontSize: 9.5,
-                fontWeight: FontWeight.w800,
-                color: AppColors.darkCharcoal,
-              ),
-            ),
-          ),
-        ],
-      ],
     );
   }
 
@@ -570,25 +549,22 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     CategoryProvider categoryProvider,
     ProductProvider provider,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+    return AppFormCard(
+      title: 'General Information',
+      icon: Icons.info_outline,
+      isRequired: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildFieldLabel('Product Title / Spare Part Name *'),
-          TextFormField(
+          AppTextField(
+            label: 'Product Name',
+            hint: 'Enter product name',
             controller: _nameController,
-            textCapitalization: TextCapitalization.words,
+            isRequired: true,
             enabled: !provider.isSaving,
-            decoration: const InputDecoration(
-              hintText: 'e.g. Hydraulic Power Steering Pump',
-              prefixIcon: Icon(Icons.precision_manufacturing_outlined),
-            ),
+            textCapitalization: TextCapitalization.words,
+            prefixIcon: Icons.precision_manufacturing_outlined,
+            isDarkTheme: true,
             validator: (val) {
               if (val == null || val.trim().isEmpty) {
                 return 'Product name is required';
@@ -596,18 +572,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               return null;
             },
           ),
-
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // Company Selector
-          _buildFieldLabel('Vehicle Manufacturer / Brand *'),
-          DropdownButtonFormField<String>(
-            isExpanded: true,
-            initialValue: _selectedCompanyId,
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.business_outlined),
-              hintText: 'Select vehicle company',
-            ),
+          AppDropdownField<String>(
+            label: 'Brand',
+            hint: 'Select brand',
+            isRequired: true,
+            enabled: !provider.isSaving,
+            value: _selectedCompanyId,
+            prefixIcon: Icons.business_outlined,
+            isDarkTheme: true,
             items: companyProvider.companies.map((c) {
               return DropdownMenuItem<String>(
                 value: c.id,
@@ -618,31 +593,28 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 ),
               );
             }).toList(),
-            onChanged: provider.isSaving
-                ? null
-                : (val) {
-                    if (val != null) {
-                      final matched = companyProvider.companies.firstWhere((c) => c.id == val);
-                      setState(() {
-                        _selectedCompanyId = val;
-                        _selectedCompanyName = matched.name;
-                      });
-                    }
-                  },
-            validator: (val) => val == null || val.isEmpty ? 'Please select a company' : null,
+            onChanged: (val) {
+              if (val != null) {
+                final matched = companyProvider.companies.firstWhere((c) => c.id == val);
+                setState(() {
+                  _selectedCompanyId = val;
+                  _selectedCompanyName = matched.name;
+                });
+              }
+            },
+            validator: (val) => val == null || val.isEmpty ? 'Please select a brand' : null,
           ),
-
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // Category Selector
-          _buildFieldLabel('Spare Parts Category *'),
-          DropdownButtonFormField<String>(
-            isExpanded: true,
-            initialValue: _selectedCategoryId,
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.category_outlined),
-              hintText: 'Select part category',
-            ),
+          AppDropdownField<String>(
+            label: 'Category',
+            hint: 'Select category',
+            isRequired: true,
+            enabled: !provider.isSaving,
+            value: _selectedCategoryId,
+            prefixIcon: Icons.category_outlined,
+            isDarkTheme: true,
             items: categoryProvider.categories.map((c) {
               return DropdownMenuItem<String>(
                 value: c.id,
@@ -653,17 +625,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                 ),
               );
             }).toList(),
-            onChanged: provider.isSaving
-                ? null
-                : (val) {
-                    if (val != null) {
-                      final matched = categoryProvider.categories.firstWhere((c) => c.id == val);
-                      setState(() {
-                        _selectedCategoryId = val;
-                        _selectedCategoryName = matched.name;
-                      });
-                    }
-                  },
+            onChanged: (val) {
+              if (val != null) {
+                final matched = categoryProvider.categories.firstWhere((c) => c.id == val);
+                setState(() {
+                  _selectedCategoryId = val;
+                  _selectedCategoryName = matched.name;
+                });
+              }
+            },
             validator: (val) => val == null || val.isEmpty ? 'Please select a category' : null,
           ),
         ],
@@ -673,75 +643,50 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   // --- 3. COMMERCIAL PRICING & INVENTORY CARD ---
   Widget _buildPricingAndInventoryCard(ProductProvider provider) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AppFormCard(
+      title: 'Pricing & Stock',
+      icon: Icons.payments_outlined,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              // Price Input
-              Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildFieldLabel('Selling Price (₹) *'),
-                    TextFormField(
-                      controller: _priceController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      enabled: !provider.isSaving,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. 2450.00',
-                        prefixIcon: Icon(Icons.currency_rupee_rounded),
-                      ),
-                      validator: (val) {
-                        if (val != null && val.trim().isNotEmpty) {
-                          final clean = val.trim().replaceAll(',', '');
-                          final parsed = double.tryParse(clean);
-                          if (parsed == null || parsed < 0) {
-                            return 'Enter valid price';
-                          }
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Stock Input
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildFieldLabel('Stock Quantity'),
-                    TextFormField(
-                      controller: _stockController,
-                      keyboardType: TextInputType.number,
-                      enabled: !provider.isSaving,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. 10',
-                        prefixIcon: Icon(Icons.inventory_2_outlined),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          // Price Input
+          Expanded(
+            flex: 3,
+            child: AppTextField(
+              label: 'Price (₹)',
+              hint: '0.00',
+              controller: _priceController,
+              isRequired: true,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              enabled: !provider.isSaving,
+              prefixIcon: Icons.currency_rupee_rounded,
+              isDarkTheme: true,
+              validator: (val) {
+                if (val != null && val.trim().isNotEmpty) {
+                  final clean = val.trim().replaceAll(',', '');
+                  final parsed = double.tryParse(clean);
+                  if (parsed == null || parsed < 0) {
+                    return 'Enter valid price';
+                  }
+                }
+                return null;
+              },
+            ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Customer selling price displayed on catalog. Stock updates inventory automatically.',
-            style: TextStyle(color: Colors.grey, fontSize: 11),
+          const SizedBox(width: 12),
+
+          // Stock Input
+          Expanded(
+            flex: 2,
+            child: AppTextField(
+              label: 'Stock',
+              hint: '0',
+              controller: _stockController,
+              keyboardType: TextInputType.number,
+              enabled: !provider.isSaving,
+              prefixIcon: Icons.inventory_2_outlined,
+              isDarkTheme: true,
+            ),
           ),
         ],
       ),
@@ -750,36 +695,36 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   // --- 4. VEHICLE APPLICATION & FITMENT CARD ---
   Widget _buildFitmentCard(ProductProvider provider) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+    return AppFormCard(
+      title: 'Application & Product Code',
+      icon: Icons.directions_car_outlined,
+      isRequired: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildFieldLabel('Application (Vehicle / Engine Compatibility) *'),
-          TextFormField(
+          AppTextField(
+            label: 'Application No',
+            hint: 'Enter application no',
             controller: _applicationController,
-            maxLines: 2,
+            isRequired: true,
             enabled: !provider.isSaving,
-            decoration: const InputDecoration(
-              hintText: 'e.g. Toyota Hilux Vigo 2.5/3.0 D-4D 2005-2015 / Fortuner 1KD/2KD',
-              prefixIcon: Icon(Icons.directions_car_outlined),
-            ),
+            prefixIcon: Icons.directions_car_outlined,
+            isDarkTheme: true,
             validator: (val) {
               if (val == null || val.trim().isEmpty) {
-                return 'Application details are required for part compatibility';
+                return 'Application no is required';
               }
               return null;
             },
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'List exact vehicle models, engine codes, and years to ensure buyer match accuracy.',
-            style: TextStyle(color: Colors.grey, fontSize: 11),
+          const SizedBox(height: 14),
+          AppTextField(
+            label: 'Product Code (Sorl Number)',
+            hint: 'Enter product code / Sorl no',
+            controller: _refNoController,
+            enabled: !provider.isSaving,
+            prefixIcon: Icons.tag_rounded,
+            isDarkTheme: true,
           ),
         ],
       ),
@@ -788,27 +733,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   // --- 5. DESCRIPTION CARD ---
   Widget _buildDescriptionCard(ProductProvider provider) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildFieldLabel('Product Description / Notes (Optional)'),
-          TextFormField(
-            controller: _descriptionController,
-            maxLines: 4,
-            enabled: !provider.isSaving,
-            decoration: const InputDecoration(
-              hintText: 'Enter part description, details, warranty, or notes...',
-              prefixIcon: Icon(Icons.notes_rounded),
-            ),
-          ),
-        ],
+    return AppFormCard(
+      title: 'Description',
+      icon: Icons.notes_rounded,
+      child: AppTextField(
+        label: 'Description',
+        hint: 'Enter description (optional)',
+        controller: _descriptionController,
+        maxLines: 3,
+        enabled: !provider.isSaving,
+        prefixIcon: Icons.notes_rounded,
+        isDarkTheme: true,
       ),
     );
   }
@@ -1026,11 +961,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [
+        border: const Border(top: BorderSide(color: Color(0xFFECEFF3), width: 1.0)),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
+            color: Color(0x0F000000),
             blurRadius: 10,
-            offset: const Offset(0, -3),
+            offset: Offset(0, -3),
           ),
         ],
       ),
@@ -1052,72 +988,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             const SizedBox(width: 12),
             // Submit
             Expanded(
-              child: Container(
+              child: AppSubmitButton(
+                label: widget.isEditing ? 'Update Spare Part' : 'Publish to Catalog',
+                loadingLabel: widget.isEditing ? 'Updating Spare Part...' : 'Publishing to Catalog...',
+                isLoading: provider.isSaving,
+                icon: widget.isEditing ? Icons.check_circle_outline : Icons.cloud_upload_outlined,
+                backgroundColor: AppColors.primaryGold,
+                foregroundColor: AppColors.darkCharcoal,
                 height: 48,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primaryGold, AppColors.lightGold],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primaryGold.withValues(alpha: 0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: provider.isSaving ? null : _submit,
-                  child: provider.isSaving
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.darkCharcoal),
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Saving Part...',
-                              style: TextStyle(
-                                color: AppColors.darkCharcoal,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              widget.isEditing ? Icons.check_circle_outline : Icons.cloud_upload_outlined,
-                              color: AppColors.darkCharcoal,
-                              size: 19,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              widget.isEditing ? 'Update Spare Part' : 'Publish to Catalog',
-                              style: const TextStyle(
-                                color: AppColors.darkCharcoal,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
+                onPressed: _submit,
               ),
             ),
           ],

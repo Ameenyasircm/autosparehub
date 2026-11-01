@@ -511,7 +511,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     setState(() {});
                   },
                   decoration: const InputDecoration(
-                    hintText: 'Search spare parts, part no, model...',
+                    hintText: 'Search spare parts, Application No, Sorl No...',
                     hintStyle: TextStyle(
                       color: Color(0xFF8C95A6),
                       fontSize: 14,
@@ -1449,11 +1449,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
                 const SizedBox(height: 2),
 
-                // Part Number (e.g., "Part No. OF-1024")
+                // Product Code / Application No snippet
                 Text(
                   product.refNo != null && product.refNo!.isNotEmpty
-                      ? 'Part No. ${product.refNo}'
-                      : (product.application.isNotEmpty ? product.application : 'Genuine OEM Part'),
+                      ? 'Sorl No: ${product.refNo}'
+                      : (product.application.isNotEmpty ? 'App No: ${product.application}' : 'Genuine OEM Part'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(

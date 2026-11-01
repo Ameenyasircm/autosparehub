@@ -404,7 +404,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                     if (hasRefNo) ...[
                       const SizedBox(height: 3),
                       Text(
-                        'Part No: ${p.refNo}',
+                        'Sorl No: ${p.refNo}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -418,7 +418,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                     if (hasApp) ...[
                       const SizedBox(height: 3),
                       Text(
-                        'App: ${p.application}',
+                        'App No: ${p.application}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
