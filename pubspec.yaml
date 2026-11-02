@@ -100,8 +100,12 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/AutoSpareLogo.jpg"
+  remove_alpha_ios: true
+  image_path: "assets/app_icon_legacy.png"
   min_sdk_android: 21
+  adaptive_icon_background: "#1E222B"
+  adaptive_icon_foreground: "assets/app_icon_foreground.png"
+  adaptive_icon_foreground_inset: 0
   web:
     generate: true
-    image_path: "assets/AutoSpareLogo.jpg"
+    image_path: "assets/app_icon_legacy.png"
