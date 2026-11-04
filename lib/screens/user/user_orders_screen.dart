@@ -8,6 +8,92 @@ import '../../theme/app_theme.dart';
 import 'user_login_screen.dart';
 import 'widgets/change_password_dialog.dart';
 
+/// Visual styling metadata for each order status in customer-facing screens.
+class OrderStatusVisuals {
+  final String key;
+  final String label;
+  final String description;
+  final IconData icon;
+  final Color primaryColor;
+  final Color backgroundColor;
+  final Color borderColor;
+
+  const OrderStatusVisuals({
+    required this.key,
+    required this.label,
+    required this.description,
+    required this.icon,
+    required this.primaryColor,
+    required this.backgroundColor,
+    required this.borderColor,
+  });
+
+  static OrderStatusVisuals fromStatus(String rawStatus) {
+    switch (rawStatus.toUpperCase()) {
+      case 'PENDING':
+        return const OrderStatusVisuals(
+          key: 'PENDING',
+          label: 'Requested',
+          description: 'Order placed. Waiting for store review and confirmation.',
+          icon: Icons.hourglass_top_rounded,
+          primaryColor: Color(0xFFD97706), // Warm amber
+          backgroundColor: Color(0xFFFEF3C7),
+          borderColor: Color(0xFFFDE68A),
+        );
+      case 'CONFIRMED':
+        return const OrderStatusVisuals(
+          key: 'CONFIRMED',
+          label: 'Confirmed',
+          description: 'Order accepted! Spare parts verified & being prepared.',
+          icon: Icons.check_circle_outline_rounded,
+          primaryColor: Color(0xFF0284C7), // Ocean sky blue
+          backgroundColor: Color(0xFFE0F2FE),
+          borderColor: Color(0xFFBAE6FD),
+        );
+      case 'DISPATCHED':
+        return const OrderStatusVisuals(
+          key: 'DISPATCHED',
+          label: 'Dispatched',
+          description: 'On the way! Package out for delivery / pickup ready.',
+          icon: Icons.local_shipping_rounded,
+          primaryColor: Color(0xFF7C3AED), // Deep purple
+          backgroundColor: Color(0xFFEDE9FE),
+          borderColor: Color(0xFFDDD6FE),
+        );
+      case 'DELIVERED':
+        return const OrderStatusVisuals(
+          key: 'DELIVERED',
+          label: 'Delivered',
+          description: 'Order fulfilled & delivered successfully. Thank you!',
+          icon: Icons.task_alt_rounded,
+          primaryColor: Color(0xFF059669), // Emerald green
+          backgroundColor: Color(0xFFD1FAE5),
+          borderColor: Color(0xFFA7F3D0),
+        );
+      case 'CANCELLED':
+        return const OrderStatusVisuals(
+          key: 'CANCELLED',
+          label: 'Cancelled',
+          description: 'Order cancelled or rejected.',
+          icon: Icons.cancel_outlined,
+          primaryColor: Color(0xFFDC2626), // Rose red
+          backgroundColor: Color(0xFFFEE2E2),
+          borderColor: Color(0xFFFECACA),
+        );
+      default:
+        return OrderStatusVisuals(
+          key: rawStatus.toUpperCase(),
+          label: rawStatus.isEmpty ? 'Pending' : rawStatus,
+          description: 'Order status update pending.',
+          icon: Icons.help_outline_rounded,
+          primaryColor: AppColors.secondaryGold,
+          backgroundColor: AppColors.secondaryGold.withValues(alpha: 0.12),
+          borderColor: AppColors.secondaryGold.withValues(alpha: 0.3),
+        );
+    }
+  }
+}
+
 /// Customer screen displaying the history, live status, and detailed itemized
 /// breakdowns of placed automotive spare part orders.
 class UserOrdersScreen extends StatefulWidget {
@@ -20,6 +106,7 @@ class UserOrdersScreen extends StatefulWidget {
 
 class _UserOrdersScreenState extends State<UserOrdersScreen> {
   String? _lastFetchedCustomerId;
+  String _selectedStatusFilter = 'ALL';
 
   @override
   void initState() {
@@ -39,13 +126,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
   }
 
   void _showOrderDetailsSheet(BuildContext context, OrderModel order) {
-    final statusColor = order.isDelivered
-        ? AppColors.success
-        : order.isCancelled
-            ? AppColors.error
-            : order.isDispatched
-                ? Colors.blue.shade700
-                : AppColors.secondaryGold;
+    final visuals = OrderStatusVisuals.fromStatus(order.status);
 
     showModalBottomSheet(
       context: context,
@@ -98,17 +179,24 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                      color: visuals.backgroundColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: visuals.borderColor),
                     ),
-                    child: Text(
-                      order.status,
-                      style: TextStyle(
-                        color: statusColor,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(visuals.icon, size: 13, color: visuals.primaryColor),
+                        const SizedBox(width: 5),
+                        Text(
+                          visuals.label,
+                          style: TextStyle(
+                            color: visuals.primaryColor,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -124,6 +212,55 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Status Explanation Banner
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 18),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: visuals.backgroundColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: visuals.borderColor),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: visuals.borderColor),
+                            ),
+                            child: Icon(visuals.icon, color: visuals.primaryColor, size: 18),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Status: ${visuals.label}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13.5,
+                                    color: visuals.primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  visuals.description,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: visuals.primaryColor.withValues(alpha: 0.9),
+                                    height: 1.25,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                     // --- ORDERED ITEMS LIST ---
                     Row(
                       children: [
@@ -388,6 +525,25 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
     final orderProvider = context.watch<OrderProvider>();
     final orders = orderProvider.customerOrders;
 
+    final filteredOrders = _selectedStatusFilter == 'ALL'
+        ? orders
+        : orders.where((o) {
+            switch (_selectedStatusFilter) {
+              case 'PENDING':
+                return o.isPending;
+              case 'CONFIRMED':
+                return o.isConfirmed;
+              case 'DISPATCHED':
+                return o.isDispatched;
+              case 'DELIVERED':
+                return o.isDelivered;
+              case 'CANCELLED':
+                return o.isCancelled;
+              default:
+                return true;
+            }
+          }).toList();
+
     if (customer != null && _lastFetchedCustomerId != customer.id) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _checkAndFetchOrders();
@@ -423,6 +579,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                         context.read<CartProvider>().onUserLogout();
                         context.read<OrderProvider>().clearCustomerOrders();
                         _lastFetchedCustomerId = null;
+                        _selectedStatusFilter = 'ALL';
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Logged out successfully.')),
@@ -552,12 +709,12 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                     ),
                   ),
                 )
-              : RefreshIndicator(
-                  color: AppColors.primaryGold,
-                  backgroundColor: AppColors.darkCharcoal,
-                  onRefresh: () => orderProvider.fetchCustomerOrders(customer.id, userPhone: customer.phone),
-                  child: orders.isEmpty
-                      ? (orderProvider.isCustomerOrdersLoading
+              : orders.isEmpty
+                  ? RefreshIndicator(
+                      color: AppColors.primaryGold,
+                      backgroundColor: AppColors.darkCharcoal,
+                      onRefresh: () => orderProvider.fetchCustomerOrders(customer.id, userPhone: customer.phone),
+                      child: orderProvider.isCustomerOrdersLoading
                           ? const Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -599,30 +756,249 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                                   ],
                                 ),
                               ),
-                            ))
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                          itemCount: orders.length,
-                          itemBuilder: (context, index) {
-                            final order = orders[index];
-                            return _buildOrderCard(order);
-                          },
+                            ),
+                    )
+                  : Column(
+                      children: [
+                        // Horizontal Status Filter Row
+                        _buildStatusFilterBar(orders),
+
+                        // Filtered Orders List or Empty Filter Notice
+                        Expanded(
+                          child: RefreshIndicator(
+                            color: AppColors.primaryGold,
+                            backgroundColor: AppColors.darkCharcoal,
+                            onRefresh: () => orderProvider.fetchCustomerOrders(customer.id, userPhone: customer.phone),
+                            child: filteredOrders.isEmpty
+                                ? SingleChildScrollView(
+                                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                                    child: Container(
+                                      alignment: Alignment.center,
+                                      height: MediaQuery.of(context).size.height * 0.55,
+                                      padding: const EdgeInsets.all(24.0),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: OrderStatusVisuals.fromStatus(_selectedStatusFilter).backgroundColor,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: OrderStatusVisuals.fromStatus(_selectedStatusFilter).borderColor,
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              OrderStatusVisuals.fromStatus(_selectedStatusFilter).icon,
+                                              size: 36,
+                                              color: OrderStatusVisuals.fromStatus(_selectedStatusFilter).primaryColor,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'No ${OrderStatusVisuals.fromStatus(_selectedStatusFilter).label} Orders',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w800,
+                                              color: AppColors.darkCharcoal,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'You currently do not have any orders with status "${OrderStatusVisuals.fromStatus(_selectedStatusFilter).label}".',
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(color: AppColors.secondaryText, fontSize: 12.5),
+                                          ),
+                                          const SizedBox(height: 18),
+                                          OutlinedButton.icon(
+                                            onPressed: () => setState(() => _selectedStatusFilter = 'ALL'),
+                                            icon: const Icon(Icons.all_inbox_rounded, size: 16),
+                                            label: const Text('Show All Orders'),
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: AppColors.darkCharcoal,
+                                              side: const BorderSide(color: AppColors.primaryGold),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                                    itemCount: filteredOrders.length,
+                                    itemBuilder: (context, index) {
+                                      final order = filteredOrders[index];
+                                      return _buildOrderCard(order);
+                                    },
+                                  ),
+                          ),
                         ),
+                      ],
+                    ),
+      ),
+    );
+  }
+
+  /// Builds the horizontal status filter row with counts and distinct status colors.
+  Widget _buildStatusFilterBar(List<OrderModel> allOrders) {
+    final totalCount = allOrders.length;
+    final pendingCount = allOrders.where((o) => o.isPending).length;
+    final confirmedCount = allOrders.where((o) => o.isConfirmed).length;
+    final dispatchedCount = allOrders.where((o) => o.isDispatched).length;
+    final deliveredCount = allOrders.where((o) => o.isDelivered).length;
+    final cancelledCount = allOrders.where((o) => o.isCancelled).length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: AppColors.dividerLight, width: 1),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            _buildFilterPill(
+              label: 'All',
+              filterKey: 'ALL',
+              count: totalCount,
+              icon: Icons.all_inbox_rounded,
+              color: AppColors.darkHeader,
+            ),
+            const SizedBox(width: 8),
+            _buildFilterPill(
+              label: 'Requested',
+              filterKey: 'PENDING',
+              count: pendingCount,
+              icon: Icons.hourglass_top_rounded,
+              color: const Color(0xFFD97706),
+            ),
+            const SizedBox(width: 8),
+            _buildFilterPill(
+              label: 'Confirmed',
+              filterKey: 'CONFIRMED',
+              count: confirmedCount,
+              icon: Icons.check_circle_outline_rounded,
+              color: const Color(0xFF0284C7),
+            ),
+            const SizedBox(width: 8),
+            _buildFilterPill(
+              label: 'Dispatched',
+              filterKey: 'DISPATCHED',
+              count: dispatchedCount,
+              icon: Icons.local_shipping_rounded,
+              color: const Color(0xFF7C3AED),
+            ),
+            const SizedBox(width: 8),
+            _buildFilterPill(
+              label: 'Delivered',
+              filterKey: 'DELIVERED',
+              count: deliveredCount,
+              icon: Icons.task_alt_rounded,
+              color: const Color(0xFF059669),
+            ),
+            const SizedBox(width: 8),
+            _buildFilterPill(
+              label: 'Cancelled',
+              filterKey: 'CANCELLED',
+              count: cancelledCount,
+              icon: Icons.cancel_outlined,
+              color: const Color(0xFFDC2626),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Individual status filter button with responsive selected state and count badge.
+  Widget _buildFilterPill({
+    required String label,
+    required String filterKey,
+    required int count,
+    required IconData icon,
+    required Color color,
+  }) {
+    final bool isSelected = _selectedStatusFilter == filterKey;
+
+    return GestureDetector(
+      onTap: () {
+        if (_selectedStatusFilter != filterKey) {
+          setState(() {
+            _selectedStatusFilter = filterKey;
+          });
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6.5),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.darkButton : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.warmGold : const Color(0xFFDDE1E6),
+            width: isSelected ? 1.4 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 13.5,
+              color: isSelected ? AppColors.warmGold : color,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? AppColors.warmGold : const Color(0xFF2C323E),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.warmGold.withValues(alpha: 0.22)
+                    : const Color(0xFFEDEFF2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: isSelected ? AppColors.warmGold : const Color(0xFF5A6271),
                 ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildOrderCard(OrderModel order) {
-    final statusColor = order.isDelivered
-        ? AppColors.success
-        : order.isCancelled
-            ? AppColors.error
-            : order.isDispatched
-                ? Colors.blue.shade700
-                : AppColors.secondaryGold;
-
+    final visuals = OrderStatusVisuals.fromStatus(order.status);
     final distinctItems = order.distinctItems;
     final isMultiItem = distinctItems.length > 1;
 
@@ -636,10 +1012,10 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: visuals.borderColor.withValues(alpha: 0.9), width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: visuals.primaryColor.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -648,7 +1024,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Order Header
+            // Order Header: Order # + Date + Colored Status Badge
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -668,18 +1044,26 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                    color: visuals.backgroundColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: visuals.borderColor, width: 1),
                   ),
-                  child: Text(
-                    order.status,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(visuals.icon, size: 11.5, color: visuals.primaryColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        visuals.label,
+                        style: TextStyle(
+                          color: visuals.primaryColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -750,8 +1134,38 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                 ),
               ],
             ),
+
+            // Subtle Status Explanation Banner
+            Container(
+              margin: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: visuals.backgroundColor.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: visuals.borderColor.withValues(alpha: 0.6)),
+              ),
+              child: Row(
+                children: [
+                  Icon(visuals.icon, size: 13, color: visuals.primaryColor),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      visuals.description,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: visuals.primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             if (order.adminRemark != null && order.adminRemark!.trim().isNotEmpty) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(

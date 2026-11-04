@@ -300,7 +300,7 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
                         Icon(Icons.shopping_bag_outlined, color: AppColors.darkCharcoal, size: 20),
                         SizedBox(width: 8),
                         Text(
-                          'Confirm & Place Order',
+                          'Submit Order Request',
                           style: TextStyle(
                             color: AppColors.darkCharcoal,
                             fontWeight: FontWeight.w800,

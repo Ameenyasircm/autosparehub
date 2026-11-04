@@ -172,16 +172,6 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
             fontSize: 18,
           ),
         ),
-        actions: [
-          if (cartProvider.isNotEmpty)
-            TextButton(
-              onPressed: () => cartProvider.clearCart(),
-              child: const Text(
-                'Clear',
-                style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-            ),
-        ],
       ),
       bottomNavigationBar: SafeArea(
         top: false,

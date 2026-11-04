@@ -48,7 +48,7 @@ class OrderSuccessScreen extends StatelessWidget {
           elevation: 0,
           automaticallyImplyLeading: false,
           title: const Text(
-            'Order Confirmed',
+            'Order Requested',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w800,
@@ -119,7 +119,7 @@ class OrderSuccessScreen extends StatelessWidget {
                       const SizedBox(height: 16),
 
                       const Text(
-                        'Order Placed Successfully!',
+                        'Order Requested Successfully!',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 21,

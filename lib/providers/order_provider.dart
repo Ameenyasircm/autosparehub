@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/cart_item_model.dart';
 import '../models/order_model.dart';
 import '../models/product_model.dart';
+import '../services/notification_service.dart';
 
 enum OrderDateFilter {
   all,
@@ -31,6 +32,8 @@ class OrderProvider extends ChangeNotifier {
   bool _isCustomerOrdersLoading = false;
   bool _isPlacingOrder = false;
   String? _errorMessage;
+  StreamSubscription<QuerySnapshot>? _adminOrdersSubscription;
+  bool _isInitialAdminStreamLoad = true;
 
   String _statusFilter = 'ALL'; // ALL, PENDING, CONFIRMED, DISPATCHED, DELIVERED, CANCELLED
   OrderDateFilter _dateFilter = OrderDateFilter.all;
@@ -247,6 +250,9 @@ class OrderProvider extends ChangeNotifier {
           .set(order.toMap())
           .timeout(const Duration(seconds: 10));
 
+      // Broadcast order notification to all administrators
+      _notifyAdminsOfNewOrder(order);
+
       _customerOrders.removeWhere((o) => o.id == order.id || o.orderNumber == order.orderNumber);
       _customerOrders.insert(0, order);
       _isPlacingOrder = false;
@@ -331,6 +337,9 @@ class OrderProvider extends ChangeNotifier {
           .doc(docId)
           .set(order.toMap())
           .timeout(const Duration(seconds: 10));
+
+      // Broadcast order notification to all administrators
+      _notifyAdminsOfNewOrder(order);
 
       _customerOrders.removeWhere((o) => o.id == order.id || o.orderNumber == order.orderNumber);
       _customerOrders.insert(0, order);
@@ -478,10 +487,110 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  /// Notify all active system administrators when a customer places an order
+  Future<void> _notifyAdminsOfNewOrder(OrderModel order) async {
+    try {
+      // 1. Fetch active admin documents to get their saved FCM IDs
+      final adminSnapshot = await _firestore
+          .collection('ADMINS')
+          .where('IS_ACTIVE', isEqualTo: true)
+          .get()
+          .timeout(const Duration(seconds: 8));
+
+      final List<String> adminTokens = [];
+      for (final doc in adminSnapshot.docs) {
+        final data = doc.data();
+        final token = (data['FCM_TOKEN'] ?? data['fcmToken'])?.toString().trim();
+        if (token != null && token.isNotEmpty) {
+          adminTokens.add(token);
+        }
+      }
+
+      // 2. Persist order notification in NOTIFICATIONS collection for admin alerts / Cloud Functions
+      await _firestore.collection('NOTIFICATIONS').add({
+        'RECIPIENT_TYPE': 'ADMIN',
+        'TYPE': 'NEW_ORDER',
+        'TITLE': 'New Order Received! 🛒',
+        'BODY': 'Order ${order.orderNumber} placed by ${order.userName} (${order.quantity} item${order.quantity > 1 ? 's' : ''}, ₹${order.totalAmount.toStringAsFixed(0)})',
+        'ORDER_ID': order.id,
+        'ORDER_NUMBER': order.orderNumber,
+        'CUSTOMER_NAME': order.userName,
+        'CUSTOMER_PHONE': order.userPhone,
+        'TOTAL_AMOUNT': order.totalAmount,
+        'ITEM_COUNT': order.quantity,
+        'ADMIN_FCM_TOKENS': adminTokens,
+        'IS_READ': false,
+        'CREATED_AT': FieldValue.serverTimestamp(),
+      }).timeout(const Duration(seconds: 6));
+
+      debugPrint('OrderProvider: Notified admins of new order ${order.orderNumber}. Active admin tokens: ${adminTokens.length}');
+    } catch (e) {
+      debugPrint('OrderProvider._notifyAdminsOfNewOrder error: $e');
+    }
+  }
+
+  /// Start real-time Firestore stream listener for Admin Orders.
+  /// Automatically triggers audio/visual local notifications when new orders arrive
+  /// and keeps the admin order dashboard updated in real-time.
+  void startListeningAdminOrders() {
+    _adminOrdersSubscription?.cancel();
+    _isInitialAdminStreamLoad = true;
+
+    _adminOrdersSubscription = _firestore
+        .collection(collectionName)
+        .snapshots()
+        .listen((snapshot) {
+      _adminOrders = snapshot.docs.map((doc) => OrderModel.fromFirestore(doc)).toList();
+
+      // Sort newest first
+      _adminOrders.sort((a, b) {
+        if (a.createdAt != null && b.createdAt != null) {
+          return b.createdAt!.compareTo(a.createdAt!);
+        }
+        return b.id.compareTo(a.id);
+      });
+
+      _isLoading = false;
+      notifyListeners();
+
+      // If not the initial load, detect new orders added and display local notification
+      if (!_isInitialAdminStreamLoad) {
+        for (final change in snapshot.docChanges) {
+          if (change.type == DocumentChangeType.added) {
+            try {
+              final newOrder = OrderModel.fromFirestore(change.doc);
+              NotificationService.instance.showNotification(
+                title: 'New Order Received! 🛒',
+                body: 'Order ${newOrder.orderNumber} placed by ${newOrder.userName} (₹${newOrder.totalAmount.toStringAsFixed(0)})',
+                payload: newOrder.id,
+              );
+            } catch (e) {
+              debugPrint('Error triggering new order alert: $e');
+            }
+          }
+        }
+      }
+      _isInitialAdminStreamLoad = false;
+    }, onError: (e) {
+      debugPrint('OrderProvider.startListeningAdminOrders stream error: $e');
+    });
+  }
+
+  void stopListeningAdminOrders() {
+    _adminOrdersSubscription?.cancel();
+    _adminOrdersSubscription = null;
+  }
+
   void clearError() {
     if (_errorMessage != null) {
       _errorMessage = null;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _adminOrdersSubscription?.cancel();
+    super.dispose();
   }
 }

@@ -464,6 +464,13 @@ class UserAuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Sets customer directly for unit and widget testing
+  void setCustomerForTesting(CustomerModel customer) {
+    _currentCustomer = customer;
+    _isSessionInitialized = true;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _customerSubscription?.cancel();

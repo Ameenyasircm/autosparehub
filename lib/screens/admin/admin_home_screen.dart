@@ -37,6 +37,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Future<void> _refreshData() async {
+    context.read<OrderProvider>().startListeningAdminOrders();
     await Future.wait([
       context.read<OrderProvider>().fetchAdminOrders(),
       context.read<CategoryProvider>().fetchCategories(),

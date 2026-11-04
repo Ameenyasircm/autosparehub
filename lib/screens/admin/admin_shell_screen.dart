@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
+import 'package:provider/provider.dart';
+import '../../providers/order_provider.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import 'admin_home_screen.dart';
@@ -26,6 +28,7 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       NotificationService.instance.requestPermissionIfNotGranted();
+      context.read<OrderProvider>().startListeningAdminOrders();
     });
   }
 
