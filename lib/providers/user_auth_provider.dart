@@ -9,24 +9,24 @@ import '../utils/phone_helper.dart';
 /// Result outcome of customer registration or lookup
 enum CustomerRegistrationResult {
   newRequestSubmitted, // New request created and pending admin approval
-  alreadyPending,      // Mobile number is already in database pending approval
-  alreadyApproved,     // Mobile number is already approved
-  alreadyRejected,     // Mobile number was previously rejected
-  alreadyExists,       // Account already exists with this phone number
-  invalidPhone,        // Not a valid 10-digit Indian phone number
-  invalidPassword,     // Password too short or empty
-  error,               // Firestore or connectivity error
+  alreadyPending, // Mobile number is already in database pending approval
+  alreadyApproved, // Mobile number is already approved
+  alreadyRejected, // Mobile number was previously rejected
+  alreadyExists, // Account already exists with this phone number
+  invalidPhone, // Not a valid 10-digit Indian phone number
+  invalidPassword, // Password too short or empty
+  error, // Firestore or connectivity error
 }
 
 /// Result outcome of customer login
 enum CustomerLoginResult {
-  approved,            // Login successful and account is admin-approved
-  pendingApproval,     // Correct credentials, but account is still pending admin approval
-  rejected,            // Account registration was rejected by admin
-  userNotFound,        // No account found with given mobile number
-  invalidPassword,     // Password mismatch
-  invalidPhone,        // Not a valid mobile number
-  error,               // Network or Firestore error
+  approved, // Login successful and account is admin-approved
+  pendingApproval, // Correct credentials, but account is still pending admin approval
+  rejected, // Account registration was rejected by admin
+  userNotFound, // No account found with given mobile number
+  invalidPassword, // Password mismatch
+  invalidPhone, // Not a valid mobile number
+  error, // Network or Firestore error
 }
 
 /// Provider managing customer registration, approval checking, and identity state.
@@ -40,13 +40,15 @@ class UserAuthProvider extends ChangeNotifier {
   })  : _customFirestore = firestore,
         _sessionService = sessionService ?? UserSessionService();
 
-  FirebaseFirestore get _firestore => _customFirestore ?? FirebaseFirestore.instance;
+  FirebaseFirestore get _firestore =>
+      _customFirestore ?? FirebaseFirestore.instance;
 
   static const String collectionName = 'USERS';
 
   CustomerModel? _currentCustomer;
   bool _isLoading = false;
   bool _isSessionInitialized = false;
+  bool _shouldShowApprovalCelebration = false;
   String? _errorMessage;
   StreamSubscription<DocumentSnapshot>? _customerSubscription;
   StreamSubscription<String>? _tokenRefreshSubscription;
@@ -54,6 +56,7 @@ class UserAuthProvider extends ChangeNotifier {
   CustomerModel? get currentCustomer => _currentCustomer;
   bool get isLoading => _isLoading;
   bool get isSessionInitialized => _isSessionInitialized;
+  bool get shouldShowApprovalCelebration => _shouldShowApprovalCelebration;
   String? get errorMessage => _errorMessage;
 
   bool get isRegistered => _currentCustomer != null;
@@ -74,21 +77,28 @@ class UserAuthProvider extends ChangeNotifier {
       if (!snapshot.exists || snapshot.data() == null) return;
       try {
         final updated = CustomerModel.fromFirestore(snapshot);
-        final bool becameApproved = _currentCustomer != null &&
-            !_currentCustomer!.isApproved &&
-            updated.isApproved;
+        final bool wasNotApproved =
+            _currentCustomer == null || !_currentCustomer!.isApproved;
+        final bool becameApproved = wasNotApproved && updated.isApproved;
 
         _currentCustomer = updated;
         await _sessionService.saveCustomerSession(updated);
-        notifyListeners();
 
         if (becameApproved) {
-          debugPrint('UserAuthProvider: Customer $customerDocId is now APPROVED! Showing alert.');
-          await NotificationService.instance.showNotification(
-            title: 'Account Approved! 🎉',
-            body: 'Your garage account has been approved by the administrator. You can now place orders!',
-          );
+          debugPrint(
+              'UserAuthProvider: Customer $customerDocId is now APPROVED! Checking celebration notice.');
+          final hasSeen =
+              await _sessionService.hasSeenApprovalNotice(customerDocId);
+          if (!hasSeen) {
+            _shouldShowApprovalCelebration = true;
+            await NotificationService.instance.showNotification(
+              title: 'Account Approved! 🎉',
+              body:
+                  'Your garage account has been approved by the administrator. You can now place orders!',
+            );
+          }
         }
+        notifyListeners();
       } catch (e) {
         debugPrint('UserAuthProvider._startListeningToCustomer error: $e');
       }
@@ -110,13 +120,18 @@ class UserAuthProvider extends ChangeNotifier {
       }
 
       _tokenRefreshSubscription?.cancel();
-      _tokenRefreshSubscription = NotificationService.instance.onTokenRefresh.listen((newToken) async {
+      _tokenRefreshSubscription =
+          NotificationService.instance.onTokenRefresh.listen((newToken) async {
         try {
-          await _firestore.collection(collectionName).doc(customerDocId).update({
+          await _firestore
+              .collection(collectionName)
+              .doc(customerDocId)
+              .update({
             'FCM_TOKEN': newToken,
             'FCM_UPDATED_AT': FieldValue.serverTimestamp(),
           });
-          debugPrint('User FCM Token refreshed in Firestore for $customerDocId');
+          debugPrint(
+              'User FCM Token refreshed in Firestore for $customerDocId');
         } catch (_) {}
       });
     } catch (e) {
@@ -128,6 +143,12 @@ class UserAuthProvider extends ChangeNotifier {
   Future<void> initSession() async {
     try {
       _currentCustomer = await _sessionService.getCustomerSession();
+
+      // If customer was already approved in previous launches, mark notice as seen
+      // so normal app openings never trigger the celebration banner
+      if (_currentCustomer != null && _currentCustomer!.isApproved) {
+        await _sessionService.markApprovalNoticeSeen(_currentCustomer!.id);
+      }
 
       // If user was previously registered, activate real-time listener and FCM sync
       if (_currentCustomer != null) {
@@ -182,7 +203,8 @@ class UserAuthProvider extends ChangeNotifier {
       final docRef = _firestore.collection(collectionName).doc(docId);
 
       // 1. Direct lookup to check if this 10-digit number already exists
-      final existingDoc = await docRef.get().timeout(const Duration(seconds: 8));
+      final existingDoc =
+          await docRef.get().timeout(const Duration(seconds: 8));
 
       if (existingDoc.exists) {
         final existingCustomer = CustomerModel.fromFirestore(existingDoc);
@@ -265,21 +287,25 @@ class UserAuthProvider extends ChangeNotifier {
     try {
       final docId = PhoneHelper.toDocId(cleanPhone);
       final docRef = _firestore.collection(collectionName).doc(docId);
-      final docSnapshot = await docRef.get().timeout(const Duration(seconds: 10));
+      final docSnapshot =
+          await docRef.get().timeout(const Duration(seconds: 10));
 
       if (!docSnapshot.exists) {
         _isLoading = false;
-        _errorMessage = 'No customer account found with this phone number. Please register.';
+        _errorMessage =
+            'No customer account found with this phone number. Please register.';
         notifyListeners();
         return CustomerLoginResult.userNotFound;
       }
 
       final data = docSnapshot.data() ?? {};
-      final storedPassword = (data['PASSWORD'] ?? data['password'] ?? '').toString();
+      final storedPassword =
+          (data['PASSWORD'] ?? data['password'] ?? '').toString();
 
       if (storedPassword.isNotEmpty && storedPassword != cleanPassword) {
         _isLoading = false;
-        _errorMessage = 'Incorrect password. Please try again or ask admin to reset.';
+        _errorMessage =
+            'Incorrect password. Please try again or ask admin to reset.';
         notifyListeners();
         return CustomerLoginResult.invalidPassword;
       }
@@ -322,12 +348,11 @@ class UserAuthProvider extends ChangeNotifier {
           .collection(collectionName)
           .doc(_currentCustomer!.id)
           .update({
-            'STATUS': 'PENDING',
-            'REQUESTED_AT': Timestamp.fromDate(now),
-            'REJECTION_REASON': null,
-            'UPDATED_AT': FieldValue.serverTimestamp(),
-          })
-          .timeout(const Duration(seconds: 8));
+        'STATUS': 'PENDING',
+        'REQUESTED_AT': Timestamp.fromDate(now),
+        'REJECTION_REASON': null,
+        'UPDATED_AT': FieldValue.serverTimestamp(),
+      }).timeout(const Duration(seconds: 8));
 
       _currentCustomer = _currentCustomer!.copyWith(
         status: 'PENDING',
@@ -360,9 +385,17 @@ class UserAuthProvider extends ChangeNotifier {
 
       if (doc.exists) {
         final updated = CustomerModel.fromFirestore(doc);
+        final wasNotApproved = !_currentCustomer!.isApproved;
         if (updated.status != _currentCustomer!.status) {
           _currentCustomer = updated;
           await _sessionService.saveCustomerSession(updated);
+          if (wasNotApproved && updated.isApproved) {
+            final hasSeen =
+                await _sessionService.hasSeenApprovalNotice(updated.id);
+            if (!hasSeen) {
+              _shouldShowApprovalCelebration = true;
+            }
+          }
           notifyListeners();
         }
         return true;
@@ -371,6 +404,15 @@ class UserAuthProvider extends ChangeNotifier {
       debugPrint('UserAuthProvider.refreshApprovalStatus error: $e');
     }
     return false;
+  }
+
+  /// Consumes the one-time celebration trigger and persists the notice as displayed
+  Future<void> consumeApprovalCelebration() async {
+    _shouldShowApprovalCelebration = false;
+    if (_currentCustomer != null) {
+      await _sessionService.markApprovalNoticeSeen(_currentCustomer!.id);
+    }
+    notifyListeners();
   }
 
   /// Update customer's own password from the user app.
@@ -401,7 +443,8 @@ class UserAuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final docRef = _firestore.collection(collectionName).doc(_currentCustomer!.id);
+      final docRef =
+          _firestore.collection(collectionName).doc(_currentCustomer!.id);
       final doc = await docRef.get().timeout(const Duration(seconds: 8));
 
       if (!doc.exists) {
@@ -412,7 +455,8 @@ class UserAuthProvider extends ChangeNotifier {
       }
 
       final data = doc.data() as Map<String, dynamic>;
-      final currentStoredPassword = data['PASSWORD']?.toString() ?? _currentCustomer!.password;
+      final currentStoredPassword =
+          data['PASSWORD']?.toString() ?? _currentCustomer!.password;
 
       // If a password was previously set on the account, verify oldPassword matches
       if (currentStoredPassword != null && currentStoredPassword.isNotEmpty) {
@@ -439,7 +483,8 @@ class UserAuthProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('UserAuthProvider.changePassword error: $e');
-      _errorMessage = 'Failed to update password. Please check your internet connection.';
+      _errorMessage =
+          'Failed to update password. Please check your internet connection.';
       _isLoading = false;
       notifyListeners();
       return false;

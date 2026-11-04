@@ -44,7 +44,7 @@ class OrderStatusVisuals {
         return const OrderStatusVisuals(
           key: 'CONFIRMED',
           label: 'Confirmed',
-          description: 'Order accepted! Spare parts verified & being prepared.',
+          description: 'Order accepted! Parts verified & ready for store pickup.',
           icon: Icons.check_circle_outline_rounded,
           primaryColor: Color(0xFF0284C7), // Ocean sky blue
           backgroundColor: Color(0xFFE0F2FE),
@@ -53,9 +53,9 @@ class OrderStatusVisuals {
       case 'DISPATCHED':
         return const OrderStatusVisuals(
           key: 'DISPATCHED',
-          label: 'Dispatched',
-          description: 'On the way! Package out for delivery / pickup ready.',
-          icon: Icons.local_shipping_rounded,
+          label: 'Ready for Pickup',
+          description: 'Parts packed & ready for direct store pickup.',
+          icon: Icons.storefront_rounded,
           primaryColor: Color(0xFF7C3AED), // Deep purple
           backgroundColor: Color(0xFFEDE9FE),
           borderColor: Color(0xFFDDD6FE),
@@ -63,8 +63,8 @@ class OrderStatusVisuals {
       case 'DELIVERED':
         return const OrderStatusVisuals(
           key: 'DELIVERED',
-          label: 'Delivered',
-          description: 'Order fulfilled & delivered successfully. Thank you!',
+          label: 'Completed',
+          description: 'Order fulfilled & collected from store. Thank you!',
           icon: Icons.task_alt_rounded,
           primaryColor: Color(0xFF059669), // Emerald green
           backgroundColor: Color(0xFFD1FAE5),
@@ -846,7 +846,6 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
     final totalCount = allOrders.length;
     final pendingCount = allOrders.where((o) => o.isPending).length;
     final confirmedCount = allOrders.where((o) => o.isConfirmed).length;
-    final dispatchedCount = allOrders.where((o) => o.isDispatched).length;
     final deliveredCount = allOrders.where((o) => o.isDelivered).length;
     final cancelledCount = allOrders.where((o) => o.isCancelled).length;
 
@@ -890,15 +889,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
             ),
             const SizedBox(width: 8),
             _buildFilterPill(
-              label: 'Dispatched',
-              filterKey: 'DISPATCHED',
-              count: dispatchedCount,
-              icon: Icons.local_shipping_rounded,
-              color: const Color(0xFF7C3AED),
-            ),
-            const SizedBox(width: 8),
-            _buildFilterPill(
-              label: 'Delivered',
+              label: 'Completed',
               filterKey: 'DELIVERED',
               count: deliveredCount,
               icon: Icons.task_alt_rounded,

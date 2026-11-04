@@ -45,13 +45,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   final _searchController = TextEditingController();
   bool _isInitialLoading = true;
   bool _isCheckingApproval = false;
-  bool _wasApprovedState = false;
   CategoryModel? _selectedCategory;
 
   @override
   void initState() {
     super.initState();
-    _wasApprovedState = context.read<UserAuthProvider>().isApproved;
     _isInitialLoading = context.read<ProductProvider>().products.isEmpty;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       NotificationService.instance.requestPermissionIfNotGranted();
@@ -181,10 +179,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     final cart = context.watch<CartProvider>();
     final auth = context.watch<UserAuthProvider>();
 
-    // Live approval transition detection while app is active
-    if (!_wasApprovedState && auth.isApproved) {
-      _wasApprovedState = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    // One-time celebration notification when admin approves customer for the first time
+    if (auth.shouldShowApprovalCelebration) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        await auth.consumeApprovalCelebration();
         if (!mounted) return;
         final cust = auth.currentCustomer;
         if (cust != null) {
@@ -211,8 +210,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           ),
         );
       });
-    } else if (auth.isApproved) {
-      _wasApprovedState = true;
     }
 
     return PopScope(

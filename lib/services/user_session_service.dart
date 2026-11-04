@@ -73,4 +73,24 @@ class UserSessionService {
       debugPrint('UserSessionService.clearCustomerSession error: $e');
     }
   }
+
+  /// Checks if the one-time approval celebration notice has already been displayed to this customer.
+  Future<bool> hasSeenApprovalNotice(String customerId) async {
+    try {
+      final prefs = await _prefs;
+      return prefs.getBool('autospare_approval_notice_seen_$customerId') ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Marks the approval celebration notice as displayed so it never repeats on subsequent launches.
+  Future<void> markApprovalNoticeSeen(String customerId) async {
+    try {
+      final prefs = await _prefs;
+      await prefs.setBool('autospare_approval_notice_seen_$customerId', true);
+    } catch (e) {
+      debugPrint('UserSessionService.markApprovalNoticeSeen error: $e');
+    }
+  }
 }

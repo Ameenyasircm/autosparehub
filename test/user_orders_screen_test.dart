@@ -4,6 +4,7 @@ import 'package:auto_spare_hub/providers/cart_provider.dart';
 import 'package:auto_spare_hub/providers/order_provider.dart';
 import 'package:auto_spare_hub/providers/user_auth_provider.dart';
 import 'package:auto_spare_hub/screens/user/user_orders_screen.dart';
+import 'package:auto_spare_hub/services/user_session_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -73,7 +74,7 @@ void main() {
           createdAt: now,
         ),
         OrderModel(
-          id: 'ORD_DISPATCHED_1',
+          id: 'ORD_DELIVERED_1',
           orderNumber: '#ORD-1003',
           userId: 'USR001',
           userName: 'Ameen',
@@ -82,7 +83,7 @@ void main() {
           companyName: 'Denso',
           categoryName: 'Ignition',
           totalAmount: 1200.0,
-          status: 'DISPATCHED',
+          status: 'DELIVERED',
           createdAt: now,
         ),
       ];
@@ -101,9 +102,10 @@ void main() {
       expect(find.text('3'), findsOneWidget); // Total count
       expect(find.text('Requested'), findsWidgets);
       expect(find.text('Confirmed'), findsWidgets);
-      expect(find.text('Dispatched'), findsWidgets);
-      expect(find.text('Delivered'), findsOneWidget);
+      expect(find.text('Completed'), findsWidgets);
       expect(find.text('Cancelled'), findsOneWidget);
+      // Dispatched should NOT be present in filter bar
+      expect(find.text('Dispatched'), findsNothing);
 
       // Verify all 3 orders are displayed initially
       expect(find.text('#ORD-1001'), findsOneWidget);
@@ -119,11 +121,11 @@ void main() {
       expect(find.text('#ORD-1002'), findsOneWidget);
       expect(find.text('#ORD-1003'), findsNothing);
 
-      // Filter by 'Delivered' (count is 0)
-      await tester.tap(find.text('Delivered'));
+      // Filter by 'Cancelled' (count is 0)
+      await tester.tap(find.text('Cancelled'));
       await tester.pumpAndSettle();
 
-      expect(find.text('No Delivered Orders'), findsOneWidget);
+      expect(find.text('No Cancelled Orders'), findsOneWidget);
       expect(find.text('Show All Orders'), findsOneWidget);
 
       // Tap 'Show All Orders'
@@ -134,6 +136,32 @@ void main() {
       expect(find.text('#ORD-1001'), findsOneWidget);
       expect(find.text('#ORD-1002'), findsOneWidget);
       expect(find.text('#ORD-1003'), findsOneWidget);
+    });
+
+    test('Approval Celebration: marks seen so snackbar is not repeated on app launch', () async {
+      final sessionService = UserSessionService();
+      const customer = CustomerModel(
+        id: 'USR002',
+        name: 'Auto Garage',
+        phone: '9876543211',
+        status: 'APPROVED',
+      );
+
+      // Initially not seen
+      expect(await sessionService.hasSeenApprovalNotice('USR002'), isFalse);
+
+      // Mark seen
+      await sessionService.markApprovalNoticeSeen('USR002');
+      expect(await sessionService.hasSeenApprovalNotice('USR002'), isTrue);
+
+      // Test UserAuthProvider initSession with already approved user marks it seen
+      await sessionService.saveCustomerSession(customer);
+      final auth = UserAuthProvider(sessionService: sessionService);
+      await auth.initSession();
+
+      // Because user was already approved from saved session, celebration is not triggered
+      expect(auth.shouldShowApprovalCelebration, isFalse);
+      expect(await sessionService.hasSeenApprovalNotice('USR002'), isTrue);
     });
   });
 }

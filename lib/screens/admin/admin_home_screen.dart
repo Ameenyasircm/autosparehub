@@ -480,16 +480,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
           const SizedBox(width: 8),
           _buildStatusPill(
-            label: 'Dispatched',
-            statusKey: 'DISPATCHED',
-            count: orderProvider.dispatchedOrdersCount,
-            icon: Icons.local_shipping_rounded,
-            color: Colors.deepPurple,
-            orderProvider: orderProvider,
-          ),
-          const SizedBox(width: 8),
-          _buildStatusPill(
-            label: 'Delivered',
+            label: 'Completed',
             statusKey: 'DELIVERED',
             count: orderProvider.deliveredOrdersCount,
             icon: Icons.check_circle_rounded,
@@ -1649,9 +1640,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     final orderProvider = context.read<OrderProvider>();
     const statuses = [
       {'status': 'PENDING', 'label': 'Pending Review', 'icon': Icons.hourglass_top_rounded, 'color': Colors.amber},
-      {'status': 'CONFIRMED', 'label': 'Confirmed & Processing', 'icon': Icons.thumb_up_alt_rounded, 'color': Colors.blue},
-      {'status': 'DISPATCHED', 'label': 'Dispatched for Delivery', 'icon': Icons.local_shipping_rounded, 'color': Colors.deepPurple},
-      {'status': 'DELIVERED', 'label': 'Delivered Successfully', 'icon': Icons.check_circle_rounded, 'color': Colors.green},
+      {'status': 'CONFIRMED', 'label': 'Confirmed & Ready for Pickup', 'icon': Icons.thumb_up_alt_rounded, 'color': Colors.blue},
+      {'status': 'DELIVERED', 'label': 'Completed / Collected', 'icon': Icons.check_circle_rounded, 'color': Colors.green},
       {'status': 'CANCELLED', 'label': 'Cancelled / Rejected', 'icon': Icons.cancel_rounded, 'color': Colors.red},
     ];
 
@@ -1662,7 +1652,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     const quickRemarks = [
       'Verified with customer',
       'Ready for store pickup',
-      'Dispatched via transport',
+      'Verified & packed for counter pickup',
       'Customer unreachable on phone',
       'Cancelled on customer request',
       'Out of stock / part unavailable',
