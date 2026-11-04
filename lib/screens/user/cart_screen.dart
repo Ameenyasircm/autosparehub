@@ -10,6 +10,7 @@ import 'user_home_screen.dart';
 import 'user_login_screen.dart';
 import 'user_orders_screen.dart';
 import 'user_product_detail_screen.dart';
+import 'widgets/approval_pending_dialog.dart';
 
 /// Customer shopping cart screen matching Image 2 with precision:
 /// - Dark AppBar with "My Cart" and white back button
@@ -97,48 +98,9 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
       if (!mounted) return;
 
       if (!authProvider.isApproved) {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            title: Row(
-              children: const [
-                Icon(Icons.hourglass_top_rounded, color: Colors.amber, size: 26),
-                SizedBox(width: 10),
-                Text('Approval Pending', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Your customer account is currently awaiting administrator verification. Once approved, your order will be submitted right away.',
-                  style: TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.shade200),
-                  ),
-                  child: const Text(
-                    'നിങ്ങളുടെ അക്കൗണ്ട് അഡ്മിന്റെ പരിശോധനയിലാണ്. അഡ്മിൻ അനുമതി നൽകിയ ശേഷം മാത്രമേ ഓർഡറുകൾ നൽകാൻ സാധിക്കൂ.',
-                    style: TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal, height: 1.4),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.darkCharcoal)),
-              ),
-            ],
-          ),
+        ApprovalPendingDialog.show(
+          context,
+          phone: authProvider.currentCustomer?.phone ?? '',
         );
         return;
       }

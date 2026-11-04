@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../services/notification_service.dart';
 import '../../widgets/app_submit_button.dart';
 import '../../widgets/app_text_field.dart';
 import 'user_home_screen.dart';
@@ -47,6 +48,9 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
   void initState() {
     super.initState();
     _isRegisterMode = widget.initialIsRegister;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.instance.requestPermissionIfNotGranted();
+    });
   }
 
   @override

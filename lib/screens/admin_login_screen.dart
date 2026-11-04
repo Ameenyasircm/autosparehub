@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_login_provider.dart';
 import '../theme/app_theme.dart';
+import '../services/notification_service.dart';
 import '../widgets/app_submit_button.dart';
 import '../widgets/app_text_field.dart';
 import 'admin/admin_shell_screen.dart';
@@ -22,6 +23,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.instance.requestPermissionIfNotGranted();
+    });
+  }
 
   @override
   void dispose() {

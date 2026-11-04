@@ -362,7 +362,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                     ),
                     Switch(
                       value: _isActive,
-                      activeThumbColor: AppColors.primaryGold,
+                      activeColor: AppColors.primaryGold,
                       onChanged: provider.isSaving
                           ? null
                           : (val) => setState(() => _isActive = val),

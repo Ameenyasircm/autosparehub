@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/admin_model.dart';
+import 'notification_service.dart';
 
 /// Result object for admin authentication operations
 class AdminAuthResult {
@@ -110,6 +111,22 @@ class AdminAuthService {
     } catch (e) {
       debugPrint('AdminAuthService unexpected error: $e');
       return AdminAuthResult.failure('An unexpected error occurred during login. Please try again.');
+    }
+  }
+
+  /// Synchronize FCM Device Token to Firestore for Admin Push Notifications
+  Future<void> syncAdminFcmToken(String adminDocId) async {
+    try {
+      final token = await NotificationService.instance.getDeviceToken();
+      if (token != null && token.isNotEmpty) {
+        await _firestore.collection(adminsCollection).doc(adminDocId).update({
+          'FCM_TOKEN': token,
+          'FCM_UPDATED_AT': FieldValue.serverTimestamp(),
+        }).timeout(const Duration(seconds: 8));
+        debugPrint('Admin FCM Token synced to Firestore for $adminDocId');
+      }
+    } catch (e) {
+      debugPrint('AdminAuthService.syncAdminFcmToken error: $e');
     }
   }
 }

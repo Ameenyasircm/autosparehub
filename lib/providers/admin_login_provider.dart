@@ -40,6 +40,8 @@ class AdminLoginProvider extends ChangeNotifier {
         _currentAdmin = savedAdmin;
         _errorMessage = null;
         notifyListeners();
+        // Sync Admin FCM Token in background
+        _authService.syncAdminFcmToken(savedAdmin.id);
         return true;
       }
     } catch (e) {
@@ -72,6 +74,8 @@ class AdminLoginProvider extends ChangeNotifier {
         // Persist session to local storage via SharedPreferences
         await _sessionService.saveAdminSession(result.admin!);
         notifyListeners();
+        // Sync Admin FCM Token in background
+        _authService.syncAdminFcmToken(result.admin!.id);
         return true;
       } else {
         _currentAdmin = null;

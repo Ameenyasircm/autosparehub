@@ -27,6 +27,7 @@ import 'screens/user/cart_screen.dart';
 import 'screens/user/user_home_screen.dart';
 import 'screens/user/user_orders_screen.dart';
 import 'services/database_service.dart';
+import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/app_lock_wrapper.dart';
 
@@ -40,6 +41,7 @@ void main() async {
       persistenceEnabled: true,
       cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
+    await NotificationService.instance.initialize();
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
   }

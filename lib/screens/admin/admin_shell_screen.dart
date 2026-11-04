@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
+import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import 'admin_home_screen.dart';
 import 'admin_menu_screen.dart';
@@ -19,6 +20,14 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
     AdminHomeScreen(),
     AdminMenuScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.instance.requestPermissionIfNotGranted();
+    });
+  }
 
   Future<bool> _showExitConfirmDialog(BuildContext context) async {
     final result = await showDialog<bool>(

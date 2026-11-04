@@ -103,13 +103,32 @@ class CustomerManagementProvider extends ChangeNotifier {
           .timeout(const Duration(seconds: 8));
 
       final index = _customers.indexWhere((c) => c.id == customerId);
+      CustomerModel? targetCustomer;
       if (index != -1) {
+        targetCustomer = _customers[index];
         _customers[index] = _customers[index].copyWith(
           status: 'APPROVED',
           approvedAt: now,
         );
         notifyListeners();
       }
+
+      // Record system notification for User & Cloud Functions/FCM trigger
+      try {
+        await _firestore.collection('NOTIFICATIONS').add({
+          'RECIPIENT_ID': customerId,
+          'RECIPIENT_TYPE': 'USER',
+          'TITLE': 'Account Approved! 🎉',
+          'BODY': 'Your garage account has been approved by the administrator. You can now place orders.',
+          'TYPE': 'ACCOUNT_APPROVED',
+          'IS_READ': false,
+          'FCM_TOKEN': targetCustomer?.fcmToken,
+          'CREATED_AT': FieldValue.serverTimestamp(),
+        });
+      } catch (e) {
+        debugPrint('CustomerManagementProvider: Failed to write notification record: $e');
+      }
+
       return true;
     } catch (e) {
       debugPrint('CustomerManagementProvider.approveCustomer error: $e');

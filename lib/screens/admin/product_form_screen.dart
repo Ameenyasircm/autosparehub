@@ -944,7 +944,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           ),
           Switch(
             value: _isActive,
-            activeThumbColor: AppColors.primaryGold,
+            activeColor: AppColors.primaryGold,
             activeTrackColor: AppColors.darkCharcoal,
             onChanged: provider.isSaving
                 ? null

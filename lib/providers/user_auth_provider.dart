@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/customer_model.dart';
+import '../services/notification_service.dart';
 import '../services/user_session_service.dart';
 import '../utils/phone_helper.dart';
 
@@ -47,6 +48,8 @@ class UserAuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isSessionInitialized = false;
   String? _errorMessage;
+  StreamSubscription<DocumentSnapshot>? _customerSubscription;
+  StreamSubscription<String>? _tokenRefreshSubscription;
 
   CustomerModel? get currentCustomer => _currentCustomer;
   bool get isLoading => _isLoading;
@@ -58,13 +61,78 @@ class UserAuthProvider extends ChangeNotifier {
   bool get isPending => _currentCustomer?.isPending ?? false;
   bool get isRejected => _currentCustomer?.isRejected ?? false;
 
+  /// Starts real-time Firestore listener on the customer profile document.
+  /// Guarantees instant UI reactivity when an administrator approves/rejects the user,
+  /// updating the drawer menu, badges, and ordering privileges in real time without page reload.
+  void _startListeningToCustomer(String customerDocId) {
+    _customerSubscription?.cancel();
+    _customerSubscription = _firestore
+        .collection(collectionName)
+        .doc(customerDocId)
+        .snapshots()
+        .listen((snapshot) async {
+      if (!snapshot.exists || snapshot.data() == null) return;
+      try {
+        final updated = CustomerModel.fromFirestore(snapshot);
+        final bool becameApproved = _currentCustomer != null &&
+            !_currentCustomer!.isApproved &&
+            updated.isApproved;
+
+        _currentCustomer = updated;
+        await _sessionService.saveCustomerSession(updated);
+        notifyListeners();
+
+        if (becameApproved) {
+          debugPrint('UserAuthProvider: Customer $customerDocId is now APPROVED! Showing alert.');
+          await NotificationService.instance.showNotification(
+            title: 'Account Approved! 🎉',
+            body: 'Your garage account has been approved by the administrator. You can now place orders!',
+          );
+        }
+      } catch (e) {
+        debugPrint('UserAuthProvider._startListeningToCustomer error: $e');
+      }
+    }, onError: (e) {
+      debugPrint('UserAuthProvider customer stream error: $e');
+    });
+  }
+
+  /// Synchronize FCM Device Token to Firestore for Push Notifications
+  Future<void> _syncFcmToken(String customerDocId) async {
+    try {
+      final token = await NotificationService.instance.getDeviceToken();
+      if (token != null && token.isNotEmpty) {
+        await _firestore.collection(collectionName).doc(customerDocId).update({
+          'FCM_TOKEN': token,
+          'FCM_UPDATED_AT': FieldValue.serverTimestamp(),
+        }).timeout(const Duration(seconds: 8));
+        debugPrint('User FCM Token synced to Firestore for $customerDocId');
+      }
+
+      _tokenRefreshSubscription?.cancel();
+      _tokenRefreshSubscription = NotificationService.instance.onTokenRefresh.listen((newToken) async {
+        try {
+          await _firestore.collection(collectionName).doc(customerDocId).update({
+            'FCM_TOKEN': newToken,
+            'FCM_UPDATED_AT': FieldValue.serverTimestamp(),
+          });
+          debugPrint('User FCM Token refreshed in Firestore for $customerDocId');
+        } catch (_) {}
+      });
+    } catch (e) {
+      debugPrint('UserAuthProvider._syncFcmToken error: $e');
+    }
+  }
+
   /// Initialize and restore customer session on launch
   Future<void> initSession() async {
     try {
       _currentCustomer = await _sessionService.getCustomerSession();
 
-      // If user was previously registered, refresh status from Firestore
+      // If user was previously registered, activate real-time listener and FCM sync
       if (_currentCustomer != null) {
+        _startListeningToCustomer(_currentCustomer!.id);
+        _syncFcmToken(_currentCustomer!.id);
         await refreshApprovalStatus();
       }
     } catch (e) {
@@ -154,6 +222,8 @@ class UserAuthProvider extends ChangeNotifier {
 
       _currentCustomer = newCustomer;
       await _sessionService.saveCustomerSession(newCustomer);
+      _startListeningToCustomer(docId);
+      _syncFcmToken(docId);
 
       _isLoading = false;
       notifyListeners();
@@ -217,6 +287,8 @@ class UserAuthProvider extends ChangeNotifier {
       final customer = CustomerModel.fromFirestore(docSnapshot);
       _currentCustomer = customer;
       await _sessionService.saveCustomerSession(customer);
+      _startListeningToCustomer(customer.id);
+      _syncFcmToken(customer.id);
 
       _isLoading = false;
       notifyListeners();
@@ -376,6 +448,10 @@ class UserAuthProvider extends ChangeNotifier {
 
   /// Clear session (for testing or switching account)
   Future<void> logout() async {
+    _customerSubscription?.cancel();
+    _customerSubscription = null;
+    _tokenRefreshSubscription?.cancel();
+    _tokenRefreshSubscription = null;
     _currentCustomer = null;
     await _sessionService.clearCustomerSession();
     notifyListeners();
@@ -386,5 +462,12 @@ class UserAuthProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _customerSubscription?.cancel();
+    _tokenRefreshSubscription?.cancel();
+    super.dispose();
   }
 }

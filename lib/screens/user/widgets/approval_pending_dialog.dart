@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/user_auth_provider.dart';
 import '../../../services/contact_service.dart';
 import '../../../theme/app_theme.dart';
 
@@ -61,6 +63,95 @@ class _ApprovalPendingDialogWidgetState
 
   @override
   Widget build(BuildContext context) {
+    // Safely listen to live customer authorization state without throwing if provider absent in tests
+    UserAuthProvider? auth;
+    try {
+      auth = Provider.of<UserAuthProvider>(context, listen: true);
+    } catch (_) {}
+    final bool isApproved = auth?.isApproved ?? false;
+
+    // LIVE STATE TRANSFORMATION: If admin approved while dialog is open, transform into celebration state immediately
+    if (isApproved) {
+      return AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        title: Row(
+          children: const [
+            Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Account Approved! 🎉',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.darkHeader,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: const Text(
+                'Great news! Your garage account registration has just been approved by the administrator. You now have full access to browse and place spare part orders.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF14532D),
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'നിങ്ങളുടെ അക്കൗണ്ടിന് അഡ്മിൻ അനുമതി നൽകിയിരിക്കുന്നു! നിങ്ങൾക്ക് ഇപ്പോൾ ഓർഡറുകൾ നൽകാം.',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: Color(0xFF166534),
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.darkButton,
+              foregroundColor: AppColors.warmGold,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Start Shopping',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+            ),
+          ),
+        ],
+      );
+    }
+
     final cleanPhone = widget.phone.replaceAll(RegExp(r'\D'), '');
     final displayPhone = cleanPhone.length > 10
         ? cleanPhone.substring(cleanPhone.length - 10)

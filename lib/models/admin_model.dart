@@ -8,6 +8,7 @@ class AdminModel {
   final String phoneNumber;
   final String type;
   final bool isActive;
+  final String? fcmToken;
 
   const AdminModel({
     required this.id,
@@ -15,6 +16,7 @@ class AdminModel {
     required this.phoneNumber,
     required this.type,
     required this.isActive,
+    this.fcmToken,
   });
 
   /// Check whether the administrator holds the MANAGER role
@@ -44,6 +46,7 @@ class AdminModel {
       phoneNumber: (data['PHONE_NUMBER'] ?? data['phoneNumber'] ?? data['phone'] ?? '').toString().trim(),
       type: (data['TYPE'] ?? data['type'] ?? 'STAFF').toString().trim().toUpperCase(),
       isActive: parseIsActive(data['IS_ACTIVE'] ?? data['isActive']),
+      fcmToken: (data['FCM_TOKEN'] ?? data['fcmToken'] ?? data['FCM_ID'] ?? data['fcmId'])?.toString().trim(),
     );
   }
 
@@ -55,6 +58,7 @@ class AdminModel {
       'PHONE_NUMBER': phoneNumber,
       'TYPE': type,
       'IS_ACTIVE': isActive,
+      if (fcmToken != null && fcmToken!.isNotEmpty) 'FCM_TOKEN': fcmToken,
     };
   }
 
@@ -65,6 +69,7 @@ class AdminModel {
     String? phoneNumber,
     String? type,
     bool? isActive,
+    String? fcmToken,
   }) {
     return AdminModel(
       id: id ?? this.id,
@@ -72,6 +77,7 @@ class AdminModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       type: type ?? this.type,
       isActive: isActive ?? this.isActive,
+      fcmToken: fcmToken ?? this.fcmToken,
     );
   }
 

@@ -11,6 +11,7 @@ class CustomerModel {
   final DateTime? approvedAt;
   final String? rejectionReason;
   final String? password;
+  final String? fcmToken;
 
   const CustomerModel({
     required this.id,
@@ -22,6 +23,7 @@ class CustomerModel {
     this.approvedAt,
     this.rejectionReason,
     this.password,
+    this.fcmToken,
   }) : phoneNumber = phoneNumber ?? phone ?? '';
 
   String get phone => phoneNumber;
@@ -51,6 +53,7 @@ class CustomerModel {
       approvedAt: parseTimestamp(data['APPROVED_AT'] ?? data['approvedAt']),
       rejectionReason: data['REJECTION_REASON']?.toString(),
       password: (data['PASSWORD'] ?? data['password'])?.toString(),
+      fcmToken: (data['FCM_TOKEN'] ?? data['fcmToken'] ?? data['FCM_ID'] ?? data['fcmId'])?.toString().trim(),
     );
   }
 
@@ -61,6 +64,7 @@ class CustomerModel {
       'PHONE_NUMBER': phoneNumber,
       'STATUS': status,
       if (password != null && password!.isNotEmpty) 'PASSWORD': password,
+      if (fcmToken != null && fcmToken!.isNotEmpty) 'FCM_TOKEN': fcmToken,
       'REQUESTED_AT': requestedAt != null ? Timestamp.fromDate(requestedAt!) : FieldValue.serverTimestamp(),
       'APPROVED_AT': approvedAt != null ? Timestamp.fromDate(approvedAt!) : null,
       'REJECTION_REASON': rejectionReason,
@@ -77,6 +81,7 @@ class CustomerModel {
     DateTime? approvedAt,
     String? rejectionReason,
     String? password,
+    String? fcmToken,
   }) {
     return CustomerModel(
       id: id ?? this.id,
@@ -87,9 +92,10 @@ class CustomerModel {
       approvedAt: approvedAt ?? this.approvedAt,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       password: password ?? this.password,
+      fcmToken: fcmToken ?? this.fcmToken,
     );
   }
 
   @override
-  String toString() => 'CustomerModel(id: $id, name: $name, phone: $phoneNumber, status: $status)';
+  String toString() => 'CustomerModel(id: $id, name: $name, phone: $phoneNumber, status: $status, fcmToken: $fcmToken)';
 }

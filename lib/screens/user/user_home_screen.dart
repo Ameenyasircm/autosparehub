@@ -9,6 +9,7 @@ import '../../providers/company_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/user_auth_provider.dart';
+import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import 'cart_screen.dart';
 import 'user_login_screen.dart';
@@ -44,13 +45,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   final _searchController = TextEditingController();
   bool _isInitialLoading = true;
   bool _isCheckingApproval = false;
+  bool _wasApprovedState = false;
   CategoryModel? _selectedCategory;
 
   @override
   void initState() {
     super.initState();
+    _wasApprovedState = context.read<UserAuthProvider>().isApproved;
     _isInitialLoading = context.read<ProductProvider>().products.isEmpty;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      NotificationService.instance.requestPermissionIfNotGranted();
       await context.read<UserAuthProvider>().initSession();
       if (!mounted) return;
       final auth = context.read<UserAuthProvider>();
@@ -176,6 +180,40 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final auth = context.watch<UserAuthProvider>();
+
+    // Live approval transition detection while app is active
+    if (!_wasApprovedState && auth.isApproved) {
+      _wasApprovedState = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final cust = auth.currentCustomer;
+        if (cust != null) {
+          context.read<CartProvider>().loadCartForUser(cust.id);
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.check_circle_rounded, color: Colors.greenAccent),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '🎉 Your garage account has been approved! You can now place orders.',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.darkHeader,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      });
+    } else if (auth.isApproved) {
+      _wasApprovedState = true;
+    }
 
     return PopScope(
       canPop: false,
