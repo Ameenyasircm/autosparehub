@@ -696,15 +696,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   // --- 4. VEHICLE APPLICATION & FITMENT CARD ---
   Widget _buildFitmentCard(ProductProvider provider) {
     return AppFormCard(
-      title: 'Application & Product Code',
+      title: 'OEM Part No & Part Number',
       icon: Icons.directions_car_outlined,
       isRequired: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           AppTextField(
-            label: 'Application No',
-            hint: 'Enter application no',
+            label: 'OEM Part No',
+            hint: 'Enter OEM Part No',
             controller: _applicationController,
             isRequired: true,
             enabled: !provider.isSaving,
@@ -712,14 +712,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             isDarkTheme: true,
             validator: (val) {
               if (val == null || val.trim().isEmpty) {
-                return 'Application no is required';
+                return 'OEM Part No is required';
               }
               return null;
             },
           ),
           const SizedBox(height: 14),
           AppTextField(
-            label: 'Product Code (Sorl Number)',
+            label: 'Part Number',
             hint: 'Enter product code / Sorl no',
             controller: _refNoController,
             enabled: !provider.isSaving,

@@ -371,7 +371,7 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
 
           _buildMenuItem(
             context: context,
-            title: 'Vehicle Brands & Companies',
+            title: 'Companies',
             icon: Icons.business_rounded,
             iconColor: const Color(0xFF0284C7),
             iconBgColor: const Color(0xFFE0F2FE),
