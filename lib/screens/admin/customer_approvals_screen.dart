@@ -11,7 +11,8 @@ import '../../utils/phone_helper.dart';
 /// Screen for administrators to review, approve, and reject customer account requests.
 /// Features dedicated tabs for Pending, Approved, and Rejected customer profiles.
 class CustomerApprovalsScreen extends StatefulWidget {
-  const CustomerApprovalsScreen({super.key});
+  final bool embedded;
+  const CustomerApprovalsScreen({super.key, this.embedded = false});
 
   @override
   State<CustomerApprovalsScreen> createState() => _CustomerApprovalsScreenState();
@@ -234,6 +235,7 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.embedded,
         backgroundColor: AppColors.darkCharcoal,
         elevation: 0,
         title: const Text(
@@ -323,8 +325,13 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
       );
     }
 
+    final isTablet = MediaQuery.of(context).size.width >= 720;
+
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 20 : 14,
+        vertical: 12,
+      ),
       physics: const BouncingScrollPhysics(),
       itemCount: customers.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
@@ -608,7 +615,11 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
 
   Widget _buildActionRow(BuildContext context, CustomerModel customer, String? adminId, bool isPendingTab) {
     if (isPendingTab) {
-      return Row(
+      return Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        runSpacing: 6,
         children: [
           SizedBox(
             height: 28,
@@ -623,54 +634,61 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
               label: const Text('Password', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
             ),
           ),
-          const Spacer(),
-          SizedBox(
-            height: 28,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error,
-                side: BorderSide(color: AppColors.error.withValues(alpha: 0.35)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                visualDensity: VisualDensity.compact,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 28,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: BorderSide(color: AppColors.error.withValues(alpha: 0.35)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () => _showRejectDialog(context, customer),
+                  child: const Text('Reject', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                ),
               ),
-              onPressed: () => _showRejectDialog(context, customer),
-              child: const Text('Reject', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            height: 28,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                visualDensity: VisualDensity.compact,
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 28,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () async {
+                    final provider = context.read<CustomerManagementProvider>();
+                    final messenger = ScaffoldMessenger.of(context);
+                    final ok = await provider.approveCustomer(customer.id, adminId: adminId);
+                    if (mounted && ok) {
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('Approved ${customer.name}!')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.check_rounded, size: 14),
+                  label: const Text('Approve', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                ),
               ),
-              onPressed: () async {
-                final provider = context.read<CustomerManagementProvider>();
-                final messenger = ScaffoldMessenger.of(context);
-                final ok = await provider.approveCustomer(customer.id, adminId: adminId);
-                if (mounted && ok) {
-                  messenger.showSnackBar(
-                    SnackBar(content: Text('Approved ${customer.name}!')),
-                  );
-                }
-              },
-              icon: const Icon(Icons.check_rounded, size: 14),
-              label: const Text('Approve', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
-            ),
+            ],
           ),
         ],
       );
     }
 
     if (customer.isApproved) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+      return Wrap(
+        alignment: WrapAlignment.end,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        runSpacing: 6,
         children: [
           SizedBox(
             height: 28,
@@ -687,7 +705,6 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
               label: const Text('Change Password', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
             ),
           ),
-          const SizedBox(width: 8),
           SizedBox(
             height: 28,
             child: OutlinedButton.icon(
@@ -708,7 +725,11 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
     }
 
     // Rejected Tab
-    return Row(
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 6,
       children: [
         SizedBox(
           height: 28,
@@ -723,7 +744,6 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
             label: const Text('Password', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
           ),
         ),
-        const Spacer(),
         SizedBox(
           height: 28,
           child: ElevatedButton.icon(

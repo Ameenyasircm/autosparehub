@@ -221,6 +221,66 @@ void main() {
       expect(order.categoryNames, ['Clutch System']);
       expect(order.totalItemUnits, 1);
     });
+
+    test('toWhatsAppMessage generates rich, structured order details for admin and customer', () {
+      final item1 = OrderItemModel(
+        productId: 'PRD1',
+        productName: 'Power Steering Pump',
+        productImage: 'https://example.com/pump.jpg',
+        companyName: 'BOSCH',
+        categoryName: 'Steering',
+        refNo: 'P-992',
+        unitPrice: 4500.0,
+        quantity: 2,
+        totalPrice: 9000.0,
+      );
+
+      final item2 = OrderItemModel(
+        productId: 'PRD2',
+        productName: 'Brake Disc Rotor',
+        productImage: '',
+        companyName: 'BREMBO',
+        categoryName: 'Braking',
+        unitPrice: 2200.0,
+        quantity: 1,
+        totalPrice: 2200.0,
+      );
+
+      final order = OrderModel(
+        id: 'ORD123',
+        orderNumber: '#ORD-2026',
+        userId: 'USR_1',
+        userName: 'Ameen Yasir',
+        userPhone: '9876543210',
+        totalAmount: 11200.0,
+        status: 'PENDING',
+        items: [item1, item2],
+        shippingAddress: 'Workshop 4, Industrial Area, Manjeri',
+        customerNote: 'Please dispatch before 4 PM',
+        adminRemark: 'Verified stock with warehouse',
+      );
+
+      final adminMsg = order.toWhatsAppMessage(isAdmin: true);
+      expect(adminMsg.contains('Hello Ameen Yasir,'), isTrue);
+      expect(adminMsg.contains('Regarding your order *#ORD-2026* at *SN AutoSpare Hub Manjeri*:'), isTrue);
+      expect(adminMsg.contains('📦 *Order Details:*'), isTrue);
+      expect(adminMsg.contains('• Power Steering Pump (BOSCH) [Ref: P-992] - Qty: 2 (₹4500 each = ₹9000)'), isTrue);
+      expect(adminMsg.contains('• Brake Disc Rotor (BREMBO) - Qty: 1 (₹2200)'), isTrue);
+      expect(adminMsg.contains('💰 *Total Amount:* ₹11200'), isTrue);
+      expect(adminMsg.contains('Thank you for choosing *SN AutoSpare Hub*!'), isTrue);
+
+      // Verify excluded details are NOT in the message
+      expect(adminMsg.contains('Status'), isFalse);
+      expect(adminMsg.contains('Delivery / Location'), isFalse);
+      expect(adminMsg.contains('Customer Note'), isFalse);
+      expect(adminMsg.contains('Store Note'), isFalse);
+      expect(adminMsg.contains('confirm or modify'), isFalse);
+
+      final customerMsg = order.toWhatsAppMessage(isAdmin: false);
+      expect(customerMsg.contains('Hello SN AutoSpare Hub,'), isTrue);
+      expect(customerMsg.contains('I am inquiring regarding my order *#ORD-2026*:'), isTrue);
+      expect(customerMsg.contains('Thank you for choosing *SN AutoSpare Hub*!'), isTrue);
+    });
   });
 
   group('OrderProvider Multi-Filter Tests', () {

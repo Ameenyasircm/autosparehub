@@ -16,13 +16,15 @@ enum ProductSortOption {
 
 /// Provider managing spare parts products catalog, technical specifications, and queries.
 class ProductProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _customFirestore;
   final CloudinaryService _cloudinaryService;
+
+  FirebaseFirestore get _firestore => _customFirestore ?? FirebaseFirestore.instance;
 
   ProductProvider({
     FirebaseFirestore? firestore,
     CloudinaryService? cloudinaryService,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+  })  : _customFirestore = firestore,
         _cloudinaryService = cloudinaryService ?? CloudinaryService();
 
   static const String collectionName = 'PRODUCTS';
@@ -46,6 +48,13 @@ class ProductProvider extends ChangeNotifier {
   String get selectedCompanyId => _selectedCompanyId;
   String get selectedCategoryId => _selectedCategoryId;
   ProductSortOption get sortOption => _sortOption;
+
+  @visibleForTesting
+  void setProductsForTesting(List<ProductModel> list) {
+    _products = List.from(list);
+    _isLoading = false;
+    notifyListeners();
+  }
 
   /// Returns products matching active search query, company filter, category filter, and sort order.
   /// When a search query is active, category restriction is lifted so that search is global across

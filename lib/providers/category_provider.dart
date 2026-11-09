@@ -7,13 +7,15 @@ import '../services/cloudinary_service.dart';
 
 /// Provider managing spare parts categories and their catalog images
 class CategoryProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _customFirestore;
   final CloudinaryService _cloudinaryService;
+
+  FirebaseFirestore get _firestore => _customFirestore ?? FirebaseFirestore.instance;
 
   CategoryProvider({
     FirebaseFirestore? firestore,
     CloudinaryService? cloudinaryService,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+  })  : _customFirestore = firestore,
         _cloudinaryService = cloudinaryService ?? CloudinaryService();
 
   static const String collectionName = 'CATEGORIES';
@@ -30,6 +32,13 @@ class CategoryProvider extends ChangeNotifier {
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
+
+  @visibleForTesting
+  void setCategoriesForTesting(List<CategoryModel> list) {
+    _categories = List.from(list);
+    _isLoading = false;
+    notifyListeners();
+  }
 
   List<CategoryModel> get filteredCategories {
     if (_searchQuery.isEmpty) return _categories;

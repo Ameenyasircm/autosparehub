@@ -93,6 +93,13 @@ class AdminLoginProvider extends ChangeNotifier {
     }
   }
 
+  /// Set current admin directly (useful for tests and mock environments)
+  @visibleForTesting
+  void setCurrentAdminForTesting(AdminModel? admin) {
+    _currentAdmin = admin;
+    notifyListeners();
+  }
+
   /// Logout current admin and clear session state from local storage
   Future<void> logout() async {
     _currentAdmin = null;

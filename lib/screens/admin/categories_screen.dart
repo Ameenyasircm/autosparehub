@@ -8,7 +8,8 @@ import 'category_form_screen.dart';
 
 /// Screen listing spare parts categories with search, thumbnail preview, status toggle, and edit/delete actions.
 class CategoriesScreen extends StatefulWidget {
-  const CategoriesScreen({super.key});
+  final bool embedded;
+  const CategoriesScreen({super.key, this.embedded = false});
 
   @override
   State<CategoriesScreen> createState() => _CategoriesScreenState();
@@ -106,6 +107,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.embedded,
         backgroundColor: AppColors.darkCharcoal,
         elevation: 0,
         title: const Text(
@@ -233,15 +235,25 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       );
     }
 
+    final isTablet = MediaQuery.of(context).size.width >= 720;
+
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 24 : 16,
+        vertical: 16,
+      ),
       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
       itemCount: list.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final category = list[index];
+        return _buildCategoryCard(category, provider);
+      },
+    );
+  }
 
-        return Card(
+  Widget _buildCategoryCard(CategoryModel category, CategoryProvider provider) {
+    return Card(
           elevation: 1.5,
           shadowColor: Colors.black.withValues(alpha: 0.04),
           shape: RoundedRectangleBorder(
@@ -392,7 +404,5 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
           ),
         );
-      },
-    );
   }
 }

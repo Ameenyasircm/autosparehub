@@ -8,7 +8,8 @@ import 'company_form_screen.dart';
 
 /// Screen listing vehicle manufacturers / companies with search, status toggling, and management options.
 class CompaniesScreen extends StatefulWidget {
-  const CompaniesScreen({super.key});
+  final bool embedded;
+  const CompaniesScreen({super.key, this.embedded = false});
 
   @override
   State<CompaniesScreen> createState() => _CompaniesScreenState();
@@ -106,6 +107,7 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.embedded,
         backgroundColor: AppColors.darkCharcoal,
         elevation: 0,
         title: const Text(
@@ -233,6 +235,26 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
       );
     }
 
+    final isTablet = MediaQuery.of(context).size.width >= 720;
+    if (isTablet) {
+      final crossAxisCount = MediaQuery.of(context).size.width >= 1100 ? 3 : 2;
+      return GridView.builder(
+        padding: const EdgeInsets.all(16),
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        itemCount: list.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          mainAxisExtent: 94,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemBuilder: (context, index) {
+          final company = list[index];
+          return _buildCompanyCard(company, provider);
+        },
+      );
+    }
+
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
@@ -240,8 +262,13 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final company = list[index];
+        return _buildCompanyCard(company, provider);
+      },
+    );
+  }
 
-        return Card(
+  Widget _buildCompanyCard(CompanyModel company, CompanyProvider provider) {
+    return Card(
           elevation: 1.5,
           shadowColor: Colors.black.withValues(alpha: 0.04),
           shape: RoundedRectangleBorder(
@@ -392,7 +419,5 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
             ),
           ),
         );
-      },
-    );
   }
 }

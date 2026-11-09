@@ -1004,18 +1004,4 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       ),
     );
   }
-
-  Widget _buildFieldLabel(String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6.0),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 12.5,
-          color: AppColors.darkCharcoal,
-        ),
-      ),
-    );
-  }
 }

@@ -26,8 +26,11 @@ void main() {
         ChangeNotifierProvider<OrderProvider>.value(value: orderProvider),
         ChangeNotifierProvider<CartProvider>.value(value: cartProvider),
       ],
-      child: const MaterialApp(
-        home: UserOrdersScreen(),
+      child: MaterialApp(
+        theme: ThemeData(
+          splashFactory: InkRipple.splashFactory,
+        ),
+        home: const UserOrdersScreen(),
       ),
     );
   }

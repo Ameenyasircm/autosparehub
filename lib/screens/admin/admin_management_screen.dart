@@ -9,7 +9,8 @@ import 'admin_form_screen.dart';
 
 /// Professional Admin Management screen for managing administrator accounts, roles, and access.
 class AdminManagementScreen extends StatefulWidget {
-  const AdminManagementScreen({super.key});
+  final bool embedded;
+  const AdminManagementScreen({super.key, this.embedded = false});
 
   @override
   State<AdminManagementScreen> createState() => _AdminManagementScreenState();
@@ -120,6 +121,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.embedded,
         backgroundColor: AppColors.darkCharcoal,
         elevation: 0,
         title: const Text(
@@ -292,16 +294,26 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
       );
     }
 
+    final isTablet = MediaQuery.of(context).size.width >= 720;
+
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 24 : 16,
+        vertical: 16,
+      ),
       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
       itemCount: list.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final admin = list[index];
         final isSelf = admin.id == currentAdminId;
+        return _buildAdminCard(admin, isSelf, provider);
+      },
+    );
+  }
 
-        return Card(
+  Widget _buildAdminCard(AdminModel admin, bool isSelf, AdminManagementProvider provider) {
+    return Card(
           elevation: 1.5,
           shadowColor: Colors.black.withValues(alpha: 0.04),
           shape: RoundedRectangleBorder(
@@ -391,7 +403,10 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
                       const SizedBox(height: 8),
 
                       // Badges
-                      Row(
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           // Role Badge
                           Container(
@@ -411,7 +426,6 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 6),
 
                           // Active Badge
                           Container(
@@ -512,7 +526,5 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
             ),
           ),
         );
-      },
-    );
   }
 }

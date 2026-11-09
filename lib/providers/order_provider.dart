@@ -536,44 +536,48 @@ class OrderProvider extends ChangeNotifier {
     _adminOrdersSubscription?.cancel();
     _isInitialAdminStreamLoad = true;
 
-    _adminOrdersSubscription = _firestore
-        .collection(collectionName)
-        .snapshots()
-        .listen((snapshot) {
-      _adminOrders = snapshot.docs.map((doc) => OrderModel.fromFirestore(doc)).toList();
+    try {
+      _adminOrdersSubscription = _firestore
+          .collection(collectionName)
+          .snapshots()
+          .listen((snapshot) {
+        _adminOrders = snapshot.docs.map((doc) => OrderModel.fromFirestore(doc)).toList();
 
-      // Sort newest first
-      _adminOrders.sort((a, b) {
-        if (a.createdAt != null && b.createdAt != null) {
-          return b.createdAt!.compareTo(a.createdAt!);
-        }
-        return b.id.compareTo(a.id);
-      });
+        // Sort newest first
+        _adminOrders.sort((a, b) {
+          if (a.createdAt != null && b.createdAt != null) {
+            return b.createdAt!.compareTo(a.createdAt!);
+          }
+          return b.id.compareTo(a.id);
+        });
 
-      _isLoading = false;
-      notifyListeners();
+        _isLoading = false;
+        notifyListeners();
 
-      // If not the initial load, detect new orders added and display local notification
-      if (!_isInitialAdminStreamLoad) {
-        for (final change in snapshot.docChanges) {
-          if (change.type == DocumentChangeType.added) {
-            try {
-              final newOrder = OrderModel.fromFirestore(change.doc);
-              NotificationService.instance.showNotification(
-                title: 'New Order Received! 🛒',
-                body: 'Order ${newOrder.orderNumber} placed by ${newOrder.userName} (₹${newOrder.totalAmount.toStringAsFixed(0)})',
-                payload: newOrder.id,
-              );
-            } catch (e) {
-              debugPrint('Error triggering new order alert: $e');
+        // If not the initial load, detect new orders added and display local notification
+        if (!_isInitialAdminStreamLoad) {
+          for (final change in snapshot.docChanges) {
+            if (change.type == DocumentChangeType.added) {
+              try {
+                final newOrder = OrderModel.fromFirestore(change.doc);
+                NotificationService.instance.showNotification(
+                  title: 'New Order Received! 🛒',
+                  body: 'Order ${newOrder.orderNumber} placed by ${newOrder.userName} (₹${newOrder.totalAmount.toStringAsFixed(0)})',
+                  payload: newOrder.id,
+                );
+              } catch (e) {
+                debugPrint('Error triggering new order alert: $e');
+              }
             }
           }
         }
-      }
-      _isInitialAdminStreamLoad = false;
-    }, onError: (e) {
-      debugPrint('OrderProvider.startListeningAdminOrders stream error: $e');
-    });
+        _isInitialAdminStreamLoad = false;
+      }, onError: (e) {
+        debugPrint('OrderProvider.startListeningAdminOrders stream error: $e');
+      });
+    } catch (e) {
+      debugPrint('OrderProvider.startListeningAdminOrders error: $e');
+    }
   }
 
   void stopListeningAdminOrders() {

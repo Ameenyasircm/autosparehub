@@ -13,7 +13,8 @@ import 'product_form_screen.dart';
 /// Features a streamlined search & button-driven filter bar, Grid/List view toggle,
 /// advanced sorting, and uncluttered product cards.
 class ProductsScreen extends StatefulWidget {
-  const ProductsScreen({super.key});
+  final bool embedded;
+  const ProductsScreen({super.key, this.embedded = false});
 
   @override
   State<ProductsScreen> createState() => _ProductsScreenState();
@@ -605,6 +606,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.embedded,
         backgroundColor: AppColors.darkCharcoal,
         elevation: 0,
         title: Row(
@@ -1092,19 +1094,33 @@ class _ProductsScreenState extends State<ProductsScreen> {
   // ==========================================
 
   Widget _buildGridView(List<ProductModel> list, ProductProvider provider) {
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 88),
-      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.63,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: list.length,
-      itemBuilder: (context, index) {
-        final product = list[index];
-        return _buildGridCard(product, provider);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final int crossAxisCount = availableWidth >= 1100
+            ? 4
+            : (availableWidth >= 680 ? 3 : 2);
+        final double totalHorizontalGutter = 28 + (crossAxisCount - 1) * 12;
+        final double columnWidth = (availableWidth - totalHorizontalGutter) / crossAxisCount;
+        final double imageHeight = columnWidth / 1.35;
+        const double detailsHeight = 154.0;
+        final double cardHeight = (imageHeight + detailsHeight).roundToDouble();
+
+        return GridView.builder(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 88),
+          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisExtent: cardHeight,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: list.length,
+          itemBuilder: (context, index) {
+            final product = list[index];
+            return _buildGridCard(product, provider);
+          },
+        );
       },
     );
   }
@@ -1143,7 +1159,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(13)),
                     child: AspectRatio(
-                      aspectRatio: 1.25,
+                      aspectRatio: 1.35,
                       child: Container(
                         color: const Color(0xFFF6F8FA),
                         child: Image.network(
@@ -1301,6 +1317,25 @@ class _ProductsScreenState extends State<ProductsScreen> {
   // ==========================================
 
   Widget _buildListView(List<ProductModel> list, ProductProvider provider) {
+    final isTablet = MediaQuery.of(context).size.width >= 720;
+    if (isTablet) {
+      return GridView.builder(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 88),
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisExtent: 140,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 10,
+        ),
+        itemCount: list.length,
+        itemBuilder: (context, index) {
+          final product = list[index];
+          return _buildListCard(product, provider);
+        },
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 88),
       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
@@ -1550,6 +1585,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF8892A0), size: 18),
       padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onSelected: (val) {
         if (val == 'edit') {

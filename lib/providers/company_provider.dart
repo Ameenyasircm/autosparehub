@@ -7,13 +7,15 @@ import '../services/cloudinary_service.dart';
 
 /// Provider managing vehicle manufacturers and brands (Companies)
 class CompanyProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _customFirestore;
   final CloudinaryService _cloudinaryService;
+
+  FirebaseFirestore get _firestore => _customFirestore ?? FirebaseFirestore.instance;
 
   CompanyProvider({
     FirebaseFirestore? firestore,
     CloudinaryService? cloudinaryService,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+  })  : _customFirestore = firestore,
         _cloudinaryService = cloudinaryService ?? CloudinaryService();
 
   static const String collectionName = 'COMPANIES';

@@ -174,6 +174,53 @@ class OrderModel {
     return map.values.toList();
   }
 
+  /// Formats a complete, professional WhatsApp message containing comprehensive
+  /// details about the order for direct customer communication.
+  String toWhatsAppMessage({bool isAdmin = true}) {
+    final buffer = StringBuffer();
+    if (isAdmin) {
+      final greetingName = userName.trim().isNotEmpty ? userName.trim() : 'Customer';
+      buffer.writeln('Hello $greetingName,');
+      buffer.writeln();
+      buffer.writeln('Regarding your order *$orderNumber* at *SN AutoSpare Hub Manjeri*:');
+    } else {
+      buffer.writeln('Hello SN AutoSpare Hub,');
+      buffer.writeln();
+      buffer.writeln('I am inquiring regarding my order *$orderNumber*:');
+    }
+
+    buffer.writeln();
+    buffer.writeln('📦 *Order Details:*');
+
+    final itemsList = distinctItems;
+    for (final item in itemsList) {
+      final brand = item.companyName.trim().isNotEmpty ? ' (${item.companyName.trim()})' : '';
+      final ref = (item.refNo != null && item.refNo!.trim().isNotEmpty) ? ' [Ref: ${item.refNo!.trim()}]' : '';
+      final totalStr = item.totalPrice % 1 == 0
+          ? item.totalPrice.toStringAsFixed(0)
+          : item.totalPrice.toStringAsFixed(2);
+
+      if (item.quantity > 1 && item.unitPrice > 0) {
+        final unitStr = item.unitPrice % 1 == 0
+            ? item.unitPrice.toStringAsFixed(0)
+            : item.unitPrice.toStringAsFixed(2);
+        buffer.writeln('• ${item.productName}$brand$ref - Qty: ${item.quantity} (₹$unitStr each = ₹$totalStr)');
+      } else {
+        buffer.writeln('• ${item.productName}$brand$ref - Qty: ${item.quantity} (₹$totalStr)');
+      }
+    }
+
+    buffer.writeln();
+    final grandTotalStr = totalAmount % 1 == 0
+        ? totalAmount.toStringAsFixed(0)
+        : totalAmount.toStringAsFixed(2);
+    buffer.writeln('💰 *Total Amount:* ₹$grandTotalStr');
+    buffer.writeln();
+    buffer.writeln('Thank you for choosing *SN AutoSpare Hub*!');
+
+    return buffer.toString().trim();
+  }
+
   factory OrderModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
     return OrderModel.fromMap(data, doc.id);

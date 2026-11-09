@@ -5,10 +5,11 @@ import '../models/admin_model.dart';
 
 /// Provider managing administration accounts, roles, access status, and queries.
 class AdminManagementProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _customFirestore;
+  FirebaseFirestore get _firestore => _customFirestore ?? FirebaseFirestore.instance;
 
   AdminManagementProvider({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+      : _customFirestore = firestore;
 
   static const String collectionName = 'ADMINS';
 
@@ -26,6 +27,13 @@ class AdminManagementProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
   String get roleFilter => _roleFilter;
+
+  @visibleForTesting
+  void setAdminsForTesting(List<AdminModel> list) {
+    _admins = List.from(list);
+    _isLoading = false;
+    notifyListeners();
+  }
 
   /// Filtered admins based on search query and role filter
   List<AdminModel> get filteredAdmins {

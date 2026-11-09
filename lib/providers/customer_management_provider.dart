@@ -7,16 +7,19 @@ import '../models/customer_model.dart';
 class CustomerManagementProvider extends ChangeNotifier {
   final FirebaseFirestore? _customFirestore;
 
-  CustomerManagementProvider({FirebaseFirestore? firestore}) : _customFirestore = firestore;
+  CustomerManagementProvider({FirebaseFirestore? firestore})
+      : _customFirestore = firestore;
 
-  FirebaseFirestore get _firestore => _customFirestore ?? FirebaseFirestore.instance;
+  FirebaseFirestore get _firestore =>
+      _customFirestore ?? FirebaseFirestore.instance;
 
   static const String collectionName = 'USERS';
 
   List<CustomerModel> _customers = [];
   bool _isLoading = false;
   String? _errorMessage;
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _customersSubscription;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+      _customersSubscription;
 
   List<CustomerModel> get customers => _customers;
   bool get isLoading => _isLoading;
@@ -27,6 +30,13 @@ class CustomerManagementProvider extends ChangeNotifier {
 
   int get pendingCount => pendingCustomers.length;
 
+  @visibleForTesting
+  void setCustomersForTesting(List<CustomerModel> list) {
+    _customers = List.from(list);
+    _isLoading = false;
+    notifyListeners();
+  }
+
   /// Start real-time Firestore listener for customer requests
   void listenToCustomers() {
     _customersSubscription?.cancel();
@@ -34,25 +44,34 @@ class CustomerManagementProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    _customersSubscription = _firestore.collection(collectionName).snapshots().listen(
-      (snapshot) {
-        _customers = snapshot.docs.map((doc) => CustomerModel.fromFirestore(doc)).toList();
-        _customers.sort((a, b) {
-          if (a.requestedAt != null && b.requestedAt != null) {
-            return b.requestedAt!.compareTo(a.requestedAt!);
-          }
-          return b.id.compareTo(a.id);
-        });
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (e) {
-        debugPrint('CustomerManagementProvider stream error: $e');
-        _errorMessage = 'Failed to load customers: $e';
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
+    try {
+      _customersSubscription =
+          _firestore.collection(collectionName).snapshots().listen(
+        (snapshot) {
+          _customers = snapshot.docs
+              .map((doc) => CustomerModel.fromFirestore(doc))
+              .toList();
+          _customers.sort((a, b) {
+            if (a.requestedAt != null && b.requestedAt != null) {
+              return b.requestedAt!.compareTo(a.requestedAt!);
+            }
+            return b.id.compareTo(a.id);
+          });
+          _isLoading = false;
+          notifyListeners();
+        },
+        onError: (e) {
+          debugPrint('CustomerManagementProvider stream error: $e');
+          _errorMessage = 'Failed to load customers: $e';
+          _isLoading = false;
+          notifyListeners();
+        },
+      );
+    } catch (e) {
+      debugPrint('CustomerManagementProvider.listenToCustomers error: $e');
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   /// Fetch all registered customers once (for pull-to-refresh)
@@ -67,7 +86,8 @@ class CustomerManagementProvider extends ChangeNotifier {
           .get()
           .timeout(const Duration(seconds: 10));
 
-      _customers = snapshot.docs.map((doc) => CustomerModel.fromFirestore(doc)).toList();
+      _customers =
+          snapshot.docs.map((doc) => CustomerModel.fromFirestore(doc)).toList();
 
       // Sort newest request first
       _customers.sort((a, b) {
@@ -91,16 +111,12 @@ class CustomerManagementProvider extends ChangeNotifier {
   Future<bool> approveCustomer(String customerId, {String? adminId}) async {
     try {
       final now = DateTime.now();
-      await _firestore
-          .collection(collectionName)
-          .doc(customerId)
-          .update({
-            'STATUS': 'APPROVED',
-            'APPROVED_AT': Timestamp.fromDate(now),
-            'APPROVED_BY_ADMIN_ID': adminId,
-            'UPDATED_AT': FieldValue.serverTimestamp(),
-          })
-          .timeout(const Duration(seconds: 8));
+      await _firestore.collection(collectionName).doc(customerId).update({
+        'STATUS': 'APPROVED',
+        'APPROVED_AT': Timestamp.fromDate(now),
+        'APPROVED_BY_ADMIN_ID': adminId,
+        'UPDATED_AT': FieldValue.serverTimestamp(),
+      }).timeout(const Duration(seconds: 8));
 
       final index = _customers.indexWhere((c) => c.id == customerId);
       CustomerModel? targetCustomer;
@@ -119,14 +135,16 @@ class CustomerManagementProvider extends ChangeNotifier {
           'RECIPIENT_ID': customerId,
           'RECIPIENT_TYPE': 'USER',
           'TITLE': 'Account Approved! 🎉',
-          'BODY': 'Your garage account has been approved by the administrator. You can now place orders.',
+          'BODY':
+              'Your garage account has been approved by the administrator. You can now place orders.',
           'TYPE': 'ACCOUNT_APPROVED',
           'IS_READ': false,
           'FCM_TOKEN': targetCustomer?.fcmToken,
           'CREATED_AT': FieldValue.serverTimestamp(),
         });
       } catch (e) {
-        debugPrint('CustomerManagementProvider: Failed to write notification record: $e');
+        debugPrint(
+            'CustomerManagementProvider: Failed to write notification record: $e');
       }
 
       return true;
@@ -139,15 +157,11 @@ class CustomerManagementProvider extends ChangeNotifier {
   /// Reject customer registration request
   Future<bool> rejectCustomer(String customerId, {String? reason}) async {
     try {
-      await _firestore
-          .collection(collectionName)
-          .doc(customerId)
-          .update({
-            'STATUS': 'REJECTED',
-            'REJECTION_REASON': reason ?? 'Account request could not be verified.',
-            'UPDATED_AT': FieldValue.serverTimestamp(),
-          })
-          .timeout(const Duration(seconds: 8));
+      await _firestore.collection(collectionName).doc(customerId).update({
+        'STATUS': 'REJECTED',
+        'REJECTION_REASON': reason ?? 'Account request could not be verified.',
+        'UPDATED_AT': FieldValue.serverTimestamp(),
+      }).timeout(const Duration(seconds: 8));
 
       final index = _customers.indexWhere((c) => c.id == customerId);
       if (index != -1) {
@@ -165,7 +179,8 @@ class CustomerManagementProvider extends ChangeNotifier {
   }
 
   /// Update customer password by administrator
-  Future<bool> updateCustomerPassword(String customerId, String newPassword) async {
+  Future<bool> updateCustomerPassword(
+      String customerId, String newPassword) async {
     final cleanPass = newPassword.trim();
     if (cleanPass.length < 6) {
       _errorMessage = 'Password must be at least 6 characters.';
@@ -174,14 +189,10 @@ class CustomerManagementProvider extends ChangeNotifier {
     }
 
     try {
-      await _firestore
-          .collection(collectionName)
-          .doc(customerId)
-          .update({
-            'PASSWORD': cleanPass,
-            'UPDATED_AT': FieldValue.serverTimestamp(),
-          })
-          .timeout(const Duration(seconds: 8));
+      await _firestore.collection(collectionName).doc(customerId).update({
+        'PASSWORD': cleanPass,
+        'UPDATED_AT': FieldValue.serverTimestamp(),
+      }).timeout(const Duration(seconds: 8));
 
       final index = _customers.indexWhere((c) => c.id == customerId);
       if (index != -1) {
