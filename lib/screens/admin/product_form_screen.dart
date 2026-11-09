@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
@@ -26,6 +27,11 @@ class ProductFormScreen extends StatefulWidget {
 }
 
 class _ProductFormScreenState extends State<ProductFormScreen> {
+  /// Stock can be typed in only as opening stock: for a new product, or an
+  /// existing one that never had stock recorded.
+  bool get _isStockEditable =>
+      !widget.isEditing || widget.productToEdit?.stockQuantity == null;
+
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _nameController;
@@ -198,7 +204,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
     final cleanPriceStr = _priceController.text.trim().replaceAll(',', '');
     final price = cleanPriceStr.isNotEmpty ? double.tryParse(cleanPriceStr) : null;
-    final stock = int.tryParse(_stockController.text.trim());
+    // Stock is only entered once (opening stock). After that it changes only
+    // through sales and purchases, so editing never overwrites it.
+    final stock = _isStockEditable ? int.tryParse(_stockController.text.trim()) : null;
 
     bool success = false;
 
@@ -662,12 +670,11 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               prefixIcon: Icons.currency_rupee_rounded,
               isDarkTheme: true,
               validator: (val) {
-                if (val != null && val.trim().isNotEmpty) {
-                  final clean = val.trim().replaceAll(',', '');
-                  final parsed = double.tryParse(clean);
-                  if (parsed == null || parsed < 0) {
-                    return 'Enter valid price';
-                  }
+                final clean = (val ?? '').trim().replaceAll(',', '');
+                if (clean.isEmpty) return 'Enter price';
+                final parsed = double.tryParse(clean);
+                if (parsed == null || parsed < 0) {
+                  return 'Enter valid price';
                 }
                 return null;
               },
@@ -679,13 +686,23 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           Expanded(
             flex: 2,
             child: AppTextField(
-              label: 'Stock',
+              label: _isStockEditable ? 'Opening Stock' : 'Stock',
               hint: '0',
               controller: _stockController,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              isRequired: _isStockEditable,
+              readOnly: !_isStockEditable,
               enabled: !provider.isSaving,
               prefixIcon: Icons.inventory_2_outlined,
               isDarkTheme: true,
+              helperText: _isStockEditable ? null : 'Use Sales & Purchases',
+              validator: (val) {
+                if (!_isStockEditable) return null;
+                final parsed = int.tryParse((val ?? '').trim());
+                if (parsed == null || parsed < 0) return 'Enter stock';
+                return null;
+              },
             ),
           ),
         ],

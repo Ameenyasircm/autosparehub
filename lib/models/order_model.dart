@@ -91,6 +91,10 @@ class OrderModel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  /// Set when an admin converts this order into a counter sale (stock reduced).
+  final String? saleId;
+  final String? saleNumber;
+
   OrderModel({
     required this.id,
     required this.orderNumber,
@@ -113,6 +117,8 @@ class OrderModel {
     List<String>? categoryNames,
     this.createdAt,
     this.updatedAt,
+    this.saleId,
+    this.saleNumber,
   })  : items = (items != null && items.isNotEmpty)
             ? items
             : [
@@ -145,6 +151,7 @@ class OrderModel {
   bool get isDispatched => status.toUpperCase() == 'DISPATCHED';
   bool get isDelivered => status.toUpperCase() == 'DELIVERED';
   bool get isCancelled => status.toUpperCase() == 'CANCELLED';
+  bool get isSold => saleId != null && saleId!.isNotEmpty;
 
   /// Total count of all items across cart line items
   int get totalItemUnits => items.fold<int>(0, (total, i) => total + i.quantity);
@@ -290,6 +297,8 @@ class OrderModel {
       categoryNames: parsedCategoryNames,
       createdAt: parseTimestamp(data['CREATED_AT'] ?? data['createdAt']),
       updatedAt: parseTimestamp(data['UPDATED_AT'] ?? data['updatedAt']),
+      saleId: data['SALE_ID']?.toString(),
+      saleNumber: data['SALE_NUMBER']?.toString(),
     );
   }
 
@@ -341,6 +350,8 @@ class OrderModel {
     List<String>? categoryNames,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? saleId,
+    String? saleNumber,
   }) {
     return OrderModel(
       id: id ?? this.id,
@@ -364,6 +375,8 @@ class OrderModel {
       categoryNames: categoryNames ?? this.categoryNames,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      saleId: saleId ?? this.saleId,
+      saleNumber: saleNumber ?? this.saleNumber,
     );
   }
 }

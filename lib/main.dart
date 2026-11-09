@@ -15,6 +15,7 @@ import 'providers/company_provider.dart';
 import 'providers/customer_management_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/product_provider.dart';
+import 'providers/sales_provider.dart';
 import 'providers/user_auth_provider.dart';
 import 'screens/admin/admin_management_screen.dart';
 import 'screens/admin/admin_shell_screen.dart';
@@ -91,6 +92,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<CustomerManagementProvider>(
           create: (_) => CustomerManagementProvider(),
+        ),
+        ChangeNotifierProvider<SalesProvider>(
+          create: (_) => SalesProvider(),
         ),
       ],
       child: MaterialApp(

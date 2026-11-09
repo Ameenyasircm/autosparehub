@@ -401,7 +401,9 @@ class ProductProvider extends ChangeNotifier {
         'ROTATION': rotation?.trim().isEmpty ?? true ? null : rotation!.trim(),
         'FUEL_FEED_HOLE': fuelFeedHole?.trim().isEmpty ?? true ? null : fuelFeedHole!.trim(),
         'PRICE': price,
-        'STOCK_QUANTITY': stockQuantity,
+        // Stock is managed by sales/purchases; only set it when given
+        // (opening stock for a product that never had any recorded).
+        if (stockQuantity != null) 'STOCK_QUANTITY': stockQuantity,
         'SEARCH_KEYWORDS': searchKeywords,
         'IS_ACTIVE': isActive,
         'UPDATED_AT': FieldValue.serverTimestamp(),

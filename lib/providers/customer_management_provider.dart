@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/customer_model.dart';
+import '../utils/phone_helper.dart';
 
 /// Provider managing customer account review, approvals, and rejections in the Admin Portal.
 class CustomerManagementProvider extends ChangeNotifier {
@@ -206,6 +207,87 @@ class CustomerManagementProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  /// Creates an already-approved customer from the admin app (e.g. for a
+  /// counter sale). Uses the same phone-based document ID as self
+  /// registration, so a phone number can only exist once. The password lets
+  /// the customer log in to the user app later.
+  /// Returns the new customer, or null with [errorMessage] set.
+  Future<CustomerModel?> addCustomerByAdmin({
+    required String name,
+    required String phone,
+    required String password,
+    String? adminId,
+  }) async {
+    final cleanName = name.trim();
+    final cleanPhone = PhoneHelper.extract10Digits(phone);
+    final cleanPassword = password.trim();
+    _errorMessage = null;
+
+    if (cleanName.isEmpty) {
+      _errorMessage = 'Customer name is required.';
+    } else if (!PhoneHelper.isValidIndianNumber(cleanPhone)) {
+      _errorMessage = 'Enter a valid 10-digit mobile number.';
+    } else if (cleanPassword.length < 6) {
+      _errorMessage = 'Password must be at least 6 characters.';
+    }
+    if (_errorMessage != null) {
+      notifyListeners();
+      return null;
+    }
+
+    final docId = PhoneHelper.toDocId(cleanPhone);
+    final docRef = _firestore.collection(collectionName).doc(docId);
+    final now = DateTime.now();
+    final customer = CustomerModel(
+      id: docId,
+      name: cleanName,
+      phoneNumber: cleanPhone,
+      status: 'APPROVED',
+      requestedAt: now,
+      approvedAt: now,
+      password: cleanPassword,
+    );
+
+    try {
+      // Returns an error message instead of throwing, because errors thrown
+      // inside a transaction can come back wrapped by the plugin.
+      final duplicateError = await _firestore.runTransaction<String?>((tx) async {
+        final existing = await tx.get(docRef);
+        if (existing.exists) {
+          final current = CustomerModel.fromFirestore(existing);
+          return 'This number is already registered to ${current.name} '
+              '(${current.status.toLowerCase()}).';
+        }
+        final map = customer.toMap();
+        map['NORMALIZED_PHONE'] = PhoneHelper.normalizeTo91(cleanPhone);
+        map['DISPLAY_PHONE'] = PhoneHelper.formatForDisplay(cleanPhone);
+        map['APPROVED_BY_ADMIN_ID'] = adminId;
+        map['CREATED_BY_ADMIN'] = true;
+        tx.set(docRef, map);
+        return null;
+      }).timeout(const Duration(seconds: 10));
+
+      if (duplicateError != null) {
+        _errorMessage = duplicateError;
+        notifyListeners();
+        return null;
+      }
+
+      if (!_customers.any((c) => c.id == docId)) {
+        _customers.insert(0, customer);
+      }
+      notifyListeners();
+      return customer;
+    } on TimeoutException {
+      _errorMessage = 'Connection timed out. Please check your internet and try again.';
+    } catch (e) {
+      debugPrint('CustomerManagementProvider.addCustomerByAdmin error: $e');
+      _errorMessage = 'Failed to create customer: $e';
+    }
+    notifyListeners();
+    return null;
   }
 
   @override

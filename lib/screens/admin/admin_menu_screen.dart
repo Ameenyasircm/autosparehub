@@ -13,6 +13,7 @@ import 'companies_screen.dart';
 import 'customer_approvals_screen.dart';
 import 'product_form_screen.dart';
 import 'products_screen.dart';
+import 'sales/sales_hub_screen.dart';
 
 /// Admin Menu Screen hosting all management options, approvals, catalog controls,
 /// contact details settings, and admin session management.
@@ -330,6 +331,25 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
                   ),
                 );
               }
+            },
+          ),
+
+          const SizedBox(height: 22),
+
+          // SECTION: SALES & STOCK
+          _buildSectionHeader('Sales & Stock'),
+          const SizedBox(height: 8),
+
+          _buildMenuItem(
+            context: context,
+            title: 'Sales & Purchases',
+            icon: Icons.point_of_sale_rounded,
+            iconColor: const Color(0xFF16A34A),
+            iconBgColor: const Color(0xFFDCFCE7),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SalesHubScreen()),
+              );
             },
           ),
 
