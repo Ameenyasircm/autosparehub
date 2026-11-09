@@ -18,6 +18,7 @@ import 'user_product_detail_screen.dart';
 import 'widgets/approval_pending_dialog.dart';
 import 'widgets/change_password_dialog.dart';
 import 'widgets/contact_us_sheet.dart';
+import 'widgets/order_access_guard.dart';
 
 /// Customer Storefront Home Screen matching Image 5 with pixel-level precision:
 /// - Dark AppBar (#12151B) with circular logo, "AUTO SPARE HUB" rich title, and rounded square cart button with badge dot
@@ -206,6 +207,18 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final auth = context.watch<UserAuthProvider>();
+
+    // Account deleted by the admin while the app was open: logged out
+    // automatically; clear local data and explain once.
+    if (auth.accountRemovedNotice) {
+      auth.consumeAccountRemovedNotice();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.read<CartProvider>().onUserLogout();
+        context.read<OrderProvider>().clearCustomerOrders();
+        showAccountRemovedMessage(context);
+      });
+    }
 
     // One-time celebration notification when admin approves customer for the first time
     if (auth.shouldShowApprovalCelebration) {
@@ -2117,13 +2130,19 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         const SizedBox(height: 16),
 
         // Settings / Actions List
+        // ListTiles paint their ripple on the nearest Material; the transparent
+        // Material keeps it visible above the white box, the clip keeps it
+        // inside the rounded corners.
         Container(
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: const Color(0xFFE5E9F0)),
           ),
-          child: Column(
+          child: Material(
+            type: MaterialType.transparency,
+            child: Column(
             children: [
               ListTile(
                 leading: const Icon(Icons.receipt_long_rounded, color: AppColors.warmGold),
@@ -2168,6 +2187,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                 },
               ),
             ],
+            ),
           ),
         ),
       ],

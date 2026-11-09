@@ -29,6 +29,16 @@ enum CustomerLoginResult {
   error, // Network or Firestore error
 }
 
+/// Result of the server-side check done right before placing an order.
+enum OrderAccessResult {
+  allowed,
+  notLoggedIn,
+  accountRemoved, // document deleted by the admin
+  notApproved, // pending approval
+  rejected,
+  networkError, // could not reach the server to confirm
+}
+
 /// Provider managing customer registration, approval checking, and identity state.
 class UserAuthProvider extends ChangeNotifier {
   final FirebaseFirestore? _customFirestore;
@@ -74,7 +84,14 @@ class UserAuthProvider extends ChangeNotifier {
         .doc(customerDocId)
         .snapshots()
         .listen((snapshot) async {
-      if (!snapshot.exists || snapshot.data() == null) return;
+      if (!snapshot.exists || snapshot.data() == null) {
+        // Deleted by the admin while logged in. Only trust the server here:
+        // a missing document in the offline cache does not mean deleted.
+        if (!snapshot.metadata.isFromCache) {
+          await _handleAccountRemoved();
+        }
+        return;
+      }
       try {
         final updated = CustomerModel.fromFirestore(snapshot);
         final bool wasNotApproved =
@@ -529,6 +546,51 @@ class UserAuthProvider extends ChangeNotifier {
   }
 
   /// Clear session (for testing or switching account)
+  /// Set when the account was removed/blocked and the customer was logged out
+  /// automatically. The UI shows a message once and clears it.
+  bool _accountRemovedNotice = false;
+  bool get accountRemovedNotice => _accountRemovedNotice;
+  void consumeAccountRemovedNotice() => _accountRemovedNotice = false;
+
+  Future<void> _handleAccountRemoved() async {
+    debugPrint('UserAuthProvider: customer account no longer exists, logging out.');
+    _accountRemovedNotice = true;
+    await logout();
+  }
+
+  /// Checks with the server (not the cached login) that the customer still
+  /// exists and is approved, right before an order is submitted. Refreshes
+  /// the cached customer; logs out if the account was deleted.
+  Future<OrderAccessResult> verifyOrderAccess() async {
+    final current = _currentCustomer;
+    if (current == null) return OrderAccessResult.notLoggedIn;
+    try {
+      final doc = await _firestore
+          .collection(collectionName)
+          .doc(current.id)
+          .get(const GetOptions(source: Source.server))
+          .timeout(const Duration(seconds: 8));
+
+      if (!doc.exists || doc.data() == null) {
+        await _handleAccountRemoved();
+        return OrderAccessResult.accountRemoved;
+      }
+
+      final updated = CustomerModel.fromFirestore(doc);
+      _currentCustomer = updated;
+      await _sessionService.saveCustomerSession(updated);
+      notifyListeners();
+
+      if (updated.isApproved) return OrderAccessResult.allowed;
+      if (updated.isRejected) return OrderAccessResult.rejected;
+      return OrderAccessResult.notApproved;
+    } catch (e) {
+      // Offline / timeout: cannot confirm access, so do not place the order.
+      debugPrint('UserAuthProvider.verifyOrderAccess error: $e');
+      return OrderAccessResult.networkError;
+    }
+  }
+
   Future<void> logout() async {
     _customerSubscription?.cancel();
     _customerSubscription = null;

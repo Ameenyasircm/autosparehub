@@ -5,6 +5,7 @@ import '../../../providers/order_provider.dart';
 import '../../../providers/user_auth_provider.dart';
 import '../../../theme/app_theme.dart';
 import '../order_success_screen.dart';
+import 'order_access_guard.dart';
 
 /// Modal bottom sheet allowing an approved customer to choose quantity, enter shipping address,
 /// and place a spare part order.
@@ -63,7 +64,20 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
 
   double get _totalPrice => (widget.product.price ?? 0.0) * _quantity;
 
+  bool _isVerifying = false;
+
   Future<void> _submitOrder() async {
+    // Confirm with the server that the account still exists and is approved
+    // (the login itself comes from the phone's cache).
+    setState(() => _isVerifying = true);
+    final allowed = await ensureOrderAccess(context);
+    if (!mounted) return;
+    setState(() => _isVerifying = false);
+    if (!allowed) {
+      Navigator.of(context).pop(); // close the sheet; the reason was shown
+      return;
+    }
+
     final customer = context.read<UserAuthProvider>().currentCustomer;
     if (customer == null || !customer.isApproved) return;
 
@@ -296,8 +310,8 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
                 shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              onPressed: orderProvider.isPlacingOrder ? null : _submitOrder,
-              child: orderProvider.isPlacingOrder
+              onPressed: orderProvider.isPlacingOrder || _isVerifying ? null : _submitOrder,
+              child: orderProvider.isPlacingOrder || _isVerifying
                   ? const SizedBox(
                       width: 22,
                       height: 22,

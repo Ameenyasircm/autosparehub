@@ -11,6 +11,7 @@ import 'user_home_screen.dart';
 import 'user_login_screen.dart';
 import 'user_product_detail_screen.dart';
 import 'widgets/approval_pending_dialog.dart';
+import 'widgets/order_access_guard.dart';
 
 /// Customer shopping cart screen matching Image 2 with precision:
 /// - Dark AppBar with "My Cart" and white back button
@@ -143,6 +144,9 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
     }
 
     if (!await _ensureApprovedCustomer(_handleCheckout)) return;
+    if (!mounted) return;
+    // Server check: account still exists and is approved (login is cached).
+    if (!await ensureOrderAccess(context)) return;
     if (!mounted) return;
 
     // 4. Approved -> Submit order
