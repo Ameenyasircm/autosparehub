@@ -149,6 +149,50 @@ class ProductProvider extends ChangeNotifier {
     }
   }
 
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _liveSubscription;
+
+  /// Keeps the products list in sync with Firestore in real time (used by the
+  /// customer app), so hiding/editing in the admin app shows up immediately
+  /// without a refresh. Safe to call more than once. The returned future
+  /// completes when the first data has arrived.
+  Future<void> startListening() {
+    if (_liveSubscription != null) return Future.value();
+    final firstData = Completer<void>();
+    if (_products.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
+    _liveSubscription = _firestore.collection(collectionName).snapshots().listen(
+      (snapshot) {
+        _products = snapshot.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
+        _products.sort((a, b) {
+          if (a.createdAt != null && b.createdAt != null) {
+            return b.createdAt!.compareTo(a.createdAt!);
+          }
+          return b.id.compareTo(a.id);
+        });
+        _isLoading = false;
+        _errorMessage = null;
+        notifyListeners();
+        if (!firstData.isCompleted) firstData.complete();
+      },
+      onError: (e) {
+        debugPrint('ProductModel live listener error: $e');
+        _isLoading = false;
+        _liveSubscription = null; // allow a later retry
+        notifyListeners();
+        if (!firstData.isCompleted) firstData.complete();
+      },
+    );
+    return firstData.future;
+  }
+
+  @override
+  void dispose() {
+    _liveSubscription?.cancel();
+    super.dispose();
+  }
+
   /// Fetches all products from Firestore, sorted newest first
   Future<void> fetchProducts() async {
     _isLoading = true;

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/order_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../services/contact_service.dart';
 import '../../theme/app_theme.dart';
 import 'user_home_screen.dart';
 import 'user_orders_screen.dart';
@@ -119,7 +120,7 @@ class OrderSuccessScreen extends StatelessWidget {
                       const SizedBox(height: 16),
 
                       const Text(
-                        'Order Requested Successfully!',
+                        'Order Request Submitted Successfully!',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 21,
@@ -130,7 +131,7 @@ class OrderSuccessScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Thank you, ${order.userName}! Your request is logged.',
+                        'Thank you, ${order.userName}! Your order request has been received.',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 13.5,
@@ -228,7 +229,7 @@ class OrderSuccessScreen extends StatelessWidget {
                           const SizedBox(width: 12),
                           const Expanded(
                             child: Text(
-                              'Direct Administrator Confirmation',
+                              'Direct Manager Confirmation',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 15,
@@ -241,13 +242,17 @@ class OrderSuccessScreen extends StatelessWidget {
                       const Divider(color: Colors.white24, height: 1),
                       const SizedBox(height: 12),
 
-                      _buildInfoBullet(
-                        icon: Icons.phone_callback_rounded,
-                        title: 'Admin Will Contact You Directly',
-                        subtitle:
-                            'Our team will call or WhatsApp you directly at +91 ${order.userPhone} to confirm exact part compatibility, pricing, and fulfillment.',
-                        malayalamSubtitle:
-                            'ഓർഡർ സ്ഥിരീകരിക്കുന്നതിനായി ഞങ്ങളുടെ അഡ്മിൻ നിങ്ങളെ നേരിട്ട് ബന്ധപ്പെടുന്നതാണ്.',
+                      // Support number set by the admin (Customer Helpline Contact).
+                      _SupportPhoneBuilder(
+                        builder: (phone) => _buildInfoBullet(
+                          icon: Icons.phone_callback_rounded,
+                          title: 'Our Manager Will Contact You Shortly',
+                          subtitle: phone == null
+                              ? 'Our team will call or WhatsApp you shortly to confirm exact part compatibility, pricing, and fulfilment.'
+                              : 'Our team will call or WhatsApp you shortly at +91 $phone to confirm exact part compatibility, pricing, and fulfilment.',
+                          malayalamSubtitle:
+                              'ഓർഡർ സ്ഥിരീകരിക്കുന്നതിനായി ഞങ്ങളുടെ മാനേജർ നിങ്ങളെ ഉടൻ ബന്ധപ്പെടുന്നതാണ്.',
+                        ),
                       ),
                     ],
                   ),
@@ -541,6 +546,28 @@ class OrderSuccessScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Loads the support phone number (CONTACT_DETAILS, set by the admin) once
+/// and rebuilds with it. Passes null while loading.
+class _SupportPhoneBuilder extends StatefulWidget {
+  final Widget Function(String? phone) builder;
+  const _SupportPhoneBuilder({required this.builder});
+
+  @override
+  State<_SupportPhoneBuilder> createState() => _SupportPhoneBuilderState();
+}
+
+class _SupportPhoneBuilderState extends State<_SupportPhoneBuilder> {
+  late final Future<String> _phone = ContactService().fetchContactPhone();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: _phone,
+      builder: (context, snap) => widget.builder(snap.data),
     );
   }
 }

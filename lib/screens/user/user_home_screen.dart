@@ -69,13 +69,11 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         ApprovalPendingDialog.show(context, phone: phone);
       }
 
-      final compProvider = context.read<CompanyProvider>();
-      if (compProvider.companies.isEmpty) compProvider.fetchCompanies();
-
-      final catProvider = context.read<CategoryProvider>();
-      if (catProvider.categories.isEmpty) catProvider.fetchCategories();
-
-      await context.read<ProductProvider>().fetchProducts();
+      // Live listeners: products/categories/companies hidden or changed in the
+      // admin app update here immediately, without a refresh.
+      context.read<CompanyProvider>().startListening();
+      context.read<CategoryProvider>().startListening();
+      await context.read<ProductProvider>().startListening();
       if (mounted) {
         setState(() => _isInitialLoading = false);
       }
@@ -459,7 +457,12 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
       return _buildLoadingState();
     }
 
-    if (_selectedCategory == null) {
+    // If the open category was hidden or deleted by the admin, go back to
+    // the category list instead of showing a hidden category.
+    final openCategoryStillVisible = _selectedCategory != null &&
+        categoryProvider.categories.any((c) => c.id == _selectedCategory!.id && c.isActive);
+
+    if (!openCategoryStillVisible) {
       return _buildCategoriesView(context, categoryProvider, productProvider);
     } else {
       return _buildCategorySparesView(
@@ -797,6 +800,46 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   }
 
   // --- CATEGORY CARD ITEM ---
+  void _showEmptyCategoryDialog(CategoryModel category) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: [
+            const Icon(Icons.inventory_2_outlined, color: AppColors.warmGold),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                category.name,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.darkHeader),
+              ),
+            ),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _EmptyBoxAnimation(),
+            SizedBox(height: 14),
+            Text(
+              'No items are added in this category yet. Please check back later.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.secondaryText, fontSize: 14, height: 1.4),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK', style: TextStyle(color: AppColors.darkHeader, fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryCard(
     BuildContext context,
     CategoryModel category,
@@ -821,6 +864,12 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
+            // Empty category: explain instead of opening an empty screen.
+            // (While products are still loading the count is not final yet.)
+            if (spareCount == 0 && !productProvider.isLoading) {
+              _showEmptyCategoryDialog(category);
+              return;
+            }
             setState(() {
               _selectedCategory = category;
               _searchController.clear();
@@ -2197,6 +2246,102 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               const SizedBox(height: 8),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Small looping "empty" illustration for the empty-category alert:
+/// an open box floating over its shadow, a soft pulsing halo and a "?" bubble.
+class _EmptyBoxAnimation extends StatefulWidget {
+  const _EmptyBoxAnimation();
+
+  @override
+  State<_EmptyBoxAnimation> createState() => _EmptyBoxAnimationState();
+}
+
+class _EmptyBoxAnimationState extends State<_EmptyBoxAnimation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 130,
+      height: 120,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          final t = Curves.easeInOut.transform(_controller.value);
+          final lift = -10 * t; // box floats up and down
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              // Pulsing halo
+              Transform.scale(
+                scale: 0.85 + 0.15 * t,
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.warmGold.withValues(alpha: 0.10 + 0.08 * (1 - t)),
+                  ),
+                ),
+              ),
+              // Shadow: shrinks as the box rises
+              Positioned(
+                bottom: 14,
+                child: Container(
+                  width: 46 - 14 * t,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.10 - 0.04 * t),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              // Empty box
+              Transform.translate(
+                offset: Offset(0, lift),
+                child: Transform.rotate(
+                  angle: 0.06 * (t - 0.5),
+                  child: const Icon(Icons.inventory_2_outlined, size: 54, color: AppColors.warmGold),
+                ),
+              ),
+              // "?" bubble, fades in and out
+              Positioned(
+                top: 8 + lift / 2,
+                right: 16,
+                child: Opacity(
+                  opacity: 0.35 + 0.65 * t,
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: AppColors.darkHeader,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Text(
+                      '?',
+                      style: TextStyle(color: AppColors.primaryGold, fontWeight: FontWeight.w900, fontSize: 15),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

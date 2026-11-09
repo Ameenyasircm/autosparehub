@@ -53,6 +53,45 @@ class CompanyProvider extends ChangeNotifier {
     }
   }
 
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _liveSubscription;
+
+  /// Keeps the companies list in sync with Firestore in real time (used by the
+  /// customer app), so hiding/editing in the admin app shows up immediately
+  /// without a refresh. Safe to call more than once. The returned future
+  /// completes when the first data has arrived.
+  Future<void> startListening() {
+    if (_liveSubscription != null) return Future.value();
+    final firstData = Completer<void>();
+    if (_companies.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
+    _liveSubscription = _firestore.collection(collectionName).snapshots().listen(
+      (snapshot) {
+        _companies = snapshot.docs.map((doc) => CompanyModel.fromFirestore(doc)).toList();
+        _companies.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        _isLoading = false;
+        _errorMessage = null;
+        notifyListeners();
+        if (!firstData.isCompleted) firstData.complete();
+      },
+      onError: (e) {
+        debugPrint('CompanyModel live listener error: $e');
+        _isLoading = false;
+        _liveSubscription = null; // allow a later retry
+        notifyListeners();
+        if (!firstData.isCompleted) firstData.complete();
+      },
+    );
+    return firstData.future;
+  }
+
+  @override
+  void dispose() {
+    _liveSubscription?.cancel();
+    super.dispose();
+  }
+
   /// Fetches companies from Firestore sorted by name
   Future<void> fetchCompanies() async {
     _isLoading = true;
