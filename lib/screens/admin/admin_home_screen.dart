@@ -9,6 +9,7 @@ import '../../services/contact_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/phone_helper.dart';
 import '../../utils/responsive_helper.dart';
+import 'sales/stock_entry_form_screen.dart';
 
 /// Pure Order Management Operations Screen for Administrators.
 /// Displays live customer orders with multi-parameter filtering, search,
@@ -1354,6 +1355,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ),
                 const SizedBox(width: 8),
 
+                // Convert to Sale / Sold badge
+                _buildSaleAction(order, compact: true),
+                const SizedBox(width: 8),
+
                 // Status Button
                 SizedBox(
                   height: 28,
@@ -1763,6 +1768,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       label: const Text('Update Order Status & Remark', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: _buildSaleAction(order, onBeforeOpen: () => Navigator.pop(sheetCtx)),
+                  ),
                 ],
               ),
             ),
@@ -1891,6 +1902,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
+                _buildSaleAction(order),
+                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.darkButton,
@@ -2358,6 +2371,66 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   // =========================================================================
   // 8. ORDER STATUS & REMARK SHEET
   // =========================================================================
+  /// "To Sale" button, or a "Sold" badge once the order became a sale.
+  /// Converting opens New Sale pre-filled from the order; saving it reduces
+  /// stock and links the sale to the order.
+  Widget _buildSaleAction(OrderModel order, {bool compact = false, VoidCallback? onBeforeOpen}) {
+    if (order.isSold) {
+      return Container(
+        height: compact ? 28 : null,
+        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12, vertical: compact ? 0 : 10),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(compact ? 6 : 10),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.4)),
+        ),
+        child: Text(
+          'Sold - ${order.saleNumber ?? ''}',
+          style: TextStyle(
+            color: AppColors.success,
+            fontWeight: FontWeight.w800,
+            fontSize: compact ? 11 : 13,
+          ),
+        ),
+      );
+    }
+
+    final button = ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.success,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14, vertical: compact ? 0 : 10),
+        visualDensity: compact ? VisualDensity.compact : null,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(compact ? 6 : 10)),
+      ),
+      onPressed: () {
+        onBeforeOpen?.call();
+        _convertOrderToSale(order);
+      },
+      icon: Icon(Icons.point_of_sale_rounded, size: compact ? 14 : 18),
+      label: Text(
+        compact ? 'To Sale' : 'Convert to Sale',
+        style: TextStyle(fontWeight: FontWeight.w800, fontSize: compact ? 11 : 13),
+      ),
+    );
+    return compact ? SizedBox(height: 28, child: button) : button;
+  }
+
+  void _convertOrderToSale(OrderModel order) {
+    if (order.isCancelled) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('This order is cancelled. Change its status first to convert it to a sale.'),
+        backgroundColor: AppColors.error,
+      ));
+      return;
+    }
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => StockEntryFormScreen(type: StockEntryType.sale, fromOrder: order),
+    ));
+  }
+
   void _showOrderStatusDialog(BuildContext context, OrderModel order) {
     final orderProvider = context.read<OrderProvider>();
     const statuses = [
