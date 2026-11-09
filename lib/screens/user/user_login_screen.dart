@@ -685,7 +685,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
           // Password
           AppTextField(
             label: 'Password',
-            hint: 'Enter password (min 4 characters)',
+            hint: 'Enter password (min 6 characters)',
             controller: _regPasswordController,
             isRequired: true,
             obscureText: _obscureRegPassword,
@@ -706,8 +706,8 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
               if (value == null || value.isEmpty) {
                 return 'Please set a password';
               }
-              if (value.length < 4) {
-                return 'Password must be at least 4 characters';
+              if (value.trim().length < 6) {
+                return 'Password must be at least 6 characters';
               }
               return null;
             },

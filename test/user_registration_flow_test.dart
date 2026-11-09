@@ -52,10 +52,10 @@ void main() {
       expect(find.text('Admin Helpline'), findsOneWidget);
       expect(find.text('Call'), findsOneWidget);
       expect(find.text('WhatsApp'), findsOneWidget);
-      expect(find.text('Ok'), findsOneWidget);
+      expect(find.text('OK'), findsOneWidget);
 
       // Dismiss dialog
-      await tester.tap(find.text('Ok'));
+      await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
       expect(find.text('Approval Pending'), findsNothing);
     });

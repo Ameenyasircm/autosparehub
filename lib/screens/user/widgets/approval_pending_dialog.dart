@@ -371,15 +371,21 @@ class _ApprovalPendingDialogWidgetState
           ],
         ),
       ),
+      actionsAlignment: MainAxisAlignment.center,
+      actionsPadding: const EdgeInsets.only(bottom: 16),
       actions: [
-        TextButton(
+        // Small, simple pill button.
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.warmGold,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 10),
+            shape: const StadiumBorder(),
+          ),
           onPressed: () => Navigator.of(context).pop(),
           child: const Text(
-            'Ok',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: AppColors.darkCharcoal,
-            ),
+            'OK',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           ),
         ),
       ],
