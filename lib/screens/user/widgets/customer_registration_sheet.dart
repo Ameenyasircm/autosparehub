@@ -90,46 +90,20 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
 
     if (!mounted) return;
 
-    // Case 1: Account already pending approval
-    if (result == CustomerRegistrationResult.alreadyPending) {
-      Navigator.of(context).pop();
-      final requestedDate = authProvider.currentCustomer?.requestedAt;
-      final dateStr = requestedDate != null
-          ? '${requestedDate.day}/${requestedDate.month}/${requestedDate.year}'
-          : 'recently';
-
-      _showPendingDialog(
-        phone: _phoneController.text.trim(),
-        dateStr: dateStr,
-      );
-    }
-    // Case 2: Account already approved -> Switch to sign in or auto login
-    else if (result == CustomerRegistrationResult.alreadyApproved) {
+    // Cases 1-4: mobile number already registered (any status). One account
+    // per number, so switch to sign in instead of creating/logging in.
+    if (result == CustomerRegistrationResult.alreadyPending ||
+        result == CustomerRegistrationResult.alreadyApproved ||
+        result == CustomerRegistrationResult.alreadyRejected ||
+        result == CustomerRegistrationResult.alreadyExists) {
       setState(() {
         _isLoginMode = true;
         _loginPhoneController.text = _phoneController.text.trim();
       });
       ScaffoldMessenger.of(context).showSnackBarAutoHide(
-        const SnackBar(
-          content: Text('Account is already approved! Please sign in with your password.'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    }
-    // Case 3: Mobile was previously rejected
-    else if (result == CustomerRegistrationResult.alreadyRejected) {
-      Navigator.of(context).pop();
-      _showRejectionDialog(authProvider.currentCustomer?.rejectionReason);
-    }
-    // Case 4: Account exists
-    else if (result == CustomerRegistrationResult.alreadyExists) {
-      setState(() {
-        _isLoginMode = true;
-        _loginPhoneController.text = _phoneController.text.trim();
-      });
-      ScaffoldMessenger.of(context).showSnackBarAutoHide(
-        const SnackBar(
-          content: Text('An account already exists for this mobile number. Please sign in.'),
+        SnackBar(
+          content: Text(authProvider.errorMessage ??
+              'This mobile number is already registered. Please sign in.'),
           backgroundColor: AppColors.darkCharcoal,
         ),
       );

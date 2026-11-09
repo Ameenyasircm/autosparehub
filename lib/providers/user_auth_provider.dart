@@ -219,26 +219,26 @@ class UserAuthProvider extends ChangeNotifier {
       final docId = PhoneHelper.toDocId(cleanPhone);
       final docRef = _firestore.collection(collectionName).doc(docId);
 
-      // 1. Direct lookup to check if this 10-digit number already exists
-      final existingDoc =
-          await docRef.get().timeout(const Duration(seconds: 8));
-
+      // 1. One account per mobile number. Existing accounts are NOT logged in
+      //    here (that would skip the password); the user is sent to login.
+      CustomerModel? existing;
+      final existingDoc = await docRef.get().timeout(const Duration(seconds: 8));
       if (existingDoc.exists) {
-        final existingCustomer = CustomerModel.fromFirestore(existingDoc);
-        _currentCustomer = existingCustomer;
-        await _sessionService.saveCustomerSession(existingCustomer);
-
-        _isLoading = false;
-        notifyListeners();
-
-        if (existingCustomer.isPending) {
-          return CustomerRegistrationResult.alreadyPending;
-        } else if (existingCustomer.isApproved) {
-          return CustomerRegistrationResult.alreadyApproved;
-        } else if (existingCustomer.isRejected) {
-          return CustomerRegistrationResult.alreadyRejected;
+        existing = CustomerModel.fromFirestore(existingDoc);
+      } else {
+        // Older accounts may use a different document ID: match by number.
+        final byPhone = await _firestore
+            .collection(collectionName)
+            .where('PHONE_NUMBER', isEqualTo: cleanPhone)
+            .limit(1)
+            .get()
+            .timeout(const Duration(seconds: 8));
+        if (byPhone.docs.isNotEmpty) {
+          existing = CustomerModel.fromFirestore(byPhone.docs.first);
         }
-        return CustomerRegistrationResult.alreadyExists;
+      }
+      if (existing != null) {
+        return _duplicateRegistration(existing);
       }
 
       // 2. If no record exists, create new PENDING approval request with password
@@ -257,7 +257,16 @@ class UserAuthProvider extends ChangeNotifier {
       map['NORMALIZED_PHONE'] = PhoneHelper.normalizeTo91(cleanPhone);
       map['DISPLAY_PHONE'] = PhoneHelper.formatForDisplay(cleanPhone);
 
-      await docRef.set(map).timeout(const Duration(seconds: 10));
+      // Create only if nobody registered this number in the meantime.
+      final createdNow = await _firestore.runTransaction<bool>((tx) async {
+        if ((await tx.get(docRef)).exists) return false;
+        tx.set(docRef, map);
+        return true;
+      }).timeout(const Duration(seconds: 10));
+      if (!createdNow) {
+        final latest = await docRef.get().timeout(const Duration(seconds: 8));
+        return _duplicateRegistration(CustomerModel.fromFirestore(latest));
+      }
 
       _currentCustomer = newCustomer;
       await _sessionService.saveCustomerSession(newCustomer);
@@ -275,6 +284,29 @@ class UserAuthProvider extends ChangeNotifier {
       notifyListeners();
       return CustomerRegistrationResult.error;
     }
+  }
+
+  CustomerRegistrationResult _duplicateRegistration(CustomerModel existing) {
+    _isLoading = false;
+    if (existing.isPending) {
+      _errorMessage = 'This mobile number is already registered and waiting for '
+          'approval. Please log in with your password to check the status.';
+      notifyListeners();
+      return CustomerRegistrationResult.alreadyPending;
+    }
+    if (existing.isRejected) {
+      _errorMessage = 'This mobile number is already registered, but the request '
+          'was not approved. Please contact the store.';
+      notifyListeners();
+      return CustomerRegistrationResult.alreadyRejected;
+    }
+    _errorMessage = existing.isApproved
+        ? 'This mobile number is already registered. Please log in with your password.'
+        : 'An account already exists for this mobile number. Please log in.';
+    notifyListeners();
+    return existing.isApproved
+        ? CustomerRegistrationResult.alreadyApproved
+        : CustomerRegistrationResult.alreadyExists;
   }
 
   /// Sign in customer using phone number and password.

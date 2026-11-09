@@ -152,8 +152,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
 
     if (!mounted) return;
 
-    if (result == CustomerRegistrationResult.newRequestSubmitted ||
-        result == CustomerRegistrationResult.alreadyPending) {
+    if (result == CustomerRegistrationResult.newRequestSubmitted) {
       final phone = _regPhoneController.text.trim();
 
       ScaffoldMessenger.of(context).showSnackBarAutoHide(
@@ -173,19 +172,22 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
         ),
         (route) => false,
       );
-    } else if (result == CustomerRegistrationResult.alreadyApproved) {
+    } else if (result == CustomerRegistrationResult.alreadyPending ||
+        result == CustomerRegistrationResult.alreadyApproved ||
+        result == CustomerRegistrationResult.alreadyRejected ||
+        result == CustomerRegistrationResult.alreadyExists) {
+      // One account per mobile number: send them to login instead.
       setState(() {
         _isRegisterMode = false;
         _loginPhoneController.text = _regPhoneController.text.trim();
       });
       ScaffoldMessenger.of(context).showSnackBarAutoHide(
-        const SnackBar(
-          content: Text('Account is already approved! Please sign in with your password.'),
-          backgroundColor: AppColors.success,
+        SnackBar(
+          content: Text(authProvider.errorMessage ??
+              'This mobile number is already registered. Please log in.'),
+          backgroundColor: AppColors.darkCharcoal,
         ),
       );
-    } else if (result == CustomerRegistrationResult.alreadyRejected) {
-      _showRejectedDialog(phone: _regPhoneController.text.trim());
     } else {
       ScaffoldMessenger.of(context).showSnackBarAutoHide(
         SnackBar(
