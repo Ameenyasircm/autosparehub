@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_spare_hub/utils/snackbar_helper.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/user_auth_provider.dart';
@@ -269,7 +270,7 @@ class _ApprovalPendingDialogWidgetState
                         InkWell(
                           onTap: () {
                             Clipboard.setData(ClipboardData(text: _adminPhone));
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            ScaffoldMessenger.of(context).showSnackBarAutoHide(
                               SnackBar(
                                 content: Text('Copied $_adminPhone to clipboard'),
                                 duration: const Duration(seconds: 2),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_spare_hub/utils/snackbar_helper.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
@@ -90,7 +91,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
         Navigator.of(context).pop();
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         SnackBar(
           content: Text('Welcome back, ${customer?.name ?? 'Customer'}!'),
           backgroundColor: AppColors.darkButton,
@@ -118,7 +119,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
         _isRegisterMode = true;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         const SnackBar(
           content: Text('Account not found with this mobile. Please enter your Garage Name to register.'),
           backgroundColor: AppColors.darkButton,
@@ -126,7 +127,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         SnackBar(
           content: Text(authProvider.errorMessage ?? 'Sign in failed. Check your credentials.'),
           backgroundColor: AppColors.error,
@@ -155,7 +156,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
         result == CustomerRegistrationResult.alreadyPending) {
       final phone = _regPhoneController.text.trim();
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         const SnackBar(
           content: Text('Garage account registered successfully! Waiting for admin approval.'),
           backgroundColor: AppColors.darkButton,
@@ -177,7 +178,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
         _isRegisterMode = false;
         _loginPhoneController.text = _regPhoneController.text.trim();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         const SnackBar(
           content: Text('Account is already approved! Please sign in with your password.'),
           backgroundColor: AppColors.success,
@@ -186,7 +187,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
     } else if (result == CustomerRegistrationResult.alreadyRejected) {
       _showRejectedDialog(phone: _regPhoneController.text.trim());
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         SnackBar(
           content: Text(authProvider.errorMessage ?? 'Registration failed. Try again.'),
           backgroundColor: AppColors.error,

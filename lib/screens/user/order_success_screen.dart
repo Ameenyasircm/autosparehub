@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_spare_hub/utils/snackbar_helper.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/order_model.dart';
@@ -138,7 +139,7 @@ class OrderSuccessScreen extends StatelessWidget {
                       InkWell(
                         onTap: () {
                           Clipboard.setData(ClipboardData(text: order.orderNumber));
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(context).showSnackBarAutoHide(
                             SnackBar(
                               content: Text('Order number copied: ${order.orderNumber}'),
                               duration: const Duration(seconds: 2),

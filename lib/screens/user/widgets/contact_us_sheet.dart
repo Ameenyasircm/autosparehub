@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_spare_hub/utils/snackbar_helper.dart';
 import 'package:flutter/services.dart';
 import '../../../services/contact_service.dart';
 import '../../../theme/app_theme.dart';
@@ -171,7 +172,7 @@ class _ContactUsSheetState extends State<ContactUsSheet> {
                 InkWell(
                   onTap: () {
                     Clipboard.setData(ClipboardData(text: _phoneNumber));
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(context).showSnackBarAutoHide(
                       SnackBar(
                         content: Text('Copied $_phoneNumber to clipboard'),
                         duration: const Duration(seconds: 2),

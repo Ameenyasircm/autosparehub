@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_spare_hub/utils/snackbar_helper.dart';
 import 'package:provider/provider.dart';
 import '../../models/order_model.dart';
 import '../../providers/cart_provider.dart';
@@ -609,7 +610,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                         _lastFetchedCustomerId = null;
                         _selectedStatusFilter = 'ALL';
                         Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        ScaffoldMessenger.of(context).showSnackBarAutoHide(
                           const SnackBar(content: Text('Logged out successfully.')),
                         );
                       }

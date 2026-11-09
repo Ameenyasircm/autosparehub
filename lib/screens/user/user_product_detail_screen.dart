@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_spare_hub/utils/snackbar_helper.dart';
 import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
@@ -183,7 +184,7 @@ class _ProductDetailContent extends StatelessWidget {
     cart.addToCart(product, quantity: quantity);
 
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context).showSnackBarAutoHide(
       SnackBar(
         content: Text('Added $quantity × ${product.name} to Request'),
         backgroundColor: AppColors.darkButton,

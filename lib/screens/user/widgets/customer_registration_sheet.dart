@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_spare_hub/utils/snackbar_helper.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/cart_provider.dart';
@@ -108,7 +109,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
         _isLoginMode = true;
         _loginPhoneController.text = _phoneController.text.trim();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         const SnackBar(
           content: Text('Account is already approved! Please sign in with your password.'),
           backgroundColor: AppColors.success,
@@ -126,7 +127,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
         _isLoginMode = true;
         _loginPhoneController.text = _phoneController.text.trim();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         const SnackBar(
           content: Text('An account already exists for this mobile number. Please sign in.'),
           backgroundColor: AppColors.darkCharcoal,
@@ -235,7 +236,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
       Navigator.of(context).pop();
       widget.onRegistered?.call();
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         SnackBar(
           content: Text('Welcome back, ${authProvider.currentCustomer?.name ?? 'Customer'}!'),
           backgroundColor: AppColors.success,
@@ -256,7 +257,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
       Navigator.of(context).pop();
       _showRejectionDialog(authProvider.currentCustomer?.rejectionReason);
     } else if (result == CustomerLoginResult.userNotFound) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         const SnackBar(
           content: Text('No account found for this number. Please register first.'),
           backgroundColor: AppColors.error,
@@ -335,7 +336,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
               await auth.logout();
               if (mounted) {
                 context.read<CartProvider>().onUserLogout();
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(context).showSnackBarAutoHide(
                   const SnackBar(content: Text('Logged out successfully.')),
                 );
               }
@@ -349,11 +350,11 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
               await auth.refreshApprovalStatus();
               if (mounted) {
                 if (auth.isApproved) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBarAutoHide(
                     const SnackBar(content: Text('Account is now approved! You can log in.'), backgroundColor: AppColors.success),
                   );
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBarAutoHide(
                     const SnackBar(content: Text('Still pending administrator review.')),
                   );
                 }
@@ -422,7 +423,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
               await auth.logout();
               if (mounted) {
                 context.read<CartProvider>().onUserLogout();
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(context).showSnackBarAutoHide(
                   const SnackBar(content: Text('Logged out successfully.')),
                 );
               }
@@ -443,7 +444,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
               final authProvider = context.read<UserAuthProvider>();
               final ok = await authProvider.reapplyRegistration();
               if (mounted && ok) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                ScaffoldMessenger.of(context).showSnackBarAutoHide(
                   const SnackBar(content: Text('Re-application submitted for admin review.')),
                 );
               }

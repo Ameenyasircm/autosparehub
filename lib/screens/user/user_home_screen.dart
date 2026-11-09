@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_spare_hub/utils/snackbar_helper.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:provider/provider.dart';
 import '../../models/category_model.dart';
@@ -230,7 +231,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         if (cust != null) {
           context.read<CartProvider>().loadCartForUser(cust.id);
         }
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBarAutoHide(
           SnackBar(
             content: Row(
               children: const [
@@ -1613,7 +1614,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   onTap: () {
                     context.read<CartProvider>().addToCart(product);
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(context).showSnackBarAutoHide(
                       SnackBar(
                         content: Text('Added ${product.name} to cart'),
                         backgroundColor: AppColors.darkButton,
@@ -1697,7 +1698,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     try {
       await auth.refreshApprovalStatus();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
           SnackBar(
             content: Row(
               children: [
@@ -2180,7 +2181,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     context.read<CartProvider>().onUserLogout();
                     // Stop live order updates and clear this customer's orders.
                     context.read<OrderProvider>().clearCustomerOrders();
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(context).showSnackBarAutoHide(
                       const SnackBar(content: Text('Logged out successfully.')),
                     );
                   }

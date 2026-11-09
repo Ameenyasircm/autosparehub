@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_spare_hub/utils/snackbar_helper.dart';
 import 'package:provider/provider.dart';
 import 'widgets/order_placement_sheet.dart';
 import '../../models/cart_item_model.dart';
@@ -82,7 +83,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
     // 2. Pending Approval -> Refresh and notify
     if (authProvider.isPending) {
       final messenger = ScaffoldMessenger.of(context);
-      messenger.showSnackBar(
+      messenger.showSnackBarAutoHide(
         const SnackBar(
           content: Text('Checking latest admin approval status...'),
           duration: Duration(seconds: 1),
@@ -137,7 +138,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
     final cartProvider = context.read<CartProvider>();
 
     if (cartProvider.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         const SnackBar(content: Text('Your cart is empty. Add parts before checkout.')),
       );
       return;
@@ -174,7 +175,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         const SnackBar(
           content: Text('Failed to submit order request. Please try again.'),
           backgroundColor: AppColors.error,

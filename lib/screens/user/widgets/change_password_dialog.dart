@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:auto_spare_hub/utils/snackbar_helper.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/user_auth_provider.dart';
 import '../../../theme/app_theme.dart';
@@ -58,7 +59,7 @@ class _ChangeUserPasswordDialogState extends State<ChangeUserPasswordDialog> {
 
     if (success) {
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBarAutoHide(
         const SnackBar(
           content: Text('Password updated successfully!'),
           backgroundColor: AppColors.success,
