@@ -61,7 +61,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         if (auth.isApproved) {
           context.read<CartProvider>().loadCartForUser(cust.id);
         }
-        context.read<OrderProvider>().fetchCustomerOrders(cust.id, userPhone: cust.phone);
+        context.read<OrderProvider>().listenToCustomerOrders(cust.id, userPhone: cust.phone);
       }
 
       if (widget.showPendingAlertOnStart) {
@@ -2129,6 +2129,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   await auth.logout();
                   if (context.mounted) {
                     context.read<CartProvider>().onUserLogout();
+                    // Stop live order updates and clear this customer's orders.
+                    context.read<OrderProvider>().clearCustomerOrders();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Logged out successfully.')),
                     );
@@ -2208,7 +2210,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           final auth = context.read<UserAuthProvider>();
           if (auth.currentCustomer != null) {
             final cust = auth.currentCustomer!;
-            context.read<OrderProvider>().fetchCustomerOrders(cust.id, userPhone: cust.phone);
+            context.read<OrderProvider>().listenToCustomerOrders(cust.id, userPhone: cust.phone);
           }
         }
       },

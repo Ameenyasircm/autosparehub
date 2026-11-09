@@ -105,6 +105,33 @@ class UserOrdersScreen extends StatefulWidget {
 }
 
 class _UserOrdersScreenState extends State<UserOrdersScreen> {
+  bool _isRefreshing = false;
+
+  /// Manual refresh (button). Orders are also live, this just forces a fresh read.
+  Future<void> _refreshOrders() async {
+    final customer = context.read<UserAuthProvider>().currentCustomer;
+    if (customer == null || _isRefreshing) return;
+    setState(() => _isRefreshing = true);
+    await context
+        .read<OrderProvider>()
+        .fetchCustomerOrders(customer.id, userPhone: customer.phone);
+    if (mounted) setState(() => _isRefreshing = false);
+  }
+
+  Widget _buildRefreshButton({Color color = AppColors.darkHeader}) {
+    return IconButton(
+      tooltip: 'Refresh orders',
+      onPressed: _isRefreshing ? null : _refreshOrders,
+      icon: _isRefreshing
+          ? SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: color),
+            )
+          : Icon(Icons.refresh_rounded, color: color),
+    );
+  }
+
   String? _lastFetchedCustomerId;
   String _selectedStatusFilter = 'ALL';
 
@@ -121,7 +148,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
     final customer = context.read<UserAuthProvider>().currentCustomer;
     if (customer != null && (force || _lastFetchedCustomerId != customer.id)) {
       _lastFetchedCustomerId = customer.id;
-      context.read<OrderProvider>().fetchCustomerOrders(customer.id, userPhone: customer.phone);
+      context.read<OrderProvider>().listenToCustomerOrders(customer.id, userPhone: customer.phone);
     }
   }
 
@@ -565,6 +592,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17),
               ),
               actions: [
+                _buildRefreshButton(color: Colors.white),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, color: Colors.white),
                   tooltip: 'Account Options',
@@ -753,6 +781,8 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                                       textAlign: TextAlign.center,
                                       style: TextStyle(color: Colors.grey, fontSize: 13),
                                     ),
+                                    SizedBox(height: 12),
+                                    _EmptyOrdersRefreshSlot(),
                                   ],
                                 ),
                               ),
@@ -858,10 +888,13 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
           bottom: BorderSide(color: AppColors.dividerLight, width: 1),
         ),
       ),
-      child: SingleChildScrollView(
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.only(left: 16, right: 8),
         child: Row(
           children: [
             _buildFilterPill(
@@ -905,6 +938,11 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
             ),
           ],
         ),
+            ),
+          ),
+          _buildRefreshButton(),
+          const SizedBox(width: 4),
+        ],
       ),
     );
   }
@@ -1192,6 +1230,27 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Refresh button for the empty "No Orders" view (kept as a const-friendly
+/// widget so the surrounding const list stays const).
+class _EmptyOrdersRefreshSlot extends StatelessWidget {
+  const _EmptyOrdersRefreshSlot();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.findAncestorStateOfType<_UserOrdersScreenState>();
+    if (state == null) return const SizedBox.shrink();
+    return OutlinedButton.icon(
+      onPressed: state._isRefreshing ? null : state._refreshOrders,
+      icon: const Icon(Icons.refresh_rounded, size: 18),
+      label: const Text('Refresh'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.darkHeader,
+        side: const BorderSide(color: AppColors.borderLight),
       ),
     );
   }

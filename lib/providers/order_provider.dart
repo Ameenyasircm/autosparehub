@@ -410,8 +410,84 @@ class OrderProvider extends ChangeNotifier {
     }
   }
 
+  // --- Live customer orders (user app) ---
+  final List<StreamSubscription<QuerySnapshot<Map<String, dynamic>>>> _customerOrderSubs = [];
+  String? _listeningCustomerKey;
+  Map<String, OrderModel> _ordersById = {};
+  Map<String, OrderModel> _ordersByPhone = {};
+
+  /// Keeps the customer's orders in sync in real time, so status changes,
+  /// remarks and sales made by the admin show up immediately. Listens by
+  /// user ID and by phone (older orders) and merges both without duplicates.
+  /// Calling it again for the same customer keeps the existing listeners.
+  void listenToCustomerOrders(String userId, {String? userPhone}) {
+    if (userId.isEmpty && (userPhone == null || userPhone.isEmpty)) return;
+    final key = '$userId|${userPhone ?? ''}';
+    if (_listeningCustomerKey == key && _customerOrderSubs.isNotEmpty) return;
+
+    _stopCustomerOrderListeners();
+    _listeningCustomerKey = key;
+    if (_customerOrders.isEmpty) {
+      _isCustomerOrdersLoading = true;
+      notifyListeners();
+    }
+
+    void listen(Query<Map<String, dynamic>> query, void Function(Map<String, OrderModel>) assign) {
+      _customerOrderSubs.add(query.snapshots().listen(
+        (snapshot) {
+          final map = <String, OrderModel>{};
+          for (final doc in snapshot.docs) {
+            final order = OrderModel.fromFirestore(doc);
+            map[order.id.isNotEmpty ? order.id : order.orderNumber] = order;
+          }
+          assign(map);
+          _rebuildCustomerOrders();
+        },
+        onError: (e) {
+          debugPrint('OrderProvider.listenToCustomerOrders error: $e');
+          _isCustomerOrdersLoading = false;
+          notifyListeners();
+        },
+      ));
+    }
+
+    final orders = _firestore.collection(collectionName);
+    if (userId.isNotEmpty) {
+      listen(orders.where('USER_ID', isEqualTo: userId), (m) => _ordersById = m);
+    }
+    if (userPhone != null && userPhone.isNotEmpty) {
+      listen(orders.where('USER_PHONE', isEqualTo: userPhone), (m) => _ordersByPhone = m);
+    }
+  }
+
+  void _rebuildCustomerOrders() {
+    // Same order can match both queries; the map key removes duplicates.
+    final merged = {..._ordersByPhone, ..._ordersById};
+    final list = merged.values.toList()
+      ..sort((a, b) {
+        if (a.createdAt != null && b.createdAt != null) {
+          return b.createdAt!.compareTo(a.createdAt!);
+        }
+        return b.id.compareTo(a.id);
+      });
+    _customerOrders = list;
+    _isCustomerOrdersLoading = false;
+    notifyListeners();
+  }
+
+  void _stopCustomerOrderListeners() {
+    for (final sub in _customerOrderSubs) {
+      sub.cancel();
+    }
+    _customerOrderSubs.clear();
+    _listeningCustomerKey = null;
+    _ordersById = {};
+    _ordersByPhone = {};
+  }
+
   /// Clear customer orders on logout or switching accounts
   void clearCustomerOrders() {
+    _stopCustomerOrderListeners();
     _customerOrders = [];
     _isCustomerOrdersLoading = false;
     notifyListeners();
@@ -594,6 +670,7 @@ class OrderProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _stopCustomerOrderListeners();
     _adminOrdersSubscription?.cancel();
     super.dispose();
   }
