@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'widgets/order_placement_sheet.dart';
 import '../../models/cart_item_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
@@ -61,27 +62,21 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  void _handleCheckout() async {
+  /// Login / approval checks shared by Checkout and Buy Now. Returns true
+  /// when the customer is approved and can order; otherwise shows the right
+  /// screen or message and returns false. [retry] runs after login.
+  Future<bool> _ensureApprovedCustomer(VoidCallback retry) async {
     final authProvider = context.read<UserAuthProvider>();
-    final cartProvider = context.read<CartProvider>();
-
-    if (cartProvider.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Your cart is empty. Add parts before checkout.')),
-      );
-      return;
-    }
-
     // 1. Unregistered Guest -> Open Login/Register Screen
     if (!authProvider.isRegistered) {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => UserLoginScreen(
-            onAuthenticated: () => _handleCheckout(),
+            onAuthenticated: retry,
           ),
         ),
       );
-      return;
+      return false;
     }
 
     // 2. Pending Approval -> Refresh and notify
@@ -95,14 +90,14 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
       );
 
       await authProvider.refreshApprovalStatus();
-      if (!mounted) return;
+      if (!mounted) return false;
 
       if (!authProvider.isApproved) {
         ApprovalPendingDialog.show(
           context,
           phone: authProvider.currentCustomer?.phone ?? '',
         );
-        return;
+        return false;
       }
     }
 
@@ -111,8 +106,45 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const UserLoginScreen()),
       );
+      return false;
+    }
+    return true;
+  }
+
+  /// Orders just this cart item (with its cart quantity). On success the item
+  /// is removed from the cart; the rest of the cart stays.
+  Future<void> _buyNow(CartItemModel item) async {
+    void retry() => _buyNow(item);
+    if (!await _ensureApprovedCustomer(retry)) return;
+    if (!mounted) return;
+    final cartProvider = context.read<CartProvider>();
+    await OrderPlacementSheet.show(
+      context,
+      product: item.product,
+      initialQuantity: item.quantity,
+      onOrderPlaced: () => cartProvider.removeFromCart(item.product.id),
+    );
+  }
+
+  void _openProductDetail(CartItemModel item) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => UserProductDetailScreen(product: item.product)),
+    );
+  }
+
+  void _handleCheckout() async {
+    final authProvider = context.read<UserAuthProvider>();
+    final cartProvider = context.read<CartProvider>();
+
+    if (cartProvider.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your cart is empty. Add parts before checkout.')),
+      );
       return;
     }
+
+    if (!await _ensureApprovedCustomer(_handleCheckout)) return;
+    if (!mounted) return;
 
     // 4. Approved -> Submit order
     final customer = authProvider.currentCustomer!;
@@ -247,7 +279,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Main Info Row: [Thumbnail + Stepper] on left, [Title + Genuine Details + Price] on right
-          Row(
+          // Tapping it opens the product details (the -/+ stepper keeps its own taps).
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _openProductDetail(item),
+            child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Left Column: Image (82x82) + Quantity Stepper directly beneath
@@ -413,10 +449,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
               ),
             ],
           ),
+          ),
 
           const SizedBox(height: 12),
 
-          // Action Buttons: Remove & View Part
+          // Action Buttons: Remove & Buy Now (orders only this item)
           Row(
             children: [
               Expanded(
@@ -449,17 +486,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       padding: EdgeInsets.zero,
                     ),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => UserProductDetailScreen(product: p),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.darkCharcoal),
+                    onPressed: () => _buyNow(item),
+                    icon: const Icon(Icons.flash_on_rounded, size: 16, color: AppColors.primaryGold),
                     label: const Text(
-                      'View Part',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                      'Buy Now',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                     ),
                   ),
                 ),

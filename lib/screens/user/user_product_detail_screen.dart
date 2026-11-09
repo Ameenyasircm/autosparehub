@@ -11,7 +11,7 @@ import 'cart_screen.dart';
 /// - Key-value Product Specifications
 /// - Description section
 /// - Requested quantity stepper with warm orange/gold container
-/// - Total Price and "+ Add to Request" obsidian action button
+/// - Total Price and "+ Add to Cart" obsidian action button
 class UserProductDetailScreen extends StatefulWidget {
   final ProductModel product;
 
@@ -308,6 +308,9 @@ class _ProductDetailContent extends StatelessWidget {
 
         const SizedBox(height: 24),
 
+        // Quantity selection hidden: the part is added with quantity 1;
+        // quantity can still be changed in the cart.
+        /*
         // --- REQUESTED QUANTITY & STEPPER ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -396,6 +399,7 @@ class _ProductDetailContent extends StatelessWidget {
         ),
 
         const SizedBox(height: 24),
+        */
 
         // --- BOTTOM ACTION ROW ---
         Row(
@@ -425,7 +429,7 @@ class _ProductDetailContent extends StatelessWidget {
               ],
             ),
 
-            // "+ Add to Request" Button
+            // "+ Add to Cart" Button
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.darkButton,
@@ -439,7 +443,7 @@ class _ProductDetailContent extends StatelessWidget {
               onPressed: () => _handleAdd(context),
               icon: const Icon(Icons.add, size: 18, color: AppColors.warmGold),
               label: const Text(
-                'Add to Request',
+                'Add to Cart',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,

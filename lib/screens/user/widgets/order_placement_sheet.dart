@@ -12,16 +12,21 @@ class OrderPlacementSheet extends StatefulWidget {
   final ProductModel product;
   final VoidCallback? onOrderPlaced;
 
+  /// Starting quantity (e.g. the quantity already in the cart for Buy Now).
+  final int initialQuantity;
+
   const OrderPlacementSheet({
     super.key,
     required this.product,
     this.onOrderPlaced,
+    this.initialQuantity = 1,
   });
 
   static Future<void> show(
     BuildContext context, {
     required ProductModel product,
     VoidCallback? onOrderPlaced,
+    int initialQuantity = 1,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -30,7 +35,11 @@ class OrderPlacementSheet extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => OrderPlacementSheet(product: product, onOrderPlaced: onOrderPlaced),
+      builder: (_) => OrderPlacementSheet(
+        product: product,
+        onOrderPlaced: onOrderPlaced,
+        initialQuantity: initialQuantity,
+      ),
     );
   }
 
@@ -40,7 +49,7 @@ class OrderPlacementSheet extends StatefulWidget {
 
 class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
   final _noteController = TextEditingController();
-  int _quantity = 1;
+  late int _quantity = widget.initialQuantity.clamp(1, _maxQuantity);
 
   @override
   void dispose() {
@@ -48,9 +57,9 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
     super.dispose();
   }
 
-  int get _maxStock => widget.product.stockQuantity != null && widget.product.stockQuantity! > 0
-      ? widget.product.stockQuantity!
-      : 99;
+  // Customers may order regardless of stock (the admin confirms availability),
+  // so the quantity is not capped by stock.
+  static const int _maxQuantity = 99;
 
   double get _totalPrice => (widget.product.price ?? 0.0) * _quantity;
 
@@ -181,7 +190,7 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.add, size: 18),
-                      onPressed: _quantity < _maxStock ? () => setState(() => _quantity++) : null,
+                      onPressed: _quantity < _maxQuantity ? () => setState(() => _quantity++) : null,
                     ),
                   ],
                 ),
