@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/customer_model.dart';
+import '../services/notification_service.dart';
 import '../utils/phone_helper.dart';
 
 /// Provider managing customer account review, approvals, and rejections in the Admin Portal.
@@ -38,17 +39,25 @@ class CustomerManagementProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Start real-time Firestore listener for customer requests
+  /// Start real-time Firestore listener for customer requests.
+  /// After the first load, shows a local notification on the admin device
+  /// whenever a customer registers (or re-applies after rejection) and is
+  /// waiting for approval. Calling it again while already listening keeps
+  /// the existing listener, so no alerts are missed or repeated.
   void listenToCustomers() {
-    _customersSubscription?.cancel();
+    if (_customersSubscription != null) return;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
+    var isInitialLoad = true;
     try {
       _customersSubscription =
           _firestore.collection(collectionName).snapshots().listen(
         (snapshot) {
+          if (!isInitialLoad) _alertNewPendingCustomers(snapshot);
+          isInitialLoad = false;
+
           _customers = snapshot.docs
               .map((doc) => CustomerModel.fromFirestore(doc))
               .toList();
@@ -65,6 +74,7 @@ class CustomerManagementProvider extends ChangeNotifier {
           debugPrint('CustomerManagementProvider stream error: $e');
           _errorMessage = 'Failed to load customers: $e';
           _isLoading = false;
+          _customersSubscription = null; // allow listenToCustomers() to retry
           notifyListeners();
         },
       );
@@ -72,6 +82,31 @@ class CustomerManagementProvider extends ChangeNotifier {
       debugPrint('CustomerManagementProvider.listenToCustomers error: $e');
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Notifies for customers that just became PENDING: new registrations, and
+  /// rejected customers who re-applied. Admin-created customers are already
+  /// approved, so they never trigger this.
+  void _alertNewPendingCustomers(QuerySnapshot<Map<String, dynamic>> snapshot) {
+    final previousStatus = {for (final c in _customers) c.id: c.status};
+    for (final change in snapshot.docChanges) {
+      if (change.type == DocumentChangeType.removed) continue;
+      try {
+        final customer = CustomerModel.fromFirestore(change.doc);
+        if (!customer.isPending) continue;
+        final wasPending = previousStatus[customer.id] == 'PENDING';
+        if (wasPending) continue;
+        final reapplied = previousStatus[customer.id] != null;
+        NotificationService.instance.showNotification(
+          title: reapplied ? 'Customer Re-applied' : 'New Customer Registration',
+          body: '${customer.name} (${PhoneHelper.formatForDisplay(customer.phoneNumber)}) '
+              'is waiting for approval.',
+          payload: customer.id,
+        );
+      } catch (e) {
+        debugPrint('CustomerManagementProvider: new customer alert error: $e');
+      }
     }
   }
 

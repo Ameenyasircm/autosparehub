@@ -1355,10 +1355,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ),
                 const SizedBox(width: 8),
 
-                // Convert to Sale / Sold badge
-                _buildSaleAction(order, compact: true),
-                const SizedBox(width: 8),
-
                 // Status Button
                 SizedBox(
                   height: 28,

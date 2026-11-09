@@ -246,6 +246,7 @@ class UserAuthProvider extends ChangeNotifier {
       await _sessionService.saveCustomerSession(newCustomer);
       _startListeningToCustomer(docId);
       _syncFcmToken(docId);
+      _notifyAdminsOfRegistration(newCustomer); // not awaited
 
       _isLoading = false;
       notifyListeners();
@@ -360,6 +361,7 @@ class UserAuthProvider extends ChangeNotifier {
         rejectionReason: null,
       );
       await _sessionService.saveCustomerSession(_currentCustomer!);
+      _notifyAdminsOfRegistration(_currentCustomer!, reapplied: true); // not awaited
 
       _isLoading = false;
       notifyListeners();
@@ -369,6 +371,41 @@ class UserAuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Records an admin alert for a customer waiting for approval, the same way
+  /// new orders do (NOTIFICATIONS collection with active admins' FCM tokens),
+  /// so a Cloud Function can push it. The admin app also shows a local
+  /// notification from its live customer list. Failures are only logged.
+  Future<void> _notifyAdminsOfRegistration(CustomerModel customer, {bool reapplied = false}) async {
+    try {
+      final adminSnapshot = await _firestore
+          .collection('ADMINS')
+          .where('IS_ACTIVE', isEqualTo: true)
+          .get()
+          .timeout(const Duration(seconds: 8));
+      final adminTokens = <String>[
+        for (final doc in adminSnapshot.docs)
+          if (((doc.data()['FCM_TOKEN'] ?? doc.data()['fcmToken'])?.toString().trim() ?? '').isNotEmpty)
+            (doc.data()['FCM_TOKEN'] ?? doc.data()['fcmToken']).toString().trim(),
+      ];
+
+      await _firestore.collection('NOTIFICATIONS').add({
+        'RECIPIENT_TYPE': 'ADMIN',
+        'TYPE': reapplied ? 'CUSTOMER_REAPPLIED' : 'NEW_CUSTOMER',
+        'TITLE': reapplied ? 'Customer Re-applied' : 'New Customer Registration',
+        'BODY': '${customer.name} (${PhoneHelper.formatForDisplay(customer.phoneNumber)}) '
+            'is waiting for approval.',
+        'CUSTOMER_ID': customer.id,
+        'CUSTOMER_NAME': customer.name,
+        'CUSTOMER_PHONE': customer.phoneNumber,
+        'ADMIN_FCM_TOKENS': adminTokens,
+        'IS_READ': false,
+        'CREATED_AT': FieldValue.serverTimestamp(),
+      }).timeout(const Duration(seconds: 6));
+    } catch (e) {
+      debugPrint('UserAuthProvider._notifyAdminsOfRegistration error: $e');
     }
   }
 
