@@ -35,6 +35,20 @@ class UserHomeScreen extends StatefulWidget {
     this.pendingPhone,
   });
 
+  static const int tabHome = 0;
+  static const int tabOrders = 1;
+  static const int tabProfile = 2;
+
+  static final ValueNotifier<int?> _tabRequest = ValueNotifier<int?>(null);
+
+  /// From any screen pushed on top of the home screen (e.g. the cart): go
+  /// back to the home screen and switch it to [tab]. Keeps the same home
+  /// screen, so the logged-in state and loaded data stay as they are.
+  static void openTab(BuildContext context, int tab) {
+    _tabRequest.value = tab;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
   @override
   State<UserHomeScreen> createState() => _UserHomeScreenState();
 }
@@ -47,9 +61,24 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   bool _isCheckingApproval = false;
   CategoryModel? _selectedCategory;
 
+  void _handleTabRequest() {
+    final tab = UserHomeScreen._tabRequest.value;
+    if (tab == null || !mounted) return;
+    UserHomeScreen._tabRequest.value = null;
+    if (_currentTabIndex != tab) _tabHistory.add(_currentTabIndex);
+    setState(() => _currentTabIndex = tab);
+    if (tab == UserHomeScreen.tabOrders) {
+      final cust = context.read<UserAuthProvider>().currentCustomer;
+      if (cust != null) {
+        context.read<OrderProvider>().listenToCustomerOrders(cust.id, userPhone: cust.phone);
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    UserHomeScreen._tabRequest.addListener(_handleTabRequest);
     _isInitialLoading = context.read<ProductProvider>().products.isEmpty;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       NotificationService.instance.requestPermissionIfNotGranted();
@@ -82,6 +111,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
   @override
   void dispose() {
+    UserHomeScreen._tabRequest.removeListener(_handleTabRequest);
     _searchController.dispose();
     super.dispose();
   }

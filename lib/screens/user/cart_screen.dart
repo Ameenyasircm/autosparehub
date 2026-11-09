@@ -9,7 +9,6 @@ import '../../theme/app_theme.dart';
 import 'order_success_screen.dart';
 import 'user_home_screen.dart';
 import 'user_login_screen.dart';
-import 'user_orders_screen.dart';
 import 'user_product_detail_screen.dart';
 import 'widgets/approval_pending_dialog.dart';
 
@@ -886,12 +885,8 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                onPressed: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const UserHomeScreen()),
-                    );
-
-                },
+                // Back to the existing home screen (no second copy on the stack).
+                onPressed: () => UserHomeScreen.openTab(context, UserHomeScreen.tabHome),
                 // icon: const Icon(Icons.arrow_back_rounded, size: 18),
                 label: const Text(
                   'Browse Spare Parts',
@@ -967,9 +962,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
         children: [
           // Home Tab
           InkWell(
-            onTap: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
+            onTap: () => UserHomeScreen.openTab(context, UserHomeScreen.tabHome),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
@@ -982,11 +975,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
 
           // My Orders Tab
           InkWell(
-            onTap: () {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const UserOrdersScreen()),
-              );
-            },
+            onTap: () => UserHomeScreen.openTab(context, UserHomeScreen.tabOrders),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
@@ -999,11 +988,8 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
 
           // Profile Tab
           InkWell(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const UserLoginScreen()),
-              );
-            },
+            // Profile tab shows the account when logged in, login option otherwise.
+            onTap: () => UserHomeScreen.openTab(context, UserHomeScreen.tabProfile),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [

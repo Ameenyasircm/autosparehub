@@ -6,7 +6,6 @@ import '../../providers/cart_provider.dart';
 import '../../services/contact_service.dart';
 import '../../theme/app_theme.dart';
 import 'user_home_screen.dart';
-import 'user_orders_screen.dart';
 
 /// Dedicated celebratory screen shown immediately after placing a spare parts order.
 /// Explicitly communicates to the customer that no payment is processed in the app
@@ -36,10 +35,7 @@ class OrderSuccessScreen extends StatelessWidget {
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
           _ensureCartCleared(context);
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const UserHomeScreen()),
-            (route) => false,
-          );
+          UserHomeScreen.openTab(context, UserHomeScreen.tabHome);
         }
       },
       child: Scaffold(
@@ -62,10 +58,7 @@ class OrderSuccessScreen extends StatelessWidget {
               tooltip: 'Return to Home',
               onPressed: () {
                 _ensureCartCleared(context);
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const UserHomeScreen()),
-                  (route) => false,
-                );
+                UserHomeScreen.openTab(context, UserHomeScreen.tabHome);
               },
             ),
           ],
@@ -441,11 +434,8 @@ class OrderSuccessScreen extends StatelessWidget {
                     ),
                     onPressed: () {
                       _ensureCartCleared(context);
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (_) => const UserOrdersScreen(),
-                        ),
-                      );
+                      // Home screen's My Orders tab (keeps the bottom nav).
+                      UserHomeScreen.openTab(context, UserHomeScreen.tabOrders);
                     },
                     icon: const Icon(Icons.receipt_long_rounded,
                         color: AppColors.darkCharcoal),
@@ -477,10 +467,7 @@ class OrderSuccessScreen extends StatelessWidget {
                       onContinueShopping!();
                       return;
                     }
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const UserHomeScreen()),
-                      (route) => false,
-                    );
+                    UserHomeScreen.openTab(context, UserHomeScreen.tabHome);
                   },
                   icon: const Icon(Icons.storefront_outlined, size: 18),
                   label: const Text(
