@@ -76,6 +76,7 @@ flutter:
   assets:
     - assets/AutoSpareLogo.jpg
     - assets/member_whats_app.png
+    - assets/heavy_truck_banner.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

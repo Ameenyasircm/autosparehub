@@ -583,5 +583,82 @@ void main() {
       expect(find.text('Honda'), findsNothing);
       expect(find.text('Toyota'), findsOneWidget);
     });
+
+    testWidgets(
+        'renders compact blurred heavy truck welcome poster banner above Vehicle Companies',
+        (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(createUserHome());
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final bannerFinder = find.byKey(const ValueKey('welcome_truck_poster_banner'));
+      final headerFinder = find.text('Vehicle Companies');
+      expect(bannerFinder, findsOneWidget);
+      expect(headerFinder, findsOneWidget);
+
+      // Banner appears cleanly above Vehicle Companies and stays compact
+      final bannerRect = tester.getRect(bannerFinder);
+      final headerRect = tester.getRect(headerFinder);
+      expect(bannerRect.bottom, lessThanOrEqualTo(headerRect.top));
+      expect(bannerRect.height, inInclusiveRange(140.0, 200.0));
+
+      // Verify blurred heavy truck asset and SN AUTO welcome copy
+      expect(
+        find.descendant(of: bannerFinder, matching: find.byType(ImageFiltered)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: bannerFinder,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Image &&
+                widget.image is AssetImage &&
+                (widget.image as AssetImage).assetName == 'assets/heavy_truck_banner.jpg',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('WELCOME TO'), findsOneWidget);
+      expect(find.text('SN AUTO HUB'), findsOneWidget);
+      expect(find.text('Heavy Truck & Commercial Spares'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // Hides while searching so search results stay prioritized
+      await tester.enterText(find.byType(TextField), 'Honda');
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(bannerFinder, findsNothing);
+
+      // Reappears cleanly when search is cleared
+      await tester.tap(find.text('Clear Search ×'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(bannerFinder, findsOneWidget);
+
+      // Compact phone + large accessibility text scale stays overflow-free
+      tester.view.physicalSize = const Size(320, 568);
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.4)),
+          child: createUserHome(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(bannerFinder, findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // Tablet width also keeps poster banner compact and overflow-free
+      tester.view.physicalSize = const Size(900, 1200);
+      await tester.pumpWidget(createUserHome());
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(bannerFinder, findsOneWidget);
+      expect(tester.getRect(bannerFinder).height, inInclusiveRange(170.0, 210.0));
+      expect(tester.takeException(), isNull);
+    });
   });
 }
