@@ -844,14 +844,24 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           isSelected: orderProvider.categoryFilter.toLowerCase() == 'all',
                           onTap: () => orderProvider.setCategoryFilter('ALL'),
                         ),
-                        ...categoryProvider.categories.map((cat) {
-                          final isSelected = orderProvider.categoryFilter.toLowerCase() == cat.name.toLowerCase();
-                          return _buildFilterChip(
-                            label: cat.name,
-                            isSelected: isSelected,
-                            onTap: () => orderProvider.setCategoryFilter(cat.name),
-                          );
-                        }),
+                        ...() {
+                          final seenNames = <String>{};
+                          final uniqueNames = <String>[];
+                          for (final cat in categoryProvider.categories) {
+                            final key = cat.name.trim().toLowerCase();
+                            if (key.isNotEmpty && seenNames.add(key)) {
+                              uniqueNames.add(cat.name.trim());
+                            }
+                          }
+                          return uniqueNames.map((catName) {
+                            final isSelected = orderProvider.categoryFilter.toLowerCase() == catName.toLowerCase();
+                            return _buildFilterChip(
+                              label: catName,
+                              isSelected: isSelected,
+                              onTap: () => orderProvider.setCategoryFilter(catName),
+                            );
+                          });
+                        }(),
                       ],
                     ),
 

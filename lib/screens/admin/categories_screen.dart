@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/category_model.dart';
+import '../../models/company_model.dart';
 import '../../providers/admin_dashboard_provider.dart';
 import '../../providers/category_provider.dart';
+import '../../providers/company_provider.dart';
 import '../../theme/app_theme.dart';
 import 'category_form_screen.dart';
 
-/// Screen listing spare parts categories with search, thumbnail preview, status toggle, and edit/delete actions.
+/// Screen listing spare parts categories with company filtering, search, thumbnail preview, status toggle, and edit/delete actions.
 class CategoriesScreen extends StatefulWidget {
   final bool embedded;
-  const CategoriesScreen({super.key, this.embedded = false});
+  final CompanyModel? company;
+
+  const CategoriesScreen({
+    super.key,
+    this.embedded = false,
+    this.company,
+  });
 
   @override
   State<CategoriesScreen> createState() => _CategoriesScreenState();
@@ -17,12 +25,45 @@ class CategoriesScreen extends StatefulWidget {
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
   final _searchController = TextEditingController();
+  String _selectedCompanyId = 'ALL';
+
+  CompanyProvider? _maybeWatchCompanyProvider(BuildContext context) {
+    try {
+      return context.watch<CompanyProvider>();
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  CompanyProvider? _maybeReadCompanyProvider(BuildContext context) {
+    try {
+      return context.read<CompanyProvider>();
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  void _refreshDashboardCountsSafely() {
+    try {
+      context.read<AdminDashboardProvider>().fetchDashboardCounts();
+    } on ProviderNotFoundException {
+      // Standalone widget/screen usage without dashboard shell.
+    } catch (_) {}
+  }
 
   @override
   void initState() {
     super.initState();
+    if (widget.company != null) {
+      _selectedCompanyId = widget.company!.id;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<CategoryProvider>().fetchCategories();
+      final compProvider = _maybeReadCompanyProvider(context);
+      if (compProvider != null && compProvider.companies.isEmpty) {
+        compProvider.fetchCompanies();
+      }
     });
   }
 
@@ -66,7 +107,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
               if (mounted) {
                 if (success) {
-                  context.read<AdminDashboardProvider>().fetchDashboardCounts();
+                  _refreshDashboardCountsSafely();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Category "${category.name}" deleted.'),
@@ -91,18 +132,43 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   Future<void> _openCategoryForm([CategoryModel? category]) async {
+    final compProvider = _maybeReadCompanyProvider(context);
+    String? initialCompId = widget.company?.id;
+    String? initialCompName = widget.company?.name;
+
+    if (category == null &&
+        initialCompId == null &&
+        _selectedCompanyId != 'ALL' &&
+        _selectedCompanyId != CategoryProvider.unassignedCompanyFilter) {
+      initialCompId = _selectedCompanyId;
+      final match = compProvider?.companies.where((c) => c.id == _selectedCompanyId);
+      if (match != null && match.isNotEmpty) {
+        initialCompName = match.first.name;
+      }
+    }
+
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => CategoryFormScreen(categoryToEdit: category),
+        builder: (_) => CategoryFormScreen(
+          categoryToEdit: category,
+          initialCompanyId: initialCompId,
+          initialCompanyName: initialCompName,
+        ),
       ),
     );
     if (!mounted) return;
-    context.read<AdminDashboardProvider>().fetchDashboardCounts();
+    _refreshDashboardCountsSafely();
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CategoryProvider>();
+    final companyProvider = _maybeWatchCompanyProvider(context);
+    final unassignedCount = provider.unassignedCategories.length;
+    final activeFilterCompanyId = widget.company?.id ?? _selectedCompanyId;
+    final showCompanyChips = widget.company == null &&
+        ((companyProvider != null && companyProvider.companies.isNotEmpty) ||
+            unassignedCount > 0);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -110,9 +176,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         automaticallyImplyLeading: !widget.embedded,
         backgroundColor: AppColors.darkCharcoal,
         elevation: 0,
-        title: const Text(
-          'Spare Parts Categories',
-          style: TextStyle(
+        title: Text(
+          widget.company != null
+              ? '${widget.company!.name} Categories'
+              : 'Spare Parts Categories',
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,
             fontSize: 18,
@@ -130,46 +198,167 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         top: false,
         child: Column(
           children: [
-          // Search Bar
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: TextField(
-              controller: _searchController,
-              onChanged: (val) => provider.setSearchQuery(val),
-              decoration: InputDecoration(
-                hintText: 'Search categories by name...',
-                prefixIcon: const Icon(Icons.search, size: 22),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () {
-                          _searchController.clear();
-                          provider.setSearchQuery('');
-                        },
-                      )
-                    : null,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            // Search Bar & Company Filter Strip
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+              color: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (val) => provider.setSearchQuery(val),
+                    decoration: InputDecoration(
+                      hintText: widget.company != null
+                          ? 'Search categories in ${widget.company!.name}...'
+                          : 'Search categories or companies...',
+                      prefixIcon: const Icon(Icons.search, size: 22),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                                provider.setSearchQuery('');
+                              },
+                            )
+                          : null,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                  ),
+                  if (showCompanyChips) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 34,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        children: [
+                          _buildCompanyFilterChip(
+                            label: 'All Companies',
+                            isSelected: _selectedCompanyId == 'ALL',
+                            onTap: () => setState(() => _selectedCompanyId = 'ALL'),
+                          ),
+                          if (unassignedCount > 0)
+                            _buildCompanyFilterChip(
+                              label: 'Unassigned ($unassignedCount)',
+                              isSelected: _selectedCompanyId ==
+                                  CategoryProvider.unassignedCompanyFilter,
+                              onTap: () => setState(() => _selectedCompanyId =
+                                  CategoryProvider.unassignedCompanyFilter),
+                            ),
+                          if (companyProvider != null)
+                            ...companyProvider.companies.map((comp) {
+                              return _buildCompanyFilterChip(
+                                label: comp.name,
+                                isSelected: _selectedCompanyId == comp.id,
+                                onTap: () => setState(() => _selectedCompanyId = comp.id),
+                              );
+                            }),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (widget.company == null &&
+                      unassignedCount > 0 &&
+                      _selectedCompanyId == 'ALL') ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.amber.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 18,
+                            color: Colors.amber.shade800,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '$unassignedCount existing ${unassignedCount == 1 ? 'category needs' : 'categories need'} a company. Tap any category to map it.',
+                              style: TextStyle(
+                                color: Colors.amber.shade900,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-          ),
 
-          // Content List
-          Expanded(
-            child: RefreshIndicator(
-              color: AppColors.primaryGold,
-              backgroundColor: AppColors.darkCharcoal,
-              onRefresh: () => provider.fetchCategories(),
-              child: _buildListContent(provider),
+            // Content List
+            Expanded(
+              child: RefreshIndicator(
+                color: AppColors.primaryGold,
+                backgroundColor: AppColors.darkCharcoal,
+                onRefresh: () async {
+                  final futures = <Future<void>>[provider.fetchCategories()];
+                  if (companyProvider != null) {
+                    futures.add(companyProvider.fetchCompanies());
+                  }
+                  await Future.wait(futures);
+                },
+                child: _buildListContent(
+                  provider,
+                  companyProvider,
+                  activeFilterCompanyId,
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildListContent(CategoryProvider provider) {
+  Widget _buildCompanyFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.darkCharcoal : const Color(0xFFF3F5F8),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isSelected ? AppColors.primaryGold : const Color(0xFFDDE1E6),
+              width: 1.1,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? AppColors.primaryGold : AppColors.darkCharcoal,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListContent(
+    CategoryProvider provider,
+    CompanyProvider? companyProvider,
+    String activeFilterCompanyId,
+  ) {
     if (provider.isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primaryGold),
@@ -202,21 +391,37 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       );
     }
 
-    final list = provider.filteredCategories;
+    final list = provider.filteredCategories.where((c) {
+      if (activeFilterCompanyId == 'ALL') return true;
+      if (activeFilterCompanyId == CategoryProvider.unassignedCompanyFilter) {
+        return c.companyId.isEmpty;
+      }
+      return c.companyId == activeFilterCompanyId;
+    }).toList();
 
     if (list.isEmpty) {
+      final isUnassignedView =
+          activeFilterCompanyId == CategoryProvider.unassignedCompanyFilter;
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.category_outlined, size: 56, color: Colors.grey.shade400),
+              Icon(
+                isUnassignedView ? Icons.check_circle_outline : Icons.category_outlined,
+                size: 56,
+                color: isUnassignedView ? AppColors.success : Colors.grey.shade400,
+              ),
               const SizedBox(height: 12),
               Text(
                 provider.searchQuery.isNotEmpty
                     ? 'No categories match "${provider.searchQuery}"'
-                    : 'No spare parts categories created.',
+                    : (isUnassignedView
+                        ? 'All categories are mapped to a company!'
+                        : (widget.company != null
+                            ? 'No categories added under ${widget.company!.name} yet.'
+                            : 'No spare parts categories created.')),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: AppColors.darkCharcoal,
@@ -225,10 +430,24 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Organize catalog parts into Engine, Brakes, Transmission...',
-                style: TextStyle(color: AppColors.secondaryText, fontSize: 13),
+              Text(
+                isUnassignedView
+                    ? 'Every category in your catalog belongs to a company.'
+                    : 'Organize catalog parts into Engine, Brakes, Transmission under each company.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.secondaryText, fontSize: 13),
               ),
+              if (isUnassignedView) ...[
+                const SizedBox(height: 14),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.darkCharcoal,
+                    foregroundColor: AppColors.primaryGold,
+                  ),
+                  onPressed: () => setState(() => _selectedCompanyId = 'ALL'),
+                  child: const Text('Show All Categories'),
+                ),
+              ],
             ],
           ),
         ),
@@ -247,21 +466,44 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final category = list[index];
-        return _buildCategoryCard(category, provider);
+        return _buildCategoryCard(category, provider, companyProvider);
       },
     );
   }
 
-  Widget _buildCategoryCard(CategoryModel category, CategoryProvider provider) {
+  String _resolveCompanyName(CategoryModel category, CompanyProvider? companyProvider) {
+    if (companyProvider != null && category.companyId.isNotEmpty) {
+      final match = companyProvider.companies.where((c) => c.id == category.companyId);
+      if (match.isNotEmpty) return match.first.name;
+    }
+    return category.companyName;
+  }
+
+  Widget _buildCategoryCard(
+    CategoryModel category,
+    CategoryProvider provider,
+    CompanyProvider? companyProvider,
+  ) {
+    final resolvedCompanyName = _resolveCompanyName(category, companyProvider);
+    final isAssigned = category.hasCompany;
+    final companyLabel = isAssigned
+        ? (resolvedCompanyName.isNotEmpty ? resolvedCompanyName : 'Assigned Company')
+        : 'Unassigned — Tap to set company';
+
     return Card(
           elevation: 1.5,
           shadowColor: Colors.black.withValues(alpha: 0.04),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
-            side: BorderSide(color: Colors.grey.shade200),
+            side: BorderSide(
+              color: isAssigned ? Colors.grey.shade200 : Colors.amber.shade300,
+            ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => _openCategoryForm(category),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -333,6 +575,52 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           ),
                         ],
                       ),
+                        if (widget.company == null) ...[
+                          const SizedBox(height: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isAssigned
+                                  ? AppColors.badgeGoldBg
+                                  : Colors.amber.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isAssigned
+                                    ? AppColors.badgeGoldBorder.withValues(alpha: 0.6)
+                                    : Colors.amber.shade400,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isAssigned
+                                      ? Icons.business_outlined
+                                      : Icons.warning_amber_rounded,
+                                  size: 12,
+                                  color: isAssigned
+                                      ? AppColors.badgeGoldText
+                                      : Colors.amber.shade800,
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    companyLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: isAssigned
+                                          ? AppColors.badgeGoldText
+                                          : Colors.amber.shade900,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       if (category.description != null && category.description!.isNotEmpty) ...[
                         const SizedBox(height: 3),
                         Text(
@@ -402,6 +690,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 ),
               ],
             ),
+          ),
           ),
         );
   }

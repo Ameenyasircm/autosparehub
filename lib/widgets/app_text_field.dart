@@ -77,13 +77,17 @@ class AppTextField extends StatelessWidget {
         // 1. Label Row with red asterisk for mandatory fields
         Row(
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: enabled ? AppColors.darkCharcoal : AppColors.secondaryText,
-                letterSpacing: 0.1,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: enabled ? AppColors.darkCharcoal : AppColors.secondaryText,
+                  letterSpacing: 0.1,
+                ),
               ),
             ),
             if (isRequired) ...[

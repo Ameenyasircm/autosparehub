@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../models/category_model.dart';
 import '../../models/product_model.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/company_provider.dart';
@@ -102,6 +103,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     // Ensure company and category catalogs are loaded
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final compProvider = context.read<CompanyProvider>();
+      final catProvider = context.read<CategoryProvider>();
       if (compProvider.companies.isEmpty) {
         await compProvider.fetchCompanies();
         if (mounted && _selectedCompanyId == null && compProvider.companies.length == 1) {
@@ -112,8 +114,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         }
       }
 
-      final catProvider = context.read<CategoryProvider>();
-      if (catProvider.categories.isEmpty) catProvider.fetchCategories();
+      if (catProvider.categories.isEmpty) {
+        catProvider.fetchCategories();
+      }
     });
   }
 
@@ -200,7 +203,18 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
 
     final provider = context.read<ProductProvider>();
+    final compProvider = context.read<CompanyProvider>();
+    final catProvider = context.read<CategoryProvider>();
     provider.clearError();
+
+    final matchedComp = compProvider.companies.where((c) => c.id == _selectedCompanyId);
+    final resolvedCompanyName = matchedComp.isNotEmpty
+        ? matchedComp.first.name
+        : (_selectedCompanyName ?? '');
+    final matchedCat = catProvider.categories.where((c) => c.id == _selectedCategoryId);
+    final resolvedCategoryName = matchedCat.isNotEmpty
+        ? matchedCat.first.name
+        : (_selectedCategoryName ?? '');
 
     final cleanPriceStr = _priceController.text.trim().replaceAll(',', '');
     final price = cleanPriceStr.isNotEmpty ? double.tryParse(cleanPriceStr) : null;
@@ -217,9 +231,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         currentImageUrl: _existingImageUrl ?? '',
         newImageFile: _pickedImageFile,
         companyId: _selectedCompanyId!,
-        companyName: _selectedCompanyName ?? '',
+        companyName: resolvedCompanyName,
         categoryId: _selectedCategoryId!,
-        categoryName: _selectedCategoryName ?? '',
+        categoryName: resolvedCategoryName,
         application: _applicationController.text.trim(),
         description: _descriptionController.text.trim(),
         refNo: _refNoController.text.trim(),
@@ -238,9 +252,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         name: _nameController.text.trim(),
         imageFile: _pickedImageFile!,
         companyId: _selectedCompanyId!,
-        companyName: _selectedCompanyName ?? '',
+        companyName: resolvedCompanyName,
         categoryId: _selectedCategoryId!,
-        categoryName: _selectedCategoryName ?? '',
+        categoryName: resolvedCategoryName,
         application: _applicationController.text.trim(),
         description: _descriptionController.text.trim(),
         refNo: _refNoController.text.trim(),
@@ -514,8 +528,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                     style: TextStyle(color: Colors.grey, fontSize: 12.5),
                   ),
                   const SizedBox(height: 18),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 10,
                     children: [
                       FilledButton.icon(
                         style: FilledButton.styleFrom(
@@ -528,7 +544,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                         icon: const Icon(Icons.camera_alt_outlined, size: 18),
                         label: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
-                      const SizedBox(width: 12),
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.darkCharcoal,
@@ -557,6 +572,22 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     CategoryProvider categoryProvider,
     ProductProvider provider,
   ) {
+    final hasValidCompany = companyProvider.companies.any((c) => c.id == _selectedCompanyId);
+    final List<CategoryModel> availableCategories = _selectedCompanyId == null
+        ? const <CategoryModel>[]
+        : categoryProvider.categories.where((c) {
+            if (c.companyId == _selectedCompanyId) return true;
+            // Allow preserving an unassigned legacy category when editing an older product
+            if (widget.isEditing &&
+                _selectedCompanyId == widget.productToEdit?.companyId &&
+                c.id == widget.productToEdit?.categoryId &&
+                c.companyId.isEmpty) {
+              return true;
+            }
+            return false;
+          }).toList();
+    final hasValidCategory = availableCategories.any((c) => c.id == _selectedCategoryId);
+
     return AppFormCard(
       title: 'General Information',
       icon: Icons.info_outline,
@@ -588,7 +619,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             hint: 'Select brand',
             isRequired: true,
             enabled: !provider.isSaving,
-            value: _selectedCompanyId,
+            value: hasValidCompany ? _selectedCompanyId : null,
             prefixIcon: Icons.business_outlined,
             isDarkTheme: true,
             items: companyProvider.companies.map((c) {
@@ -604,9 +635,16 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             onChanged: (val) {
               if (val != null) {
                 final matched = companyProvider.companies.firstWhere((c) => c.id == val);
+                final categoryBelongsToCompany = categoryProvider.categories.any(
+                  (c) => c.id == _selectedCategoryId && c.companyId == val,
+                );
                 setState(() {
                   _selectedCompanyId = val;
                   _selectedCompanyName = matched.name;
+                  if (!categoryBelongsToCompany) {
+                    _selectedCategoryId = null;
+                    _selectedCategoryName = null;
+                  }
                 });
               }
             },
@@ -614,16 +652,23 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           ),
           const SizedBox(height: 14),
 
-          // Category Selector
+          // Category Selector (Filtered by Selected Brand/Company)
           AppDropdownField<String>(
             label: 'Category',
-            hint: 'Select category',
+            hint: _selectedCompanyId == null
+                ? 'Select brand first'
+                : (availableCategories.isEmpty
+                    ? 'No categories under this brand'
+                    : 'Select category'),
             isRequired: true,
-            enabled: !provider.isSaving,
-            value: _selectedCategoryId,
+            enabled: !provider.isSaving && _selectedCompanyId != null,
+            value: hasValidCategory ? _selectedCategoryId : null,
             prefixIcon: Icons.category_outlined,
             isDarkTheme: true,
-            items: categoryProvider.categories.map((c) {
+            helperText: _selectedCompanyId != null && availableCategories.isEmpty
+                ? 'Add a category under this company first.'
+                : null,
+            items: availableCategories.map((c) {
               return DropdownMenuItem<String>(
                 value: c.id,
                 child: Text(
@@ -635,7 +680,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             }).toList(),
             onChanged: (val) {
               if (val != null) {
-                final matched = categoryProvider.categories.firstWhere((c) => c.id == val);
+                final matched = availableCategories.firstWhere((c) => c.id == val);
                 setState(() {
                   _selectedCategoryId = val;
                   _selectedCategoryName = matched.name;
@@ -923,45 +968,52 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Text(
-                    'Storefront Publishing',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: (_isActive ? AppColors.success : AppColors.error).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      _isActive ? 'Live' : 'Draft',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: _isActive ? AppColors.success : AppColors.error,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Flexible(
+                      child: Text(
+                        'Storefront Publishing',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(
-                _isActive
-                    ? 'Visible to buyers on customer store'
-                    : 'Hidden from customer search (Draft mode)',
-                style: const TextStyle(color: Colors.grey, fontSize: 11),
-              ),
-            ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: (_isActive ? AppColors.success : AppColors.error).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        _isActive ? 'Live' : 'Draft',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: _isActive ? AppColors.success : AppColors.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _isActive
+                      ? 'Visible to buyers on customer store'
+                      : 'Hidden from customer search (Draft mode)',
+                  style: const TextStyle(color: Colors.grey, fontSize: 11),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 12),
           Switch(
             value: _isActive,
-            activeColor: AppColors.primaryGold,
+            activeThumbColor: AppColors.primaryGold,
             activeTrackColor: AppColors.darkCharcoal,
             onChanged: provider.isSaving
                 ? null

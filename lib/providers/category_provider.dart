@@ -19,12 +19,14 @@ class CategoryProvider extends ChangeNotifier {
         _cloudinaryService = cloudinaryService ?? CloudinaryService();
 
   static const String collectionName = 'CATEGORIES';
+  static const String unassignedCompanyFilter = '_UNASSIGNED';
 
   List<CategoryModel> _categories = [];
   bool _isLoading = false;
   bool _isSaving = false;
   String? _errorMessage;
   String _searchQuery = '';
+  String _selectedCompanyId = 'ALL';
 
   // Getters
   List<CategoryModel> get categories => _categories;
@@ -32,6 +34,7 @@ class CategoryProvider extends ChangeNotifier {
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
+  String get selectedCompanyId => _selectedCompanyId;
 
   @visibleForTesting
   void setCategoriesForTesting(List<CategoryModel> list) {
@@ -40,16 +43,52 @@ class CategoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<CategoryModel> categoriesForCompany(String companyId) {
+    return _categories.where((c) => c.companyId == companyId).toList();
+  }
+
+  List<CategoryModel> get unassignedCategories {
+    return _categories.where((c) => c.companyId.isEmpty).toList();
+  }
+
+  bool hasDuplicateNameInCompany({
+    required String name,
+    required String companyId,
+    String? excludeId,
+  }) {
+    final cleanName = name.trim().toLowerCase();
+    final cleanCompanyId = companyId.trim();
+    return _categories.any(
+      (c) =>
+          c.id != excludeId &&
+          c.companyId == cleanCompanyId &&
+          c.name.toLowerCase() == cleanName,
+    );
+  }
+
   List<CategoryModel> get filteredCategories {
-    if (_searchQuery.isEmpty) return _categories;
     return _categories.where((c) {
-      return c.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (c.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+      final matchesCompany = _selectedCompanyId == 'ALL'
+          ? true
+          : (_selectedCompanyId == unassignedCompanyFilter
+              ? c.companyId.isEmpty
+              : c.companyId == _selectedCompanyId);
+      if (!matchesCompany) return false;
+      if (_searchQuery.isEmpty) return true;
+      final q = _searchQuery.toLowerCase();
+      return c.name.toLowerCase().contains(q) ||
+          c.companyName.toLowerCase().contains(q) ||
+          (c.description?.toLowerCase().contains(q) ?? false);
     }).toList();
   }
 
   void setSearchQuery(String query) {
     _searchQuery = query.trim();
+    notifyListeners();
+  }
+
+  void setSelectedCompanyId(String companyId) {
+    _selectedCompanyId = companyId;
     notifyListeners();
   }
 
@@ -73,23 +112,31 @@ class CategoryProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
     }
-    _liveSubscription = _firestore.collection(collectionName).snapshots().listen(
-      (snapshot) {
-        _categories = snapshot.docs.map((doc) => CategoryModel.fromFirestore(doc)).toList();
-        _categories.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-        _isLoading = false;
-        _errorMessage = null;
-        notifyListeners();
-        if (!firstData.isCompleted) firstData.complete();
-      },
-      onError: (e) {
-        debugPrint('CategoryModel live listener error: $e');
-        _isLoading = false;
-        _liveSubscription = null; // allow a later retry
-        notifyListeners();
-        if (!firstData.isCompleted) firstData.complete();
-      },
-    );
+    try {
+      _liveSubscription = _firestore.collection(collectionName).snapshots().listen(
+        (snapshot) {
+          _categories = snapshot.docs.map((doc) => CategoryModel.fromFirestore(doc)).toList();
+          _categories.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+          _isLoading = false;
+          _errorMessage = null;
+          notifyListeners();
+          if (!firstData.isCompleted) firstData.complete();
+        },
+        onError: (e) {
+          debugPrint('CategoryModel live listener error: $e');
+          _isLoading = false;
+          _liveSubscription = null; // allow a later retry
+          notifyListeners();
+          if (!firstData.isCompleted) firstData.complete();
+        },
+      );
+    } catch (e) {
+      debugPrint('CategoryProvider.startListening error: $e');
+      _isLoading = false;
+      _liveSubscription = null;
+      notifyListeners();
+      if (!firstData.isCompleted) firstData.complete();
+    }
     return firstData.future;
   }
 
@@ -136,14 +183,23 @@ class CategoryProvider extends ChangeNotifier {
     }
   }
 
-  /// Adds a new spare parts category with Cloudinary image upload
+  /// Adds a new spare parts category under a company with Cloudinary image upload
   Future<bool> addCategory({
     required String name,
+    required String companyId,
+    required String companyName,
     required File imageFile,
     String? description,
     bool isActive = true,
   }) async {
     final cleanName = name.trim();
+    final cleanCompanyId = companyId.trim();
+    final cleanCompanyName = companyName.trim();
+    if (cleanCompanyId.isEmpty) {
+      _errorMessage = 'Please select a company for this category.';
+      notifyListeners();
+      return false;
+    }
     if (cleanName.isEmpty) {
       _errorMessage = 'Category name is required.';
       notifyListeners();
@@ -155,12 +211,14 @@ class CategoryProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Check for duplicate category name (case-insensitive)
-      final isDuplicate = _categories.any(
-        (c) => c.name.toLowerCase() == cleanName.toLowerCase(),
+      // 1. Check for duplicate category name under the same company (case-insensitive)
+      final isDuplicate = hasDuplicateNameInCompany(
+        name: cleanName,
+        companyId: cleanCompanyId,
       );
       if (isDuplicate) {
-        _errorMessage = 'A category with the name "$cleanName" already exists.';
+        final companyLabel = cleanCompanyName.isNotEmpty ? cleanCompanyName : 'this company';
+        _errorMessage = 'A category named "$cleanName" already exists under $companyLabel.';
         _isSaving = false;
         notifyListeners();
         return false;
@@ -186,6 +244,8 @@ class CategoryProvider extends ChangeNotifier {
         'ID': categoryDocId,
         'NAME': cleanName,
         'IMAGE_URL': uploadedUrl,
+        'COMPANY_ID': cleanCompanyId,
+        'COMPANY_NAME': cleanCompanyName,
         'DESCRIPTION': description?.trim() ?? '',
         'IS_ACTIVE': isActive,
         'CREATED_AT': FieldValue.serverTimestamp(),
@@ -227,12 +287,21 @@ class CategoryProvider extends ChangeNotifier {
   Future<bool> editCategory({
     required String id,
     required String name,
+    required String companyId,
+    required String companyName,
     File? newImageFile,
     required String currentImageUrl,
     String? description,
     required bool isActive,
   }) async {
     final cleanName = name.trim();
+    final cleanCompanyId = companyId.trim();
+    final cleanCompanyName = companyName.trim();
+    if (cleanCompanyId.isEmpty) {
+      _errorMessage = 'Please select a company for this category.';
+      notifyListeners();
+      return false;
+    }
     if (cleanName.isEmpty) {
       _errorMessage = 'Category name is required.';
       notifyListeners();
@@ -244,12 +313,15 @@ class CategoryProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Check duplicate name excluding self
-      final isDuplicate = _categories.any(
-        (c) => c.id != id && c.name.toLowerCase() == cleanName.toLowerCase(),
+      // Check duplicate name under the same company excluding self
+      final isDuplicate = hasDuplicateNameInCompany(
+        name: cleanName,
+        companyId: cleanCompanyId,
+        excludeId: id,
       );
       if (isDuplicate) {
-        _errorMessage = 'Another category with the name "$cleanName" already exists.';
+        final companyLabel = cleanCompanyName.isNotEmpty ? cleanCompanyName : 'this company';
+        _errorMessage = 'Another category named "$cleanName" already exists under $companyLabel.';
         _isSaving = false;
         notifyListeners();
         return false;
@@ -277,10 +349,38 @@ class CategoryProvider extends ChangeNotifier {
       await _firestore.collection(collectionName).doc(id).update({
         'NAME': cleanName,
         'IMAGE_URL': finalImageUrl,
+        'COMPANY_ID': cleanCompanyId,
+        'COMPANY_NAME': cleanCompanyName,
         'DESCRIPTION': description?.trim() ?? '',
         'IS_ACTIVE': isActive,
         'UPDATED_AT': FieldValue.serverTimestamp(),
       }).timeout(const Duration(seconds: 10));
+
+      // Best-effort sync of CATEGORY_NAME on products linked to this category
+      try {
+        final linkedProducts = await _firestore
+            .collection('PRODUCTS')
+            .where('CATEGORY_ID', isEqualTo: id)
+            .get()
+            .timeout(const Duration(seconds: 6));
+        if (linkedProducts.docs.isNotEmpty) {
+          for (var i = 0; i < linkedProducts.docs.length; i += 450) {
+            final end = (i + 450 < linkedProducts.docs.length)
+                ? i + 450
+                : linkedProducts.docs.length;
+            final batch = _firestore.batch();
+            for (var j = i; j < end; j++) {
+              batch.update(linkedProducts.docs[j].reference, {
+                'CATEGORY_NAME': cleanName,
+                'UPDATED_AT': FieldValue.serverTimestamp(),
+              });
+            }
+            await batch.commit().timeout(const Duration(seconds: 6));
+          }
+        }
+      } catch (e) {
+        debugPrint('CategoryProvider.editCategory: product name sync notice: $e');
+      }
 
       try {
         await fetchCategories().timeout(const Duration(seconds: 8));

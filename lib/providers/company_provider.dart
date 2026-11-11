@@ -33,6 +33,13 @@ class CompanyProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
 
+  @visibleForTesting
+  void setCompaniesForTesting(List<CompanyModel> list) {
+    _companies = List.from(list);
+    _isLoading = false;
+    notifyListeners();
+  }
+
   List<CompanyModel> get filteredCompanies {
     if (_searchQuery.isEmpty) return _companies;
     return _companies.where((c) {
@@ -66,23 +73,31 @@ class CompanyProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
     }
-    _liveSubscription = _firestore.collection(collectionName).snapshots().listen(
-      (snapshot) {
-        _companies = snapshot.docs.map((doc) => CompanyModel.fromFirestore(doc)).toList();
-        _companies.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-        _isLoading = false;
-        _errorMessage = null;
-        notifyListeners();
-        if (!firstData.isCompleted) firstData.complete();
-      },
-      onError: (e) {
-        debugPrint('CompanyModel live listener error: $e');
-        _isLoading = false;
-        _liveSubscription = null; // allow a later retry
-        notifyListeners();
-        if (!firstData.isCompleted) firstData.complete();
-      },
-    );
+    try {
+      _liveSubscription = _firestore.collection(collectionName).snapshots().listen(
+        (snapshot) {
+          _companies = snapshot.docs.map((doc) => CompanyModel.fromFirestore(doc)).toList();
+          _companies.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+          _isLoading = false;
+          _errorMessage = null;
+          notifyListeners();
+          if (!firstData.isCompleted) firstData.complete();
+        },
+        onError: (e) {
+          debugPrint('CompanyModel live listener error: $e');
+          _isLoading = false;
+          _liveSubscription = null; // allow a later retry
+          notifyListeners();
+          if (!firstData.isCompleted) firstData.complete();
+        },
+      );
+    } catch (e) {
+      debugPrint('CompanyProvider.startListening error: $e');
+      _isLoading = false;
+      _liveSubscription = null;
+      notifyListeners();
+      if (!firstData.isCompleted) firstData.complete();
+    }
     return firstData.future;
   }
 
@@ -274,6 +289,27 @@ class CompanyProvider extends ChangeNotifier {
         'IS_ACTIVE': isActive,
         'UPDATED_AT': FieldValue.serverTimestamp(),
       }).timeout(const Duration(seconds: 10));
+
+      // Best-effort sync of COMPANY_NAME on categories under this company
+      try {
+        final linkedCategories = await _firestore
+            .collection('CATEGORIES')
+            .where('COMPANY_ID', isEqualTo: id)
+            .get()
+            .timeout(const Duration(seconds: 6));
+        if (linkedCategories.docs.isNotEmpty) {
+          final batch = _firestore.batch();
+          for (final doc in linkedCategories.docs) {
+            batch.update(doc.reference, {
+              'COMPANY_NAME': cleanName,
+              'UPDATED_AT': FieldValue.serverTimestamp(),
+            });
+          }
+          await batch.commit().timeout(const Duration(seconds: 6));
+        }
+      } catch (e) {
+        debugPrint('CompanyProvider.editCompany: category name sync notice: $e');
+      }
 
       try {
         await fetchCompanies().timeout(const Duration(seconds: 8));

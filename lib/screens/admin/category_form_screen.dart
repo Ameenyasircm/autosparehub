@@ -4,15 +4,24 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/category_model.dart';
 import '../../providers/category_provider.dart';
+import '../../providers/company_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_dropdown_field.dart';
 import '../../widgets/app_submit_button.dart';
 import '../../widgets/app_text_field.dart';
 
-/// Form screen to add or edit a spare parts category with Cloudinary image upload.
+/// Form screen to add or edit a spare parts category under a company with Cloudinary image upload.
 class CategoryFormScreen extends StatefulWidget {
   final CategoryModel? categoryToEdit;
+  final String? initialCompanyId;
+  final String? initialCompanyName;
 
-  const CategoryFormScreen({super.key, this.categoryToEdit});
+  const CategoryFormScreen({
+    super.key,
+    this.categoryToEdit,
+    this.initialCompanyId,
+    this.initialCompanyName,
+  });
 
   bool get isEditing => categoryToEdit != null;
 
@@ -28,6 +37,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
 
   File? _selectedImageFile;
   String? _existingImageUrl;
+  String? _selectedCompanyId;
+  String? _selectedCompanyName;
   bool _isActive = true;
 
   @override
@@ -38,6 +49,34 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     _descController = TextEditingController(text: category?.description ?? '');
     _existingImageUrl = category?.imageUrl;
     _isActive = category?.isActive ?? true;
+
+    if (category != null && category.companyId.isNotEmpty) {
+      _selectedCompanyId = category.companyId;
+      _selectedCompanyName = category.companyName;
+    } else if (widget.initialCompanyId != null && widget.initialCompanyId!.isNotEmpty) {
+      _selectedCompanyId = widget.initialCompanyId;
+      _selectedCompanyName = widget.initialCompanyName;
+    } else {
+      final initialCompanies = context.read<CompanyProvider>().companies;
+      if (initialCompanies.length == 1) {
+        _selectedCompanyId = initialCompanies.first.id;
+        _selectedCompanyName = initialCompanies.first.name;
+      }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final compProvider = context.read<CompanyProvider>();
+      if (compProvider.companies.isEmpty) {
+        await compProvider.fetchCompanies();
+        if (!mounted) return;
+      }
+      if (_selectedCompanyId == null && compProvider.companies.length == 1) {
+        setState(() {
+          _selectedCompanyId = compProvider.companies.first.id;
+          _selectedCompanyName = compProvider.companies.first.name;
+        });
+      }
+    });
   }
 
   @override
@@ -83,6 +122,16 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedCompanyId == null || _selectedCompanyId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a company for this category.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     if (!widget.isEditing && _selectedImageFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -94,7 +143,13 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     }
 
     final provider = context.read<CategoryProvider>();
+    final companyProvider = context.read<CompanyProvider>();
     provider.clearError();
+
+    final matchedCompanies = companyProvider.companies.where((c) => c.id == _selectedCompanyId);
+    final resolvedCompanyName = matchedCompanies.isNotEmpty
+        ? matchedCompanies.first.name
+        : (_selectedCompanyName ?? '');
 
     bool success = false;
 
@@ -102,6 +157,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
       success = await provider.editCategory(
         id: widget.categoryToEdit!.id,
         name: _nameController.text.trim(),
+        companyId: _selectedCompanyId!,
+        companyName: resolvedCompanyName,
         newImageFile: _selectedImageFile,
         currentImageUrl: _existingImageUrl ?? '',
         description: _descController.text.trim(),
@@ -110,6 +167,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     } else {
       success = await provider.addCategory(
         name: _nameController.text.trim(),
+        companyId: _selectedCompanyId!,
+        companyName: resolvedCompanyName,
         imageFile: _selectedImageFile!,
         description: _descController.text.trim(),
         isActive: _isActive,
@@ -134,7 +193,9 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CategoryProvider>();
+    final companyProvider = context.watch<CompanyProvider>();
     final hasImage = _selectedImageFile != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty);
+    final hasValidCompany = companyProvider.companies.any((c) => c.id == _selectedCompanyId);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -160,6 +221,37 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Legacy unassigned category prompt
+              if (widget.isEditing && !widget.categoryToEdit!.hasCompany) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 18),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.amber.shade400),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline_rounded, color: Colors.amber.shade900, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'This existing category is not mapped to a company yet. Select the company it belongs to and tap Update Category.',
+                          style: TextStyle(
+                            color: Colors.amber.shade900,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               // Error Banner
               if (provider.errorMessage != null) ...[
                 Container(
@@ -300,6 +392,44 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
 
               const SizedBox(height: 24),
 
+              // Company Selector Field (Mandatory parent company)
+              AppDropdownField<String>(
+                label: 'Company',
+                hint: companyProvider.companies.isEmpty
+                    ? 'No companies available'
+                    : 'Select company',
+                isRequired: true,
+                enabled: !provider.isSaving,
+                value: hasValidCompany ? _selectedCompanyId : null,
+                prefixIcon: Icons.business_outlined,
+                isDarkTheme: true,
+                helperText: companyProvider.companies.isEmpty
+                    ? 'Add a company first before creating categories.'
+                    : null,
+                items: companyProvider.companies.map((c) {
+                  return DropdownMenuItem<String>(
+                    value: c.id,
+                    child: Text(
+                      c.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    final matched = companyProvider.companies.firstWhere((c) => c.id == val);
+                    setState(() {
+                      _selectedCompanyId = val;
+                      _selectedCompanyName = matched.name;
+                    });
+                  }
+                },
+                validator: (val) => val == null || val.isEmpty ? 'Please select a company' : null,
+              ),
+
+              const SizedBox(height: 18),
+
               // Category Name Field
               AppTextField(
                 label: 'Category Name',
@@ -344,25 +474,28 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Category Visibility',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                        ),
-                        Text(
-                          _isActive ? 'Active in parts catalog' : 'Inactive / Hidden',
-                          style: TextStyle(
-                            color: _isActive ? AppColors.success : AppColors.error,
-                            fontSize: 12,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Category Visibility',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                           ),
-                        ),
-                      ],
+                          Text(
+                            _isActive ? 'Active in parts catalog' : 'Inactive / Hidden',
+                            style: TextStyle(
+                              color: _isActive ? AppColors.success : AppColors.error,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 12),
                     Switch(
                       value: _isActive,
-                      activeColor: AppColors.primaryGold,
+                      activeThumbColor: AppColors.primaryGold,
                       onChanged: provider.isSaving
                           ? null
                           : (val) => setState(() => _isActive = val),

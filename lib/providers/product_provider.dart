@@ -162,28 +162,36 @@ class ProductProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
     }
-    _liveSubscription = _firestore.collection(collectionName).snapshots().listen(
-      (snapshot) {
-        _products = snapshot.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
-        _products.sort((a, b) {
-          if (a.createdAt != null && b.createdAt != null) {
-            return b.createdAt!.compareTo(a.createdAt!);
-          }
-          return b.id.compareTo(a.id);
-        });
-        _isLoading = false;
-        _errorMessage = null;
-        notifyListeners();
-        if (!firstData.isCompleted) firstData.complete();
-      },
-      onError: (e) {
-        debugPrint('ProductModel live listener error: $e');
-        _isLoading = false;
-        _liveSubscription = null; // allow a later retry
-        notifyListeners();
-        if (!firstData.isCompleted) firstData.complete();
-      },
-    );
+    try {
+      _liveSubscription = _firestore.collection(collectionName).snapshots().listen(
+        (snapshot) {
+          _products = snapshot.docs.map((doc) => ProductModel.fromFirestore(doc)).toList();
+          _products.sort((a, b) {
+            if (a.createdAt != null && b.createdAt != null) {
+              return b.createdAt!.compareTo(a.createdAt!);
+            }
+            return b.id.compareTo(a.id);
+          });
+          _isLoading = false;
+          _errorMessage = null;
+          notifyListeners();
+          if (!firstData.isCompleted) firstData.complete();
+        },
+        onError: (e) {
+          debugPrint('ProductModel live listener error: $e');
+          _isLoading = false;
+          _liveSubscription = null; // allow a later retry
+          notifyListeners();
+          if (!firstData.isCompleted) firstData.complete();
+        },
+      );
+    } catch (e) {
+      debugPrint('ProductProvider.startListening error: $e');
+      _isLoading = false;
+      _liveSubscription = null;
+      notifyListeners();
+      if (!firstData.isCompleted) firstData.complete();
+    }
     return firstData.future;
   }
 

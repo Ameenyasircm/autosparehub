@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/company_model.dart';
 import '../../providers/admin_dashboard_provider.dart';
+import '../../providers/category_provider.dart';
 import '../../providers/company_provider.dart';
 import '../../theme/app_theme.dart';
+import 'categories_screen.dart';
 import 'company_form_screen.dart';
 
-/// Screen listing vehicle manufacturers / companies with search, status toggling, and management options.
+/// Screen listing vehicle manufacturers / companies with search, status toggling, category navigation, and management options.
 class CompaniesScreen extends StatefulWidget {
   final bool embedded;
   const CompaniesScreen({super.key, this.embedded = false});
@@ -18,11 +20,40 @@ class CompaniesScreen extends StatefulWidget {
 class _CompaniesScreenState extends State<CompaniesScreen> {
   final _searchController = TextEditingController();
 
+  CategoryProvider? _maybeWatchCategoryProvider(BuildContext context) {
+    try {
+      return context.watch<CategoryProvider>();
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  CategoryProvider? _maybeReadCategoryProvider(BuildContext context) {
+    try {
+      return context.read<CategoryProvider>();
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  void _refreshDashboardCountsSafely() {
+    try {
+      context.read<AdminDashboardProvider>().fetchDashboardCounts();
+    } on ProviderNotFoundException {
+      // Standalone widget/screen usage without dashboard shell.
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<CompanyProvider>().fetchCompanies();
+      final catProvider = _maybeReadCategoryProvider(context);
+      if (catProvider != null && catProvider.categories.isEmpty) {
+        catProvider.fetchCategories();
+      }
     });
   }
 
@@ -46,7 +77,7 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
           ],
         ),
         content: Text(
-          'Are you sure you want to delete "${company.name}"?\n\nIf parts or vehicles are linked to this manufacturer, deactivating the company is recommended instead of deletion.',
+          'Are you sure you want to delete "${company.name}"?\n\nIf categories or spare parts are linked to this manufacturer, deactivating the company is recommended instead of deletion.',
           style: const TextStyle(color: AppColors.secondaryText, fontSize: 13.5, height: 1.4),
         ),
         actions: [
@@ -66,7 +97,7 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
 
               if (mounted) {
                 if (success) {
-                  context.read<AdminDashboardProvider>().fetchDashboardCounts();
+                  _refreshDashboardCountsSafely();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Company "${company.name}" deleted.'),
@@ -97,12 +128,23 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
       ),
     );
     if (!mounted) return;
-    context.read<AdminDashboardProvider>().fetchDashboardCounts();
+    _refreshDashboardCountsSafely();
+  }
+
+  Future<void> _openCompanyCategories(CompanyModel company) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CategoriesScreen(company: company),
+      ),
+    );
+    if (!mounted) return;
+    _refreshDashboardCountsSafely();
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CompanyProvider>();
+    final categoryProvider = _maybeWatchCategoryProvider(context);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -159,8 +201,14 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
             child: RefreshIndicator(
               color: AppColors.primaryGold,
               backgroundColor: AppColors.darkCharcoal,
-              onRefresh: () => provider.fetchCompanies(),
-              child: _buildListContent(provider),
+              onRefresh: () async {
+                final futures = <Future<void>>[provider.fetchCompanies()];
+                if (categoryProvider != null) {
+                  futures.add(categoryProvider.fetchCategories());
+                }
+                await Future.wait(futures);
+              },
+              child: _buildListContent(provider, categoryProvider),
             ),
           ),
         ],
@@ -169,7 +217,7 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
     );
   }
 
-  Widget _buildListContent(CompanyProvider provider) {
+  Widget _buildListContent(CompanyProvider provider, CategoryProvider? categoryProvider) {
     if (provider.isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primaryGold),
@@ -244,13 +292,13 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
         itemCount: list.length,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
-          mainAxisExtent: 94,
+          mainAxisExtent: 108,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
         itemBuilder: (context, index) {
           final company = list[index];
-          return _buildCompanyCard(company, provider);
+          return _buildCompanyCard(company, provider, categoryProvider);
         },
       );
     }
@@ -262,162 +310,219 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final company = list[index];
-        return _buildCompanyCard(company, provider);
+        return _buildCompanyCard(company, provider, categoryProvider);
       },
     );
   }
 
-  Widget _buildCompanyCard(CompanyModel company, CompanyProvider provider) {
-    return Card(
-          elevation: 1.5,
-          shadowColor: Colors.black.withValues(alpha: 0.04),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: BorderSide(color: Colors.grey.shade200),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Logo Thumbnail
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(11),
-                    child: company.logoUrl.isNotEmpty
-                        ? Image.network(
-                            company.logoUrl,
-                            fit: BoxFit.contain,
-                            loadingBuilder: (ctx, child, progress) {
-                              if (progress == null) return child;
-                              return const Center(child: CircularProgressIndicator(strokeWidth: 2));
-                            },
-                            errorBuilder: (ctx, err, stack) => const Icon(
-                              Icons.business,
-                              color: AppColors.primaryGold,
-                              size: 28,
-                            ),
-                          )
-                        : const Icon(Icons.business, color: AppColors.primaryGold, size: 28),
-                  ),
-                ),
-                const SizedBox(width: 14),
+  Widget _buildCompanyCard(
+    CompanyModel company,
+    CompanyProvider provider,
+    CategoryProvider? categoryProvider,
+  ) {
+    final categoryCount = categoryProvider?.categoriesForCompany(company.id).length;
 
-                // Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              company.name,
-                              style: const TextStyle(
-                                color: AppColors.darkCharcoal,
-                                fontSize: 15.5,
-                                fontWeight: FontWeight.w800,
-                              ),
+    return Card(
+      elevation: 1.5,
+      shadowColor: Colors.black.withValues(alpha: 0.04),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => _openCompanyCategories(company),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Logo Thumbnail
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: company.logoUrl.isNotEmpty
+                      ? Image.network(
+                          company.logoUrl,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (ctx, child, progress) {
+                            if (progress == null) return child;
+                            return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                          },
+                          errorBuilder: (ctx, err, stack) => const Icon(
+                            Icons.business,
+                            color: AppColors.primaryGold,
+                            size: 28,
+                          ),
+                        )
+                      : const Icon(Icons.business, color: AppColors.primaryGold, size: 28),
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            company.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.darkCharcoal,
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          // Status Badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: company.isActive
-                                  ? AppColors.success.withValues(alpha: 0.12)
-                                  : AppColors.error.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
+                        ),
+                        const SizedBox(width: 8),
+                        // Status Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: company.isActive
+                                ? AppColors.success.withValues(alpha: 0.12)
+                                : AppColors.error.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            company.isActive ? 'Active' : 'Inactive',
+                            style: TextStyle(
+                              color: company.isActive ? AppColors.success : AppColors.error,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
                             ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (company.description != null && company.description!.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        company.description!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.secondaryText,
+                          fontSize: 12,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                    if (categoryCount != null) ...[
+                      const SizedBox(height: 5),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.category_outlined,
+                            size: 12.5,
+                            color: AppColors.badgeGoldText,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
                             child: Text(
-                              company.isActive ? 'Active' : 'Inactive',
-                              style: TextStyle(
-                                color: company.isActive ? AppColors.success : AppColors.error,
-                                fontSize: 10,
+                              '$categoryCount ${categoryCount == 1 ? 'Category' : 'Categories'}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.badgeGoldText,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
+                          const SizedBox(width: 2),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 14,
+                            color: AppColors.badgeGoldText,
+                          ),
                         ],
                       ),
-                      if (company.description != null && company.description!.isNotEmpty) ...[
-                        const SizedBox(height: 3),
-                        Text(
-                          company.description!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.secondaryText,
-                            fontSize: 12,
-                            height: 1.3,
-                          ),
-                        ),
-                      ],
                     ],
-                  ),
-                ),
-
-                // Actions Menu
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, size: 20, color: AppColors.secondaryText),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  onSelected: (action) async {
-                    if (action == 'edit') {
-                      _openCompanyForm(company);
-                    } else if (action == 'toggle_active') {
-                      await provider.toggleCompanyActive(company.id, !company.isActive);
-                    } else if (action == 'delete') {
-                      _confirmDeleteCompany(company);
-                    }
-                  },
-                  itemBuilder: (ctx) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined, size: 18),
-                          SizedBox(width: 10),
-                          Text('Edit Company'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'toggle_active',
-                      child: Row(
-                        children: [
-                          Icon(
-                            company.isActive ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(company.isActive ? 'Deactivate' : 'Activate'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuDivider(),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                          SizedBox(width: 10),
-                          Text('Delete', style: TextStyle(color: AppColors.error)),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+
+              // Actions Menu
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, size: 20, color: AppColors.secondaryText),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onSelected: (action) async {
+                  if (action == 'categories') {
+                    _openCompanyCategories(company);
+                  } else if (action == 'edit') {
+                    _openCompanyForm(company);
+                  } else if (action == 'toggle_active') {
+                    await provider.toggleCompanyActive(company.id, !company.isActive);
+                  } else if (action == 'delete') {
+                    _confirmDeleteCompany(company);
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  const PopupMenuItem(
+                    value: 'categories',
+                    child: Row(
+                      children: [
+                        Icon(Icons.category_outlined, size: 18),
+                        SizedBox(width: 10),
+                        Text('Manage Categories'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined, size: 18),
+                        SizedBox(width: 10),
+                        Text('Edit Company'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'toggle_active',
+                    child: Row(
+                      children: [
+                        Icon(
+                          company.isActive ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(company.isActive ? 'Deactivate' : 'Activate'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                        SizedBox(width: 10),
+                        Text('Delete', style: TextStyle(color: AppColors.error)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        );
+        ),
+      ),
+    );
   }
 }

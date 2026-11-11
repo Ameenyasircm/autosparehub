@@ -135,6 +135,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final hasFilterChanges = tempCompany != 'ALL' || tempCategory != 'ALL';
+            final visibleCategories = tempCompany == 'ALL'
+                ? categoryProvider.categories
+                : categoryProvider.categoriesForCompany(tempCompany);
 
             return SafeArea(
               child: Padding(
@@ -224,7 +227,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           return _buildSheetChip(
                             label: c.name,
                             isSelected: tempCompany == c.id,
-                            onTap: () => setSheetState(() => tempCompany = c.id),
+                            onTap: () => setSheetState(() {
+                              tempCompany = c.id;
+                              if (tempCategory != 'ALL' &&
+                                  !categoryProvider.categoriesForCompany(c.id).any((cat) => cat.id == tempCategory)) {
+                                tempCategory = 'ALL';
+                              }
+                            }),
                           );
                         }),
                       ],
@@ -251,9 +260,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           isSelected: tempCategory == 'ALL',
                           onTap: () => setSheetState(() => tempCategory = 'ALL'),
                         ),
-                        ...categoryProvider.categories.map((cat) {
+                        ...visibleCategories.map((cat) {
+                          final label = tempCompany == 'ALL' && cat.companyName.isNotEmpty
+                              ? '${cat.name} (${cat.companyName})'
+                              : cat.name;
                           return _buildSheetChip(
-                            label: cat.name,
+                            label: label,
                             isSelected: tempCategory == cat.id,
                             onTap: () => setSheetState(() => tempCategory = cat.id),
                           );
@@ -362,6 +374,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         : null,
                     onTap: () {
                       provider.setSelectedCompanyId(c.id);
+                      if (provider.selectedCategoryId != 'ALL' &&
+                          !context
+                              .read<CategoryProvider>()
+                              .categoriesForCompany(c.id)
+                              .any((cat) => cat.id == provider.selectedCategoryId)) {
+                        provider.setSelectedCategoryId('ALL');
+                      }
                       Navigator.pop(ctx);
                     },
                   );
@@ -430,11 +449,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     Navigator.pop(ctx);
                   },
                 ),
-                ...categoryProvider.categories.map((cat) {
+                ...(provider.selectedCompanyId == 'ALL'
+                        ? categoryProvider.categories
+                        : categoryProvider.categoriesForCompany(provider.selectedCompanyId))
+                    .map((cat) {
                   final isSelected = provider.selectedCategoryId == cat.id;
+                  final displayName = provider.selectedCompanyId == 'ALL' && cat.companyName.isNotEmpty
+                      ? '${cat.name} (${cat.companyName})'
+                      : cat.name;
                   return ListTile(
                     title: Text(
-                      cat.name,
+                      displayName,
                       style: TextStyle(
                         fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                         color: isSelected ? AppColors.darkCharcoal : AppColors.primaryText,

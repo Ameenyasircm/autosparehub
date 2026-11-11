@@ -5,6 +5,8 @@ class CategoryModel {
   final String id;
   final String name;
   final String imageUrl;
+  final String companyId;
+  final String companyName;
   final String? description;
   final bool isActive;
   final DateTime? createdAt;
@@ -14,11 +16,15 @@ class CategoryModel {
     required this.id,
     required this.name,
     required this.imageUrl,
+    this.companyId = '',
+    this.companyName = '',
     this.description,
     required this.isActive,
     this.createdAt,
     this.updatedAt,
   });
+
+  bool get hasCompany => companyId.isNotEmpty;
 
   /// Factory constructor to safely parse Firestore document snapshot
   factory CategoryModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -48,6 +54,8 @@ class CategoryModel {
       id: id,
       name: (data['NAME'] ?? data['name'] ?? '').toString().trim(),
       imageUrl: (data['IMAGE_URL'] ?? data['imageUrl'] ?? data['image'] ?? '').toString().trim(),
+      companyId: (data['COMPANY_ID'] ?? data['companyId'] ?? '').toString().trim(),
+      companyName: (data['COMPANY_NAME'] ?? data['companyName'] ?? '').toString().trim(),
       description: data['DESCRIPTION']?.toString().trim() ?? data['description']?.toString().trim(),
       isActive: parseIsActive(data['IS_ACTIVE'] ?? data['isActive']),
       createdAt: parseTimestamp(data['CREATED_AT'] ?? data['createdAt']),
@@ -60,6 +68,8 @@ class CategoryModel {
     return {
       'NAME': name,
       'IMAGE_URL': imageUrl,
+      'COMPANY_ID': companyId,
+      'COMPANY_NAME': companyName,
       'DESCRIPTION': description ?? '',
       'IS_ACTIVE': isActive,
       'CREATED_AT': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
@@ -72,6 +82,8 @@ class CategoryModel {
     String? id,
     String? name,
     String? imageUrl,
+    String? companyId,
+    String? companyName,
     String? description,
     bool? isActive,
     DateTime? createdAt,
@@ -81,6 +93,8 @@ class CategoryModel {
       id: id ?? this.id,
       name: name ?? this.name,
       imageUrl: imageUrl ?? this.imageUrl,
+      companyId: companyId ?? this.companyId,
+      companyName: companyName ?? this.companyName,
       description: description ?? this.description,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
@@ -90,7 +104,7 @@ class CategoryModel {
 
   @override
   String toString() {
-    return 'CategoryModel(id: $id, name: $name, imageUrl: $imageUrl, isActive: $isActive)';
+    return 'CategoryModel(id: $id, name: $name, companyId: $companyId, companyName: $companyName, imageUrl: $imageUrl, isActive: $isActive)';
   }
 
   @override
@@ -100,10 +114,20 @@ class CategoryModel {
         other.id == id &&
         other.name == name &&
         other.imageUrl == imageUrl &&
+        other.companyId == companyId &&
+        other.companyName == companyName &&
         other.description == description &&
         other.isActive == isActive;
   }
 
   @override
-  int get hashCode => Object.hash(id, name, imageUrl, description, isActive);
+  int get hashCode => Object.hash(
+        id,
+        name,
+        imageUrl,
+        companyId,
+        companyName,
+        description,
+        isActive,
+      );
 }

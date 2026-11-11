@@ -49,12 +49,16 @@ class AppFormCard extends StatelessWidget {
                 Icon(icon, size: 18, color: AppColors.primaryGold),
                 const SizedBox(width: 8),
               ],
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.darkCharcoal,
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.darkCharcoal,
+                  ),
                 ),
               ),
               if (isRequired) ...[
