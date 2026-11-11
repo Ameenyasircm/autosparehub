@@ -27,6 +27,7 @@ import 'screens/admin_splash_screen.dart';
 import 'screens/user/cart_screen.dart';
 import 'screens/user/user_home_screen.dart';
 import 'screens/user/user_orders_screen.dart';
+import 'screens/user/user_splash_screen.dart';
 import 'services/database_service.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
@@ -104,9 +105,10 @@ class MyApp extends StatelessWidget {
         builder: (context, child) {
           return AppLockWrapper(child: child ?? const SizedBox.shrink());
         },
-        home: const AdminSplashScreen(),
+        home: isAdmin ? const AdminSplashScreen() : const UserSplashScreen(),
         routes: {
           '/admin_splash': (context) => const AdminSplashScreen(),
+          '/user_splash': (context) => const UserSplashScreen(),
           '/admin_login': (context) => const AdminLoginScreen(),
           '/admin_home': (context) => const AdminShellScreen(),
           '/admin_management': (context) => const AdminManagementScreen(),
