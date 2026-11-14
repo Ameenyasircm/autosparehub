@@ -4,6 +4,7 @@ import '../../../models/product_model.dart';
 import '../../../providers/order_provider.dart';
 import '../../../providers/user_auth_provider.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/responsive_helper.dart';
 import '../order_success_screen.dart';
 import 'order_access_guard.dart';
 
@@ -29,10 +30,12 @@ class OrderPlacementSheet extends StatefulWidget {
     VoidCallback? onOrderPlaced,
     int initialQuantity = 1,
   }) {
+    final isTablet = ResponsiveHelper.isTablet(context);
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
+      constraints: isTablet ? const BoxConstraints(maxWidth: 540) : null,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),

@@ -97,8 +97,15 @@ Future<void> _showMessage(
           ),
         ],
       ),
-      content: Text(message,
-          style: const TextStyle(color: AppColors.secondaryText, fontSize: 14, height: 1.4)),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: SingleChildScrollView(
+          child: Text(
+            message,
+            style: const TextStyle(color: AppColors.secondaryText, fontSize: 14, height: 1.4),
+          ),
+        ),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),

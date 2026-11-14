@@ -3,6 +3,7 @@ import 'package:auto_spare_hub/utils/snackbar_helper.dart';
 import 'package:flutter/services.dart';
 import '../../../services/contact_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/responsive_helper.dart';
 
 /// Modal bottom sheet allowing users to view dynamic store contact details
 /// and immediately initiate direct phone call or WhatsApp messaging intents.
@@ -10,10 +11,12 @@ class ContactUsSheet extends StatefulWidget {
   const ContactUsSheet({super.key});
 
   static Future<void> show(BuildContext context) {
+    final isTablet = ResponsiveHelper.isTablet(context);
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: isTablet ? const BoxConstraints(maxWidth: 520) : null,
       builder: (_) => const ContactUsSheet(),
     );
   }

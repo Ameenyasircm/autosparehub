@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/responsive_helper.dart';
 import 'cart_screen.dart';
 
 /// Product detail sheet and screen matching Image 4 with precision:
@@ -19,10 +20,12 @@ class UserProductDetailScreen extends StatefulWidget {
   const UserProductDetailScreen({super.key, required this.product});
 
   static Future<void> show(BuildContext context, ProductModel product) {
+    final isTablet = ResponsiveHelper.isTablet(context);
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: isTablet ? const BoxConstraints(maxWidth: 580) : null,
       builder: (_) => UserProductDetailSheet(product: product),
     );
   }
@@ -37,6 +40,7 @@ class _UserProductDetailScreenState extends State<UserProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final isTablet = ResponsiveHelper.isTablet(context);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -86,19 +90,25 @@ class _UserProductDetailScreenState extends State<UserProductDetailScreen> {
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.cardBorder, width: 1.2),
-            ),
-            padding: const EdgeInsets.all(20),
-            child: _ProductDetailContent(
-              product: widget.product,
-              quantity: _quantity,
-              onQuantityChanged: (q) => setState(() => _quantity = q),
-              onAdded: () => Navigator.of(context).pop(),
+          padding: EdgeInsets.all(isTablet ? 24 : 16),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: isTablet ? 960 : 600),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.cardBorder, width: 1.2),
+                ),
+                padding: EdgeInsets.all(isTablet ? 28 : 20),
+                child: _ProductDetailContent(
+                  product: widget.product,
+                  quantity: _quantity,
+                  onQuantityChanged: (q) => setState(() => _quantity = q),
+                  onAdded: () => Navigator.of(context).pop(),
+                  twoColumn: isTablet,
+                ),
+              ),
             ),
           ),
         ),
@@ -171,12 +181,14 @@ class _ProductDetailContent extends StatelessWidget {
   final int quantity;
   final ValueChanged<int> onQuantityChanged;
   final VoidCallback? onAdded;
+  final bool twoColumn;
 
   const _ProductDetailContent({
     required this.product,
     required this.quantity,
     required this.onQuantityChanged,
     this.onAdded,
+    this.twoColumn = false,
   });
 
   void _handleAdd(BuildContext context) {
@@ -204,33 +216,35 @@ class _ProductDetailContent extends StatelessWidget {
     onAdded?.call();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final unitPrice = product.price ?? 0.0;
-    final totalPrice = unitPrice * quantity;
+  Widget _buildImageShowcase({double height = 165, bool framed = false}) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      padding: framed ? const EdgeInsets.all(20) : EdgeInsets.zero,
+      alignment: Alignment.center,
+      decoration: framed
+          ? BoxDecoration(
+              color: const Color(0xFFF7F8FA),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFECEFF3), width: 1.2),
+            )
+          : null,
+      child: Image.network(
+        product.imageUrl,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => Icon(
+          Icons.precision_manufacturing_outlined,
+          size: framed ? 88 : 72,
+          color: AppColors.primaryGold,
+        ),
+      ),
+    );
+  }
 
+  Widget _buildDetailsColumn(BuildContext context, double totalPrice) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Product Photo
-        Center(
-          child: Container(
-            height: 165,
-            width: double.infinity,
-            alignment: Alignment.center,
-            child: Image.network(
-              product.imageUrl,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.precision_manufacturing_outlined,
-                size: 72,
-                color: AppColors.primaryGold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
         // Product Title
         Text(
           product.name,
@@ -309,151 +323,100 @@ class _ProductDetailContent extends StatelessWidget {
 
         const SizedBox(height: 24),
 
-        // Quantity selection hidden: the part is added with quantity 1;
-        // quantity can still be changed in the cart.
-        /*
-        // --- REQUESTED QUANTITY & STEPPER ---
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Requested quantity',
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.darkCharcoal,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Select how many you need',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-
-            // Stepper: - [Qty] + (Warm orange/gold background with white qty box)
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.warmGold,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  InkWell(
-                    onTap: quantity > 1 ? () => onQuantityChanged(quantity - 1) : null,
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.remove,
-                        size: 18,
-                        color: AppColors.darkButton,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: 44,
-                    height: 28,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '$quantity',
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.darkCharcoal,
-                      ),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => onQuantityChanged(quantity + 1),
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.add,
-                        size: 18,
-                        color: AppColors.darkButton,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 24),
-        */
-
         // --- BOTTOM ACTION ROW ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Price & Total Price label
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '₹${totalPrice.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.darkCharcoal,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '₹${totalPrice.toStringAsFixed(0)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.darkCharcoal,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 1),
-                const Text(
-                  'Total Price',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: AppColors.secondaryText,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 1),
+                  const Text(
+                    'Total Price',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.secondaryText,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 12),
 
             // "+ Add to Cart" Button
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.darkButton,
-                foregroundColor: AppColors.warmGold,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            Flexible(
+              flex: 0,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.darkButton,
+                  foregroundColor: AppColors.warmGold,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
-              ),
-              onPressed: () => _handleAdd(context),
-              icon: const Icon(Icons.add, size: 18, color: AppColors.warmGold),
-              label: const Text(
-                'Add to Cart',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.warmGold,
+                onPressed: () => _handleAdd(context),
+                icon: const Icon(Icons.add, size: 18, color: AppColors.warmGold),
+                label: const Text(
+                  'Add to Cart',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.warmGold,
+                  ),
                 ),
               ),
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final unitPrice = product.price ?? 0.0;
+    final totalPrice = unitPrice * quantity;
+
+    if (twoColumn) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 5,
+            child: _buildImageShowcase(height: 300, framed: true),
+          ),
+          const SizedBox(width: 28),
+          Expanded(
+            flex: 6,
+            child: _buildDetailsColumn(context, totalPrice),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(child: _buildImageShowcase(height: 165)),
+        const SizedBox(height: 16),
+        _buildDetailsColumn(context, totalPrice),
       ],
     );
   }
@@ -471,6 +434,7 @@ class _ProductDetailContent extends StatelessWidget {
               color: AppColors.secondaryText,
             ),
           ),
+          const SizedBox(width: 12),
           Flexible(
             child: Text(
               value,

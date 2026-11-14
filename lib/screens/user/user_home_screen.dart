@@ -15,6 +15,7 @@ import '../../providers/product_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/responsive_helper.dart';
 import 'cart_screen.dart';
 import 'user_login_screen.dart';
 import 'user_orders_screen.dart';
@@ -312,25 +313,629 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           SystemNavigator.pop();
         }
       },
-      child: Scaffold(
-        backgroundColor: AppColors.backgroundLight,
-        appBar: _buildTopAppBar(context, cart, auth),
-        body: SafeArea(
-          top: false,
-          child: IndexedStack(
-            index: _currentTabIndex,
+      child: ResponsiveHelper.isTablet(context)
+          ? _buildTabletLayout(context, cart, auth)
+          : Scaffold(
+              backgroundColor: AppColors.backgroundLight,
+              appBar: _buildTopAppBar(context, cart, auth),
+              body: SafeArea(
+                top: false,
+                child: IndexedStack(
+                  index: _currentTabIndex,
+                  children: [
+                    _buildStorefrontCatalogTab(context),
+                    const UserOrdersScreen(showAppBar: false),
+                    _buildProfileTab(context, auth),
+                  ],
+                ),
+              ),
+              bottomNavigationBar: SafeArea(
+                top: false,
+                child: _buildBottomNav(context),
+              ),
+            ),
+    );
+  }
+
+  // =========================================================================
+  // 1A. TABLET SHELL (>= 720dp) — PERSISTENT SIDEBAR RAIL
+  // =========================================================================
+  Widget _buildTabletLayout(
+    BuildContext context,
+    CartProvider cart,
+    UserAuthProvider auth,
+  ) {
+    final orderProvider = context.watch<OrderProvider>();
+    final customer = auth.currentCustomer;
+    final activeOrdersCount = orderProvider.customerOrders
+        .where((o) => o.isPending || o.isConfirmed || o.isDispatched)
+        .length;
+
+    return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildTabletSidebar(
+            context,
+            cart: cart,
+            auth: auth,
+            activeOrdersCount: customer == null ? 0 : activeOrdersCount,
+          ),
+          Expanded(
+            child: Scaffold(
+              backgroundColor: AppColors.backgroundLight,
+              appBar: _buildTabletContentAppBar(context, cart, auth),
+              body: SafeArea(
+                top: false,
+                left: false,
+                child: IndexedStack(
+                  index: _currentTabIndex,
+                  children: [
+                    _buildStorefrontCatalogTab(context),
+                    const UserOrdersScreen(showAppBar: false),
+                    _buildProfileTab(context, auth),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabletSidebar(
+    BuildContext context, {
+    required CartProvider cart,
+    required UserAuthProvider auth,
+    required int activeOrdersCount,
+  }) {
+    final customer = auth.currentCustomer;
+
+    final String statusLabel;
+    final Color statusBg;
+    if (customer == null) {
+      statusLabel = 'SIGN IN';
+      statusBg = AppColors.warmGold.withValues(alpha: 0.22);
+    } else if (auth.isApproved) {
+      statusLabel = 'APPROVED';
+      statusBg = const Color(0xFF065F46);
+    } else if (auth.isPending) {
+      statusLabel = 'PENDING';
+      statusBg = const Color(0xFFB45309);
+    } else {
+      statusLabel = 'REJECTED';
+      statusBg = const Color(0xFF991B1B);
+    }
+
+    return Container(
+      width: 260,
+      decoration: const BoxDecoration(
+        color: AppColors.darkCharcoal,
+        border: Border(
+          right: BorderSide(color: Color(0xFF262933), width: 1.2),
+        ),
+      ),
+      child: SafeArea(
+        right: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 1. App Header & Emblem
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.warmGold, width: 1.6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.warmGold.withValues(alpha: 0.25),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/AutoSpareLogo.jpg',
+                        width: 38,
+                        height: 38,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => const Icon(
+                          Icons.settings_suggest_rounded,
+                          color: AppColors.warmGold,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'AutoSpare Hub',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        Text(
+                          'Garage Portal',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.warmGold,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 2. Active Customer Status Box
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              child: Material(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () {
+                    if (customer == null) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const UserLoginScreen()),
+                      );
+                    } else {
+                      if (_currentTabIndex != UserHomeScreen.tabProfile) {
+                        _tabHistory.add(_currentTabIndex);
+                      }
+                      setState(() => _currentTabIndex = UserHomeScreen.tabProfile);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 15,
+                          backgroundColor: AppColors.warmGold.withValues(alpha: 0.2),
+                          child: customer == null
+                              ? const Icon(
+                                  Icons.person_outline_rounded,
+                                  color: AppColors.warmGold,
+                                  size: 16,
+                                )
+                              : Text(
+                                  (customer.name.isNotEmpty ? customer.name[0] : 'G').toUpperCase(),
+                                  style: const TextStyle(
+                                    color: AppColors.warmGold,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                customer?.name ?? 'Guest Garage',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Container(
+                                margin: const EdgeInsets.only(top: 3),
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: statusBg,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  statusLabel,
+                                  style: TextStyle(
+                                    color: customer == null ? AppColors.warmGold : Colors.white,
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          size: 16,
+                          color: Colors.white38,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 8),
+            const Divider(color: Colors.white12, height: 1),
+            const SizedBox(height: 8),
+
+            // 3. Navigation Rail Destinations
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                children: [
+                  _buildTabletSidebarItem(
+                    icon: Icons.storefront_rounded,
+                    title: 'Browse Parts',
+                    isSelected: _currentTabIndex == UserHomeScreen.tabHome,
+                    onTap: () {
+                      if (_currentTabIndex == UserHomeScreen.tabHome &&
+                          (_selectedCompany != null ||
+                              _selectedCategory != null ||
+                              _searchController.text.isNotEmpty)) {
+                        _onBackToCompanies(context.read<ProductProvider>());
+                        return;
+                      }
+                      if (_currentTabIndex != UserHomeScreen.tabHome) {
+                        _tabHistory.add(_currentTabIndex);
+                      }
+                      setState(() => _currentTabIndex = UserHomeScreen.tabHome);
+                    },
+                  ),
+                  _buildTabletSidebarItem(
+                    icon: Icons.receipt_long_rounded,
+                    title: 'My Orders',
+                    isSelected: _currentTabIndex == UserHomeScreen.tabOrders,
+                    badge: activeOrdersCount > 0 ? '$activeOrdersCount' : null,
+                    badgeColor: const Color(0xFFD97706),
+                    onTap: () {
+                      if (_currentTabIndex != UserHomeScreen.tabOrders) {
+                        _tabHistory.add(_currentTabIndex);
+                      }
+                      setState(() => _currentTabIndex = UserHomeScreen.tabOrders);
+                      if (customer != null) {
+                        context.read<OrderProvider>().listenToCustomerOrders(
+                              customer.id,
+                              userPhone: customer.phone,
+                            );
+                      }
+                    },
+                  ),
+                  _buildTabletSidebarItem(
+                    icon: Icons.shopping_cart_outlined,
+                    title: 'Shopping Cart',
+                    isSelected: false,
+                    badge: cart.totalItemCount > 0 ? '${cart.totalItemCount}' : null,
+                    badgeColor: AppColors.warmGold,
+                    badgeTextColor: AppColors.darkHeader,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const CartScreen()),
+                      );
+                    },
+                  ),
+                  _buildTabletSidebarItem(
+                    icon: Icons.person_rounded,
+                    title: 'Account & Profile',
+                    isSelected: _currentTabIndex == UserHomeScreen.tabProfile,
+                    onTap: () {
+                      if (_currentTabIndex != UserHomeScreen.tabProfile) {
+                        _tabHistory.add(_currentTabIndex);
+                      }
+                      setState(() => _currentTabIndex = UserHomeScreen.tabProfile);
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+                  const Divider(color: Colors.white12, height: 1),
+                  const SizedBox(height: 12),
+
+                  _buildTabletSidebarActionItem(
+                    icon: Icons.support_agent_rounded,
+                    title: 'Contact Store',
+                    subtitle: 'Helpline & WhatsApp Support',
+                    iconColor: const Color(0xFF0D9488),
+                    onTap: () => ContactUsSheet.show(context),
+                  ),
+                ],
+              ),
+            ),
+
+            // 4. Sidebar Footer
+            const Divider(color: Colors.white12, height: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              child: customer != null
+                  ? _buildTabletSidebarActionItem(
+                      icon: Icons.logout_rounded,
+                      title: 'Sign Out',
+                      iconColor: AppColors.error,
+                      onTap: () async {
+                        await auth.logout();
+                        if (context.mounted) {
+                          context.read<CartProvider>().onUserLogout();
+                          context.read<OrderProvider>().clearCustomerOrders();
+                          ScaffoldMessenger.of(context).showSnackBarAutoHide(
+                            const SnackBar(content: Text('Logged out successfully.')),
+                          );
+                        }
+                      },
+                    )
+                  : _buildTabletSidebarActionItem(
+                      icon: Icons.login_rounded,
+                      title: 'Login / Register',
+                      iconColor: AppColors.warmGold,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const UserLoginScreen()),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabletSidebarItem({
+    required IconData icon,
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+    String? badge,
+    Color? badgeColor,
+    Color badgeTextColor = Colors.white,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
+      child: Material(
+        color: isSelected ? AppColors.warmGold.withValues(alpha: 0.15) : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: isSelected
+                  ? Border.all(color: AppColors.warmGold.withValues(alpha: 0.4), width: 1)
+                  : Border.all(color: Colors.transparent),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: isSelected ? AppColors.warmGold : Colors.white70,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.85),
+                      fontSize: 13,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (badge != null) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: badgeColor ?? AppColors.warmGold,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      badge,
+                      style: TextStyle(
+                        color: badgeTextColor,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabletSidebarActionItem({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    Color? iconColor,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          child: Row(
             children: [
-              _buildStorefrontCatalogTab(context),
-              const UserOrdersScreen(showAppBar: false),
-              _buildProfileTab(context, auth),
+              Icon(icon, size: 19, color: iconColor ?? Colors.white70),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.warmGold,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
-        bottomNavigationBar: SafeArea(
-          top: false,
-          child: _buildBottomNav(context),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildTabletContentAppBar(
+    BuildContext context,
+    CartProvider cart,
+    UserAuthProvider auth,
+  ) {
+    final String sectionTitle;
+    switch (_currentTabIndex) {
+      case UserHomeScreen.tabOrders:
+        sectionTitle = 'My Spare Part Orders';
+        break;
+      case UserHomeScreen.tabProfile:
+        sectionTitle = 'Profile & Garage Account';
+        break;
+      default:
+        sectionTitle = 'Browse Spare Parts';
+        break;
+    }
+
+    return AppBar(
+      backgroundColor: AppColors.darkHeader,
+      automaticallyImplyLeading: false,
+      elevation: 0,
+      toolbarHeight: 56,
+      titleSpacing: 20,
+      title: Text(
+        sectionTitle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w800,
+          fontSize: 16.5,
         ),
       ),
+      actions: [
+        if (auth.isPending)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 11),
+            child: InkWell(
+              onTap: () => setState(() => _currentTabIndex = UserHomeScreen.tabProfile),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade900.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.shade400, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.hourglass_empty_rounded, color: Colors.amber, size: 13),
+                    SizedBox(width: 4),
+                    Text(
+                      'Pending Approval',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16, left: 8),
+          child: Center(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const CartScreen()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF22262F),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.shopping_cart_outlined,
+                      color: AppColors.warmGold,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      cart.totalItemCount > 0 ? 'Cart (${cart.totalItemCount})' : 'Cart',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -658,11 +1263,57 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     );
   }
 
-  int _gridCrossAxisCount(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    if (width >= 900) return 4;
-    if (width >= 600) return 3;
+  int _adaptiveGridColumns(double availableWidth) {
+    if (availableWidth >= 900) return 4;
+    if (availableWidth >= 540) return 3;
     return 2;
+  }
+
+  SliverGridDelegateWithFixedCrossAxisCount _buildCategoryGridDelegate({
+    required BuildContext context,
+    required double availableWidth,
+    double horizontalPadding = 32,
+    bool hasCompanyLabel = false,
+  }) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.4);
+    final crossAxisCount = _adaptiveGridColumns(availableWidth);
+    const spacing = 12.0;
+    final colWidth =
+        (availableWidth - horizontalPadding - (crossAxisCount - 1) * spacing) /
+            crossAxisCount;
+    final imageHeight = (colWidth * 0.72).clamp(92.0, 150.0);
+    final detailsHeight = (hasCompanyLabel ? 98.0 : 72.0) * textScale + 18.0;
+    final cardHeight = (imageHeight + detailsHeight).ceilToDouble();
+
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: crossAxisCount,
+      mainAxisExtent: cardHeight,
+      crossAxisSpacing: spacing,
+      mainAxisSpacing: spacing,
+    );
+  }
+
+  SliverGridDelegateWithFixedCrossAxisCount _buildProductGridDelegate({
+    required BuildContext context,
+    required double availableWidth,
+    double horizontalPadding = 32,
+  }) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.4);
+    final crossAxisCount = _adaptiveGridColumns(availableWidth);
+    const spacing = 12.0;
+    final colWidth =
+        (availableWidth - horizontalPadding - (crossAxisCount - 1) * spacing) /
+            crossAxisCount;
+    final imageHeight = (colWidth * 0.68).clamp(88.0, 146.0);
+    final detailsHeight = 114.0 * textScale + 58.0;
+    final cardHeight = (imageHeight + detailsHeight).ceilToDouble();
+
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: crossAxisCount,
+      mainAxisExtent: cardHeight,
+      crossAxisSpacing: spacing,
+      mainAxisSpacing: spacing,
+    );
   }
 
   void _selectCompany(CompanyModel company, ProductProvider productProvider) {
@@ -860,21 +1511,21 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           ),
 
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
+            child: LayoutBuilder(
+              builder: (context, constraints) => GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                gridDelegate: _buildProductGridDelegate(
+                  context: context,
+                  availableWidth: constraints.maxWidth,
+                ),
+                itemCount: searchProducts.length,
+                itemBuilder: (context, index) {
+                  return _buildProductCard(context, searchProducts[index]);
+                },
               ),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: _gridCrossAxisCount(context),
-                childAspectRatio: 0.58,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: searchProducts.length,
-              itemBuilder: (context, index) {
-                return _buildProductCard(context, searchProducts[index]);
-              },
             ),
           ),
         ] else if (isSearching && searchProducts.isEmpty && filteredCompanies.isNotEmpty) ...[
@@ -915,31 +1566,31 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             ),
           ),
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
+            child: LayoutBuilder(
+              builder: (context, constraints) => GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                gridDelegate: _buildCategoryGridDelegate(
+                  context: context,
+                  availableWidth: constraints.maxWidth,
+                ),
+                itemCount: filteredCompanies.length,
+                itemBuilder: (context, index) {
+                  final company = filteredCompanies[index];
+                  final catCount = activeCategories
+                      .where((c) => c.companyId == company.id)
+                      .length;
+                  return _buildCompanyCard(
+                    context,
+                    company,
+                    catCount,
+                    categoryProvider,
+                    productProvider,
+                  );
+                },
               ),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: _gridCrossAxisCount(context),
-                childAspectRatio: 0.84,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: filteredCompanies.length,
-              itemBuilder: (context, index) {
-                final company = filteredCompanies[index];
-                final catCount = activeCategories
-                    .where((c) => c.companyId == company.id)
-                    .length;
-                return _buildCompanyCard(
-                  context,
-                  company,
-                  catCount,
-                  categoryProvider,
-                  productProvider,
-                );
-              },
             ),
           ),
         ] else if (isSearching &&
@@ -983,127 +1634,128 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             ),
           ),
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
+            child: LayoutBuilder(
+              builder: (context, constraints) => GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                gridDelegate: _buildCategoryGridDelegate(
+                  context: context,
+                  availableWidth: constraints.maxWidth,
+                  hasCompanyLabel: true,
+                ),
+                itemCount: filteredCategories.length,
+                itemBuilder: (context, index) {
+                  final category = filteredCategories[index];
+                  final parentCompany = companyById[category.companyId];
+                  if (parentCompany == null) return const SizedBox.shrink();
+                  final spareCount = productProvider.products
+                      .where((p) =>
+                          p.isActive &&
+                          p.companyId == parentCompany.id &&
+                          p.categoryId == category.id)
+                      .length;
+                  return _buildCategoryCard(
+                    context,
+                    parentCompany,
+                    category,
+                    spareCount,
+                    productProvider,
+                    companyLabel: parentCompany.name,
+                  );
+                },
               ),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: _gridCrossAxisCount(context),
-                childAspectRatio: 0.84,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: filteredCategories.length,
-              itemBuilder: (context, index) {
-                final category = filteredCategories[index];
-                final parentCompany = companyById[category.companyId];
-                if (parentCompany == null) return const SizedBox.shrink();
-                final spareCount = productProvider.products
-                    .where((p) =>
-                        p.isActive &&
-                        p.companyId == parentCompany.id &&
-                        p.categoryId == category.id)
-                    .length;
-                return _buildCategoryCard(
-                  context,
-                  parentCompany,
-                  category,
-                  spareCount,
-                  productProvider,
-                  companyLabel: parentCompany.name,
-                );
-              },
             ),
           ),
         ] else if (isSearching) ...[
           Expanded(child: _buildEmptyCompaniesState(query, productProvider)),
         ] else ...[
           Expanded(
-            child: RefreshIndicator(
-              color: AppColors.warmGold,
-              backgroundColor: AppColors.darkHeader,
-              onRefresh: () async {
-                await Future.wait([
-                  companyProvider.fetchCompanies(),
-                  categoryProvider.fetchCategories(),
-                  productProvider.fetchProducts(),
-                ]);
-              },
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: _buildWelcomePosterBanner(context),
+            child: LayoutBuilder(
+              builder: (context, constraints) => RefreshIndicator(
+                color: AppColors.warmGold,
+                backgroundColor: AppColors.darkHeader,
+                onRefresh: () async {
+                  await Future.wait([
+                    companyProvider.fetchCompanies(),
+                    categoryProvider.fetchCategories(),
+                    productProvider.fetchProducts(),
+                  ]);
+                },
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
                   ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 2, 18, 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Vehicle Companies',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.darkHeader,
-                                letterSpacing: -0.2,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _buildWelcomePosterBanner(context),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 2, 18, 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Vehicle Companies',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.darkHeader,
+                                  letterSpacing: -0.2,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${activeCompanies.length} ${activeCompanies.length == 1 ? 'Company' : 'Companies'}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.secondaryText,
+                            const SizedBox(width: 8),
+                            Text(
+                              '${activeCompanies.length} ${activeCompanies.length == 1 ? 'Company' : 'Companies'}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.secondaryText,
+                              ),
                             ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (activeCompanies.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _buildEmptyCompaniesState('', productProvider),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+                        sliver: SliverGrid(
+                          gridDelegate: _buildCategoryGridDelegate(
+                            context: context,
+                            availableWidth: constraints.maxWidth,
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (activeCompanies.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _buildEmptyCompaniesState('', productProvider),
-                    )
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
-                      sliver: SliverGrid(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: _gridCrossAxisCount(context),
-                          childAspectRatio: 0.84,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final company = activeCompanies[index];
-                            final catCount = activeCategories
-                                .where((c) => c.companyId == company.id)
-                                .length;
-                            return _buildCompanyCard(
-                              context,
-                              company,
-                              catCount,
-                              categoryProvider,
-                              productProvider,
-                            );
-                          },
-                          childCount: activeCompanies.length,
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final company = activeCompanies[index];
+                              final catCount = activeCategories
+                                  .where((c) => c.companyId == company.id)
+                                  .length;
+                              return _buildCompanyCard(
+                                context,
+                                company,
+                                catCount,
+                                categoryProvider,
+                                productProvider,
+                              );
+                            },
+                            childCount: activeCompanies.length,
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1819,21 +2471,21 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
           ),
 
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
+            child: LayoutBuilder(
+              builder: (context, constraints) => GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                gridDelegate: _buildProductGridDelegate(
+                  context: context,
+                  availableWidth: constraints.maxWidth,
+                ),
+                itemCount: searchProducts.length,
+                itemBuilder: (context, index) {
+                  return _buildProductCard(context, searchProducts[index]);
+                },
               ),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: _gridCrossAxisCount(context),
-                childAspectRatio: 0.58,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: searchProducts.length,
-              itemBuilder: (context, index) {
-                return _buildProductCard(context, searchProducts[index]);
-              },
             ),
           ),
         ] else if (isSearching && searchProducts.isEmpty && filteredCategories.isNotEmpty) ...[
@@ -1874,34 +2526,34 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             ),
           ),
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
+            child: LayoutBuilder(
+              builder: (context, constraints) => GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                gridDelegate: _buildCategoryGridDelegate(
+                  context: context,
+                  availableWidth: constraints.maxWidth,
+                ),
+                itemCount: filteredCategories.length,
+                itemBuilder: (context, index) {
+                  final category = filteredCategories[index];
+                  final spareCount = productProvider.products
+                      .where((p) =>
+                          p.isActive &&
+                          p.companyId == company.id &&
+                          p.categoryId == category.id)
+                      .length;
+                  return _buildCategoryCard(
+                    context,
+                    company,
+                    category,
+                    spareCount,
+                    productProvider,
+                  );
+                },
               ),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: _gridCrossAxisCount(context),
-                childAspectRatio: 0.84,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: filteredCategories.length,
-              itemBuilder: (context, index) {
-                final category = filteredCategories[index];
-                final spareCount = productProvider.products
-                    .where((p) =>
-                        p.isActive &&
-                        p.companyId == company.id &&
-                        p.categoryId == category.id)
-                    .length;
-                return _buildCategoryCard(
-                  context,
-                  company,
-                  category,
-                  spareCount,
-                  productProvider,
-                );
-              },
             ),
           ),
         ] else if (isSearching) ...[
@@ -1941,34 +2593,34 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                         );
                       },
                     )
-                  : GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
-                      physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
+                  : LayoutBuilder(
+                      builder: (context, constraints) => GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        gridDelegate: _buildCategoryGridDelegate(
+                          context: context,
+                          availableWidth: constraints.maxWidth,
+                        ),
+                        itemCount: companyCategories.length,
+                        itemBuilder: (context, index) {
+                          final category = companyCategories[index];
+                          final spareCount = productProvider.products
+                              .where((p) =>
+                                  p.isActive &&
+                                  p.companyId == company.id &&
+                                  p.categoryId == category.id)
+                              .length;
+                          return _buildCategoryCard(
+                            context,
+                            company,
+                            category,
+                            spareCount,
+                            productProvider,
+                          );
+                        },
                       ),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: _gridCrossAxisCount(context),
-                        childAspectRatio: 0.84,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemCount: companyCategories.length,
-                      itemBuilder: (context, index) {
-                        final category = companyCategories[index];
-                        final spareCount = productProvider.products
-                            .where((p) =>
-                                p.isActive &&
-                                p.companyId == company.id &&
-                                p.categoryId == category.id)
-                            .length;
-                        return _buildCategoryCard(
-                          context,
-                          company,
-                          category,
-                          spareCount,
-                          productProvider,
-                        );
-                      },
                     ),
             ),
           ),
@@ -2404,21 +3056,21 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       );
                     },
                   )
-                : GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(14, 4, 14, 16),
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
+                : LayoutBuilder(
+                    builder: (context, constraints) => GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      gridDelegate: _buildProductGridDelegate(
+                        context: context,
+                        availableWidth: constraints.maxWidth,
+                      ),
+                      itemCount: displayedProducts.length,
+                      itemBuilder: (context, index) {
+                        return _buildProductCard(context, displayedProducts[index]);
+                      },
                     ),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: _gridCrossAxisCount(context),
-                      childAspectRatio: 0.58,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemCount: displayedProducts.length,
-                    itemBuilder: (context, index) {
-                      return _buildProductCard(context, displayedProducts[index]);
-                    },
                   ),
           ),
         ),
@@ -2775,7 +3427,8 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     );
                   },
                   child: Container(
-                    height: 34,
+                    constraints: const BoxConstraints(minHeight: 34),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFBFBFC),
                       borderRadius: BorderRadius.circular(8),
@@ -2789,12 +3442,17 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       children: const [
                         Icon(Icons.add, size: 15, color: AppColors.primaryGold),
                         SizedBox(width: 4),
-                        Text(
-                          'Add to Cart',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.darkCharcoal,
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Add to Cart',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.darkCharcoal,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -2880,113 +3538,117 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
       return Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.darkHeader,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.warmGold.withValues(alpha: 0.3),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/AutoSpareLogo.jpg',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              const Text(
-                'Welcome to Auto Spare Hub',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.darkHeader,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Sign in with your garage mobile number to view orders, check approval status, and manage spare part requests.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.secondaryText,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.darkButton,
-                    foregroundColor: AppColors.warmGold,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const UserLoginScreen(),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.darkHeader,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.warmGold.withValues(alpha: 0.3),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
-                    );
-                  },
-                  child: const Text(
-                    'Login to Garage',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                    ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.darkCharcoal,
-                    side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/AutoSpareLogo.jpg',
+                      fit: BoxFit.cover,
                     ),
                   ),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const UserLoginScreen(initialIsRegister: true),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    'Register New Garage',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                  ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              TextButton.icon(
-                onPressed: () => ContactUsSheet.show(context),
-                icon: const Icon(Icons.support_agent_rounded, size: 18, color: AppColors.warmGold),
-                label: const Text(
-                  'Need Help? Contact Us',
+                const SizedBox(height: 18),
+                const Text(
+                  'Welcome to Auto Spare Hub',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
                     color: AppColors.darkHeader,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                const Text(
+                  'Sign in with your garage mobile number to view orders, check approval status, and manage spare part requests.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.secondaryText,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.darkButton,
+                      foregroundColor: AppColors.warmGold,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const UserLoginScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Login to Garage',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.darkCharcoal,
+                      side: const BorderSide(color: AppColors.borderSoft, width: 1.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const UserLoginScreen(initialIsRegister: true),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Register New Garage',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextButton.icon(
+                  onPressed: () => ContactUsSheet.show(context),
+                  icon: const Icon(Icons.support_agent_rounded, size: 18, color: AppColors.warmGold),
+                  label: const Text(
+                    'Need Help? Contact Us',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.darkHeader,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -2994,96 +3656,104 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
     // Logged in User Profile Details
     final customer = auth.currentCustomer;
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Garage Info Card
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE5E9F0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundColor: AppColors.darkHeader,
-                    child: Text(
-                      customer?.name.isNotEmpty == true
-                          ? customer!.name[0].toUpperCase()
-                          : 'G',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.warmGold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          customer?.name ?? 'Garage User',
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.darkHeader,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '+91 ${customer?.phone ?? ''}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Garage Info Card
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE5E9F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
-              // Status Pill
-              if (auth.isApproved)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade200),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.check_circle_rounded, color: AppColors.success, size: 16),
-                      SizedBox(width: 6),
-                      Text(
-                        'Verified & Approved Garage Customer',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.success,
-                          fontWeight: FontWeight.w700,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 26,
+                        backgroundColor: AppColors.darkHeader,
+                        child: Text(
+                          customer?.name.isNotEmpty == true
+                              ? customer!.name[0].toUpperCase()
+                              : 'G',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.warmGold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              customer?.name ?? 'Garage User',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.darkHeader,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '+91 ${customer?.phone ?? ''}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.secondaryText,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                )
-              else if (auth.isPending)
+                  const SizedBox(height: 14),
+                  // Status Pill
+                  if (auth.isApproved)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.check_circle_rounded, color: AppColors.success, size: 16),
+                          SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'Verified & Approved Garage Customer',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: AppColors.success,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (auth.isPending)
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -3334,7 +4004,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             ),
           ),
         ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 

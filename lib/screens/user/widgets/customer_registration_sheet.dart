@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/cart_provider.dart';
 import '../../../providers/user_auth_provider.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/responsive_helper.dart';
 import '../../../widgets/app_submit_button.dart';
 import '../../../widgets/app_text_field.dart';
 import '../user_login_screen.dart';
@@ -434,11 +435,18 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<UserAuthProvider>();
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final isTablet = ResponsiveHelper.isTablet(context);
 
     return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 20),
-        child: SingleChildScrollView(
+      child: Center(
+        heightFactor: 1.0,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isTablet ? 520 : double.infinity,
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 20),
+            child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -493,6 +501,8 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
                         alignment: Alignment.center,
                         child: Text(
                           'Register Account',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: !_isLoginMode ? AppColors.primaryGold : AppColors.darkCharcoal,
                             fontWeight: FontWeight.w800,
@@ -528,6 +538,8 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
                         alignment: Alignment.center,
                         child: Text(
                           'Sign In',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: _isLoginMode ? AppColors.primaryGold : AppColors.darkCharcoal,
                             fontWeight: FontWeight.w800,
@@ -613,6 +625,8 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
           ],
         ),
       ),
+      ),
+        ),
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/responsive_helper.dart';
 import 'order_success_screen.dart';
 import 'user_home_screen.dart';
 import 'user_login_screen.dart';
@@ -185,14 +186,15 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     final cartProvider = context.watch<CartProvider>();
     final orderProvider = context.watch<OrderProvider>();
     final isPlacing = orderProvider.isLoading;
+    final isTablet = ResponsiveHelper.isTablet(context);
+    final isWideTablet = ResponsiveHelper.isWideTablet(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F2F4), // Clean Flipkart light-grey surface
+      backgroundColor: const Color(0xFFF1F2F4), // Clean light-grey surface
       appBar: AppBar(
         backgroundColor: AppColors.darkHeader,
         elevation: 0,
@@ -208,52 +210,207 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
             fontSize: 18,
           ),
         ),
+        actions: isTablet
+            ? [
+                IconButton(
+                  tooltip: 'Home',
+                  icon: const Icon(Icons.home_outlined, color: Colors.white),
+                  onPressed: () => UserHomeScreen.openTab(context, UserHomeScreen.tabHome),
+                ),
+                IconButton(
+                  tooltip: 'My Orders',
+                  icon: const Icon(Icons.receipt_long_rounded, color: Colors.white),
+                  onPressed: () => UserHomeScreen.openTab(context, UserHomeScreen.tabOrders),
+                ),
+                IconButton(
+                  tooltip: 'Profile',
+                  icon: const Icon(Icons.person_outline_rounded, color: AppColors.warmGold),
+                  onPressed: () => UserHomeScreen.openTab(context, UserHomeScreen.tabProfile),
+                ),
+                const SizedBox(width: 8),
+              ]
+            : null,
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (cartProvider.isNotEmpty)
-              _buildStickyCheckoutBar(context, cartProvider, isPlacing),
-            _buildBottomNav(context),
-          ],
-        ),
-      ),
+      bottomNavigationBar: isTablet
+          ? null
+          : SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (cartProvider.isNotEmpty)
+                    _buildStickyCheckoutBar(context, cartProvider, isPlacing),
+                  _buildBottomNav(context),
+                ],
+              ),
+            ),
       body: SafeArea(
         top: false,
         child: cartProvider.isEmpty
             ? _buildEmptyCart(context)
-            : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Item Cards List (Flipkart Style Dual-Column Layout)
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: cartProvider.items.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final item = cartProvider.items[index];
-                        return _buildCartItemCard(item, cartProvider);
-                      },
+            : isTablet
+                ? Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1120),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                child: ListView.separated(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: cartProvider.items.length,
+                                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    final item = cartProvider.items[index];
+                                    return _buildCartItemCard(item, cartProvider);
+                                  },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            SizedBox(
+                              width: isWideTablet ? 380 : 320,
+                              child: SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    _buildRemarksCard(),
+                                    const SizedBox(height: 14),
+                                    _buildPriceDetailsCard(cartProvider),
+                                    const SizedBox(height: 14),
+                                    _buildTabletCheckoutCard(
+                                      context,
+                                      cartProvider,
+                                      isPlacing,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+                  )
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(14, 14, 14, 20),
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Item Cards List (Flipkart Style Dual-Column Layout)
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: cartProvider.items.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final item = cartProvider.items[index];
+                            return _buildCartItemCard(item, cartProvider);
+                          },
+                        ),
 
-                    const SizedBox(height: 14),
+                        const SizedBox(height: 14),
 
-                    // Optional Customer Remarks Card
-                    _buildRemarksCard(),
+                        // Optional Customer Remarks Card
+                        _buildRemarksCard(),
 
-                    const SizedBox(height: 14),
+                        const SizedBox(height: 14),
 
-                    // Authentic Price Details Breakdown (Real Data Only)
-                    _buildPriceDetailsCard(cartProvider),
-                  ],
+                        // Authentic Price Details Breakdown (Real Data Only)
+                        _buildPriceDetailsCard(cartProvider),
+                      ],
+                    ),
+                  ),
+      ),
+    );
+  }
+
+  Widget _buildTabletCheckoutCard(
+    BuildContext context,
+    CartProvider cartProvider,
+    bool isPlacing,
+  ) {
+    final subtotal = cartProvider.subtotalAmount;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total Payable',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.secondaryText,
                 ),
               ),
+              Text(
+                '₹${subtotal.toStringAsFixed(0)}',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.darkCharcoal,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 48,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFC200),
+                foregroundColor: AppColors.darkCharcoal,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
+                ),
+              ),
+              onPressed: isPlacing ? null : _handleCheckout,
+              child: isPlacing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.darkCharcoal,
+                      ),
+                    )
+                  : Text(
+                      'Proceed to Order (${cartProvider.totalItemCount})',
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.darkCharcoal,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -339,12 +496,19 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                             child: Icon(Icons.remove, size: 14, color: AppColors.darkCharcoal),
                           ),
                         ),
-                        Text(
-                          '${item.quantity}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.darkCharcoal,
+                        Expanded(
+                          child: Center(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '${item.quantity}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.darkCharcoal,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                         InkWell(
@@ -437,12 +601,16 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                         ),
                         if (item.quantity > 1) ...[
                           const SizedBox(width: 6),
-                          Text(
-                            '(Total: ₹${item.totalPrice.toStringAsFixed(0)})',
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.secondaryText,
+                          Flexible(
+                            child: Text(
+                              '(Total: ₹${item.totalPrice.toStringAsFixed(0)})',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.secondaryText,
+                              ),
                             ),
                           ),
                         ],
@@ -468,12 +636,14 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                       foregroundColor: AppColors.darkCharcoal,
                       side: const BorderSide(color: Color(0xFFD1D5DB)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      padding: EdgeInsets.zero,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                     ),
                     onPressed: () => cartProvider.removeFromCart(p.id),
                     icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFDC2626)),
                     label: const Text(
                       'Remove',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -488,12 +658,14 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                       foregroundColor: AppColors.darkCharcoal,
                       side: const BorderSide(color: Color(0xFFD1D5DB)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      padding: EdgeInsets.zero,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                     ),
                     onPressed: () => _buyNow(item),
                     icon: const Icon(Icons.flash_on_rounded, size: 16, color: AppColors.primaryGold),
                     label: const Text(
                       'Buy Now',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
                     ),
                   ),
@@ -522,12 +694,14 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
             children: const [
               Icon(Icons.notes_rounded, size: 16, color: AppColors.darkCharcoal),
               SizedBox(width: 6),
-              Text(
-                'Order Remarks / Model Note (Optional)',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.darkCharcoal,
+              Expanded(
+                child: Text(
+                  'Order Remarks / Model Note (Optional)',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.darkCharcoal,
+                  ),
                 ),
               ),
             ],
@@ -606,14 +780,17 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isTotal ? 14.5 : 12.5,
-            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
-            color: isTotal ? AppColors.darkCharcoal : const Color(0xFF5A6271),
+        Flexible(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: isTotal ? 14.5 : 12.5,
+              fontWeight: isTotal ? FontWeight.w800 : FontWeight.w500,
+              color: isTotal ? AppColors.darkCharcoal : const Color(0xFF5A6271),
+            ),
           ),
         ),
+        const SizedBox(width: 8),
         Text(
           value,
           style: TextStyle(
@@ -647,59 +824,72 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Total Amount on left
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Total Amount',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.secondaryText,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Total Amount',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.secondaryText,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '₹${subtotal.toStringAsFixed(0)}',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.darkCharcoal,
+                const SizedBox(height: 2),
+                Text(
+                  '₹${subtotal.toStringAsFixed(0)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.darkCharcoal,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          const SizedBox(width: 12),
 
           // Vibrant Yellow / Gold CTA button (Flipkart style)
-          SizedBox(
-            height: 44,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFC200), // Flipkart vibrant yellow CTA
-                foregroundColor: AppColors.darkCharcoal,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
+          Flexible(
+            flex: 0,
+            child: SizedBox(
+              height: 44,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFC200), // Flipkart vibrant yellow CTA
+                  foregroundColor: AppColors.darkCharcoal,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(22),
+                  ),
                 ),
-              ),
-              onPressed: isPlacing ? null : _handleCheckout,
-              child: isPlacing
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.darkCharcoal),
-                    )
-                  : Text(
-                      'Proceed to Order (${cartProvider.totalItemCount})',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.darkCharcoal,
-                        letterSpacing: 0.2,
+                onPressed: isPlacing ? null : _handleCheckout,
+                child: isPlacing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.darkCharcoal),
+                      )
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Proceed to Order (${cartProvider.totalItemCount})',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.darkCharcoal,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
         ],
@@ -712,9 +902,11 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             // Animated Pulsing Halo & Floating Cart Illustration
             AnimatedBuilder(
               animation: _animController,
@@ -906,6 +1098,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -957,7 +1150,8 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
   // --- BOTTOM NAVIGATION BAR (MATCHING IMAGE 2 & 5) ---
   Widget _buildBottomNav(BuildContext context) {
     return Container(
-      height: 66,
+      constraints: const BoxConstraints(minHeight: 66),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),

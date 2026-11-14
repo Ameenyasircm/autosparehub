@@ -451,12 +451,18 @@ class OrderProvider extends ChangeNotifier {
       ));
     }
 
-    final orders = _firestore.collection(collectionName);
-    if (userId.isNotEmpty) {
-      listen(orders.where('USER_ID', isEqualTo: userId), (m) => _ordersById = m);
-    }
-    if (userPhone != null && userPhone.isNotEmpty) {
-      listen(orders.where('USER_PHONE', isEqualTo: userPhone), (m) => _ordersByPhone = m);
+    try {
+      final orders = _firestore.collection(collectionName);
+      if (userId.isNotEmpty) {
+        listen(orders.where('USER_ID', isEqualTo: userId), (m) => _ordersById = m);
+      }
+      if (userPhone != null && userPhone.isNotEmpty) {
+        listen(orders.where('USER_PHONE', isEqualTo: userPhone), (m) => _ordersByPhone = m);
+      }
+    } catch (e) {
+      debugPrint('OrderProvider.listenToCustomerOrders init error: $e');
+      _isCustomerOrdersLoading = false;
+      notifyListeners();
     }
   }
 

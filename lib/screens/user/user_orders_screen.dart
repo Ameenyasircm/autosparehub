@@ -6,6 +6,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/responsive_helper.dart';
 import 'user_login_screen.dart';
 import 'widgets/change_password_dialog.dart';
 
@@ -135,6 +136,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
 
   String? _lastFetchedCustomerId;
   String _selectedStatusFilter = 'ALL';
+  OrderModel? _selectedOrder;
 
   @override
   void initState() {
@@ -154,394 +156,429 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
   }
 
   void _showOrderDetailsSheet(BuildContext context, OrderModel order) {
-    final visuals = OrderStatusVisuals.fromStatus(order.status);
+    final isTablet = ResponsiveHelper.isTablet(context);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      constraints: isTablet ? const BoxConstraints(maxWidth: 560) : null,
       builder: (ctx) => SafeArea(
         child: Container(
           height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: AppColors.backgroundLight,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            // Handle bar
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 44,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+          decoration: const BoxDecoration(
+            color: AppColors.backgroundLight,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
+              _buildOrderDetailHeader(order),
+              const Divider(height: 1, color: AppColors.dividerLight),
+              Expanded(
+                child: _buildOrderDetailContent(order),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
+  Widget _buildOrderDetailHeader(OrderModel order, {EdgeInsetsGeometry? padding}) {
+    final visuals = OrderStatusVisuals.fromStatus(order.status);
+
+    return Padding(
+      padding: padding ?? const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  order.orderNumber,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.darkCharcoal,
+                  ),
+                ),
+                if (order.createdAt != null)
+                  Text(
+                    'Placed on ${order.createdAt!.day}/${order.createdAt!.month}/${order.createdAt!.year} at ${order.createdAt!.hour.toString().padLeft(2, '0')}:${order.createdAt!.minute.toString().padLeft(2, '0')}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: visuals.backgroundColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: visuals.borderColor),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(visuals.icon, size: 13, color: visuals.primaryColor),
+                const SizedBox(width: 5),
+                Text(
+                  visuals.label,
+                  style: TextStyle(
+                    color: visuals.primaryColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderDetailContent(OrderModel order) {
+    final visuals = OrderStatusVisuals.fromStatus(order.status);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Status Explanation Banner
+          Container(
+            margin: const EdgeInsets.only(bottom: 18),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: visuals.backgroundColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: visuals.borderColor),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: visuals.borderColor),
+                  ),
+                  child: Icon(visuals.icon, color: visuals.primaryColor, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        order.orderNumber,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
+                        'Status: ${visuals.label}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13.5,
+                          color: visuals.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        visuals.description,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: visuals.primaryColor.withValues(alpha: 0.9),
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // --- ORDERED ITEMS LIST ---
+          Row(
+            children: [
+              const Icon(Icons.shopping_bag_outlined, color: AppColors.primaryGold, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Ordered Spare Parts (${order.distinctItems.length} items)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.darkCharcoal,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: order.distinctItems.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final item = order.distinctItems[index];
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        color: Colors.grey.shade100,
+                        child: item.productImage.isNotEmpty
+                            ? Image.network(
+                                item.productImage,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => const Icon(
+                                  Icons.car_repair_rounded,
+                                  color: AppColors.primaryGold,
+                                ),
+                              )
+                            : const Icon(Icons.car_repair_rounded, color: AppColors.primaryGold),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.productName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${item.companyName} • ${item.categoryName}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                          ),
+                          if (item.refNo != null && item.refNo!.isNotEmpty)
+                            Text(
+                              'Sorl #: ${item.refNo}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 10.5, color: Colors.grey),
+                            ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Qty: ${item.quantity}   •   ₹ ${item.unitPrice.toStringAsFixed(0)} each',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 11.5, color: Colors.blueGrey, fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '₹ ${item.totalPrice.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        color: AppColors.darkCharcoal,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 20),
+
+          // --- SHIPPING & DELIVERY INFO ---
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.handshake_outlined, color: AppColors.primaryGold, size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Fulfillment & Contact',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
                           color: AppColors.darkCharcoal,
                         ),
                       ),
-                      if (order.createdAt != null)
-                        Text(
-                          'Placed on ${order.createdAt!.day}/${order.createdAt!.month}/${order.createdAt!.year} at ${order.createdAt!.hour.toString().padLeft(2, '0')}:${order.createdAt!.minute.toString().padLeft(2, '0')}',
-                          style: const TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
-                        ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: AppColors.dividerLight),
+                const SizedBox(height: 10),
+                Text(
+                  order.shippingAddress != null && order.shippingAddress!.isNotEmpty
+                      ? order.shippingAddress!
+                      : 'Direct Pickup / Phone Confirmation (No Delivery)',
+                  style: const TextStyle(fontSize: 13, color: AppColors.darkCharcoal, height: 1.3),
+                ),
+                if (order.customerNote != null && order.customerNote!.isNotEmpty) ...[
+                  const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: visuals.backgroundColor,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: visuals.borderColor),
+                      color: AppColors.backgroundLight,
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(visuals.icon, size: 13, color: visuals.primaryColor),
-                        const SizedBox(width: 5),
-                        Text(
-                          visuals.label,
-                          style: TextStyle(
-                            color: visuals.primaryColor,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
+                        const Icon(Icons.note_alt_outlined, size: 16, color: AppColors.secondaryText),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Note: "${order.customerNote!}"',
+                            style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.secondaryText),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ],
-              ),
-            ),
-            const Divider(height: 1, color: AppColors.dividerLight),
-
-            // Scrollable Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Status Explanation Banner
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 18),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: visuals.backgroundColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: visuals.borderColor),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: visuals.borderColor),
-                            ),
-                            child: Icon(visuals.icon, color: visuals.primaryColor, size: 18),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Status: ${visuals.label}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 13.5,
-                                    color: visuals.primaryColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  visuals.description,
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    color: visuals.primaryColor.withValues(alpha: 0.9),
-                                    height: 1.25,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                if (order.adminRemark != null && order.adminRemark!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGold.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.35)),
                     ),
-
-                    // --- ORDERED ITEMS LIST ---
-                    Row(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.shopping_bag_outlined, color: AppColors.primaryGold, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Ordered Spare Parts (${order.distinctItems.length} items)',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.darkCharcoal,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: order.distinctItems.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final item = order.distinctItems[index];
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: Row(
+                        const Icon(Icons.support_agent_rounded, size: 16, color: AppColors.primaryGold),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Container(
-                                  width: 50,
-                                  height: 50,
-                                  color: Colors.grey.shade100,
-                                  child: item.productImage.isNotEmpty
-                                      ? Image.network(
-                                          item.productImage,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) => const Icon(
-                                            Icons.car_repair_rounded,
-                                            color: AppColors.primaryGold,
-                                          ),
-                                        )
-                                      : const Icon(Icons.car_repair_rounded, color: AppColors.primaryGold),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.productName,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${item.companyName} • ${item.categoryName}',
-                                      style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
-                                    ),
-                                    if (item.refNo != null && item.refNo!.isNotEmpty)
-                                      Text(
-                                        'Sorl #: ${item.refNo}',
-                                        style: const TextStyle(fontSize: 10.5, color: Colors.grey),
-                                      ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Qty: ${item.quantity}   •   ₹ ${item.unitPrice.toStringAsFixed(0)} each',
-                                      style: const TextStyle(fontSize: 11.5, color: Colors.blueGrey, fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Text(
-                                '₹ ${item.totalPrice.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 14,
-                                  color: AppColors.darkCharcoal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // --- SHIPPING & DELIVERY INFO ---
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: const [
-                              Icon(Icons.handshake_outlined, color: AppColors.primaryGold, size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                'Fulfillment & Contact',
+                              const Text(
+                                'Admin Update / Remark:',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.darkCharcoal,
                                 ),
                               ),
+                              const SizedBox(height: 2),
+                              Text(
+                                order.adminRemark!,
+                                style: const TextStyle(fontSize: 12.5, color: AppColors.darkCharcoal),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 10),
-                          const Divider(height: 1, color: AppColors.dividerLight),
-                          const SizedBox(height: 10),
-                          Text(
-                            order.shippingAddress != null && order.shippingAddress!.isNotEmpty
-                                ? order.shippingAddress!
-                                : 'Direct Pickup / Phone Confirmation (No Delivery)',
-                            style: const TextStyle(fontSize: 13, color: AppColors.darkCharcoal, height: 1.3),
-                          ),
-                          if (order.customerNote != null && order.customerNote!.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: AppColors.backgroundLight,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.note_alt_outlined, size: 16, color: AppColors.secondaryText),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      'Note: "${order.customerNote!}"',
-                                      style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: AppColors.secondaryText),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          if (order.adminRemark != null && order.adminRemark!.trim().isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryGold.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AppColors.primaryGold.withValues(alpha: 0.35)),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.support_agent_rounded, size: 16, color: AppColors.primaryGold),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Admin Update / Remark:',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w800,
-                                            color: AppColors.darkCharcoal,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          order.adminRemark!,
-                                          style: const TextStyle(fontSize: 12.5, color: AppColors.darkCharcoal),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // --- PAYMENT & TOTAL SUMMARY ---
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'Total Units (${order.totalItemUnits} pcs)',
+                        style: const TextStyle(fontSize: 13, color: AppColors.secondaryText),
                       ),
                     ),
-
-                    const SizedBox(height: 20),
-
-                    // --- PAYMENT & TOTAL SUMMARY ---
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Total Units (${order.totalItemUnits} pcs)',
-                                style: const TextStyle(fontSize: 13, color: AppColors.secondaryText),
-                              ),
-                              Text(
-                                '₹ ${order.totalAmount.toStringAsFixed(2)}',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 20, color: AppColors.dividerLight),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Grand Total',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.darkCharcoal,
-                                ),
-                              ),
-                              Text(
-                                '₹ ${order.totalAmount.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.darkCharcoal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '₹ ${order.totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                     ),
-                    const SizedBox(height: 20),
                   ],
                 ),
-              ),
+                const Divider(height: 20, color: AppColors.dividerLight),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Flexible(
+                      child: Text(
+                        'Grand Total',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.darkCharcoal,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '₹ ${order.totalAmount.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.darkCharcoal,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }
@@ -571,6 +608,18 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                 return true;
             }
           }).toList();
+
+    OrderModel? resolvedSelected;
+    if (filteredOrders.isNotEmpty) {
+      if (_selectedOrder != null) {
+        final idx = filteredOrders.indexWhere((o) =>
+            (o.id.isNotEmpty && o.id == _selectedOrder!.id) ||
+            (o.id.isEmpty && o.orderNumber == _selectedOrder!.orderNumber));
+        resolvedSelected = idx >= 0 ? filteredOrders[idx] : filteredOrders.first;
+      } else {
+        resolvedSelected = filteredOrders.first;
+      }
+    }
 
     if (customer != null && _lastFetchedCustomerId != customer.id) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -609,6 +658,7 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                         context.read<OrderProvider>().clearCustomerOrders();
                         _lastFetchedCustomerId = null;
                         _selectedStatusFilter = 'ALL';
+                        _selectedOrder = null;
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBarAutoHide(
                           const SnackBar(content: Text('Logged out successfully.')),
@@ -645,240 +695,417 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
       body: SafeArea(
         top: !widget.showAppBar,
         child: !auth.isSessionInitialized
-          ? const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(color: AppColors.warmGold),
-                  SizedBox(height: 14),
-                  Text(
-                    'Loading account...',
-                    style: TextStyle(fontSize: 13, color: AppColors.secondaryText, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            )
-          : customer == null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 28),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 68,
-                          height: 68,
-                          decoration: BoxDecoration(
-                            color: AppColors.darkButton,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.12),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.receipt_long_rounded,
-                            color: AppColors.warmGold,
-                            size: 32,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        const Text(
-                          'View Your Orders',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.darkHeader,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Log in to check your orders, track their status, and read delivery updates.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.secondaryText,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 22),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.darkButton,
-                              foregroundColor: AppColors.warmGold,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const UserLoginScreen(),
-                                ),
-                              );
-                            },
-                            child: const Text(
-                              'Login to View Orders',
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 22),
-
-                      ],
+            ? const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: AppColors.warmGold),
+                    SizedBox(height: 14),
+                    Text(
+                      'Loading account...',
+                      style: TextStyle(fontSize: 13, color: AppColors.secondaryText, fontWeight: FontWeight.w600),
                     ),
-                  ),
-                )
-              : orders.isEmpty
-                  ? RefreshIndicator(
-                      color: AppColors.primaryGold,
-                      backgroundColor: AppColors.darkCharcoal,
-                      onRefresh: () => orderProvider.fetchCustomerOrders(customer.id, userPhone: customer.phone),
-                      child: orderProvider.isCustomerOrdersLoading
-                          ? const Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CircularProgressIndicator(color: AppColors.warmGold),
-                                  SizedBox(height: 14),
-                                  Text(
-                                    'Loading your orders...',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.secondaryText,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                  ],
+                ),
+              )
+            : customer == null
+                ? Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 440),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 68,
+                              height: 68,
+                              decoration: BoxDecoration(
+                                color: AppColors.darkButton,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.12),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
-                            )
-                          : SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                              child: Container(
-                                alignment: Alignment.center,
-                                height: MediaQuery.of(context).size.height * 0.65,
-                                padding: const EdgeInsets.all(24.0),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Icon(Icons.shopping_bag_outlined, size: 54, color: Colors.grey),
-                                    SizedBox(height: 14),
-                                    Text(
-                                      'No Orders Placed Yet',
-                                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                              child: const Icon(
+                                Icons.receipt_long_rounded,
+                                color: AppColors.warmGold,
+                                size: 32,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            const Text(
+                              'View Your Orders',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.darkHeader,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Log in to check your orders, track their status, and read delivery updates.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.secondaryText,
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.darkButton,
+                                  foregroundColor: AppColors.warmGold,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const UserLoginScreen(),
                                     ),
-                                    SizedBox(height: 6),
-                                    Text(
-                                      'When you order automotive spare parts, their tracking status will appear here.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(color: Colors.grey, fontSize: 13),
-                                    ),
-                                    SizedBox(height: 12),
-                                    _EmptyOrdersRefreshSlot(),
-                                  ],
+                                  );
+                                },
+                                child: const Text(
+                                  'Login to View Orders',
+                                  style: TextStyle(
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ),
                             ),
-                    )
-                  : Column(
-                      children: [
-                        // Horizontal Status Filter Row
-                        _buildStatusFilterBar(orders),
-
-                        // Filtered Orders List or Empty Filter Notice
-                        Expanded(
-                          child: RefreshIndicator(
-                            color: AppColors.primaryGold,
-                            backgroundColor: AppColors.darkCharcoal,
-                            onRefresh: () => orderProvider.fetchCustomerOrders(customer.id, userPhone: customer.phone),
-                            child: filteredOrders.isEmpty
-                                ? SingleChildScrollView(
-                                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                                    child: Container(
-                                      alignment: Alignment.center,
-                                      height: MediaQuery.of(context).size.height * 0.55,
-                                      padding: const EdgeInsets.all(24.0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(16),
-                                            decoration: BoxDecoration(
-                                              color: OrderStatusVisuals.fromStatus(_selectedStatusFilter).backgroundColor,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: OrderStatusVisuals.fromStatus(_selectedStatusFilter).borderColor,
-                                              ),
-                                            ),
-                                            child: Icon(
-                                              OrderStatusVisuals.fromStatus(_selectedStatusFilter).icon,
-                                              size: 36,
-                                              color: OrderStatusVisuals.fromStatus(_selectedStatusFilter).primaryColor,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            'No ${OrderStatusVisuals.fromStatus(_selectedStatusFilter).label} Orders',
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w800,
-                                              color: AppColors.darkCharcoal,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            'You currently do not have any orders with status "${OrderStatusVisuals.fromStatus(_selectedStatusFilter).label}".',
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(color: AppColors.secondaryText, fontSize: 12.5),
-                                          ),
-                                          const SizedBox(height: 18),
-                                          OutlinedButton.icon(
-                                            onPressed: () => setState(() => _selectedStatusFilter = 'ALL'),
-                                            icon: const Icon(Icons.all_inbox_rounded, size: 16),
-                                            label: const Text('Show All Orders'),
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor: AppColors.darkCharcoal,
-                                              side: const BorderSide(color: AppColors.primaryGold),
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                            ),
-                                          ),
-                                        ],
+                            const SizedBox(height: 22),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                : orders.isEmpty
+                    ? RefreshIndicator(
+                        color: AppColors.primaryGold,
+                        backgroundColor: AppColors.darkCharcoal,
+                        onRefresh: () => orderProvider.fetchCustomerOrders(customer.id, userPhone: customer.phone),
+                        child: orderProvider.isCustomerOrdersLoading
+                            ? const Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircularProgressIndicator(color: AppColors.warmGold),
+                                    SizedBox(height: 14),
+                                    Text(
+                                      'Loading your orders...',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.secondaryText,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                  )
-                                : ListView.builder(
-                                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                                  ],
+                                ),
+                              )
+                            : LayoutBuilder(
+                                builder: (context, emptyConstraints) {
+                                  return SingleChildScrollView(
                                     physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                                    itemCount: filteredOrders.length,
-                                    itemBuilder: (context, index) {
-                                      final order = filteredOrders[index];
-                                      return _buildOrderCard(order);
-                                    },
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(minHeight: emptyConstraints.maxHeight),
+                                      child: Center(
+                                        child: ConstrainedBox(
+                                          constraints: const BoxConstraints(maxWidth: 440),
+                                          child: const Padding(
+                                            padding: EdgeInsets.all(24.0),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.shopping_bag_outlined, size: 54, color: Colors.grey),
+                                                SizedBox(height: 14),
+                                                Text(
+                                                  'No Orders Placed Yet',
+                                                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                                                ),
+                                                SizedBox(height: 6),
+                                                Text(
+                                                  'When you order automotive spare parts, their tracking status will appear here.',
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                                                ),
+                                                SizedBox(height: 12),
+                                                _EmptyOrdersRefreshSlot(),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                      )
+                    : LayoutBuilder(
+                        builder: (context, bodyConstraints) {
+                          final isWideSplit = ResponsiveHelper.isWideTablet(context) &&
+                              bodyConstraints.maxWidth >= 700;
+                          final isTabletLayout = ResponsiveHelper.isTablet(context) ||
+                              bodyConstraints.maxWidth >= ResponsiveHelper.tabletBreakpoint;
+
+                          if (isWideSplit) {
+                            final leftPaneWidth = bodyConstraints.maxWidth >= 900 ? 390.0 : 350.0;
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Container(
+                                  width: leftPaneWidth,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border(
+                                      right: BorderSide(color: Color(0xFFECEFF3), width: 1.2),
+                                    ),
                                   ),
-                          ),
-                        ),
-                      ],
-                    ),
+                                  child: Column(
+                                    children: [
+                                      _buildStatusFilterBar(
+                                        orders,
+                                        wrapPills: true,
+                                        showRefresh: !widget.showAppBar,
+                                      ),
+                                      Expanded(
+                                        child: RefreshIndicator(
+                                          color: AppColors.primaryGold,
+                                          backgroundColor: AppColors.darkCharcoal,
+                                          onRefresh: () => orderProvider.fetchCustomerOrders(
+                                            customer.id,
+                                            userPhone: customer.phone,
+                                          ),
+                                          child: filteredOrders.isEmpty
+                                              ? _buildEmptyFilterState(scrollable: true)
+                                              : ListView.builder(
+                                                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
+                                                  physics: const AlwaysScrollableScrollPhysics(
+                                                    parent: BouncingScrollPhysics(),
+                                                  ),
+                                                  itemCount: filteredOrders.length,
+                                                  itemBuilder: (context, index) {
+                                                    final order = filteredOrders[index];
+                                                    final isSelected = resolvedSelected != null &&
+                                                        ((order.id.isNotEmpty && order.id == resolvedSelected.id) ||
+                                                            (order.id.isEmpty &&
+                                                                order.orderNumber == resolvedSelected.orderNumber));
+                                                    return _buildOrderCard(
+                                                      order,
+                                                      isSelected: isSelected,
+                                                      onTap: () => setState(() => _selectedOrder = order),
+                                                    );
+                                                  },
+                                                ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: resolvedSelected == null
+                                      ? _buildEmptyFilterState(scrollable: false)
+                                      : Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: [
+                                            Container(
+                                              color: Colors.white,
+                                              child: _buildOrderDetailHeader(
+                                                resolvedSelected,
+                                                padding: const EdgeInsets.fromLTRB(24, 18, 24, 14),
+                                              ),
+                                            ),
+                                            const Divider(height: 1, color: AppColors.dividerLight),
+                                            Expanded(
+                                              child: Align(
+                                                alignment: Alignment.topCenter,
+                                                child: ConstrainedBox(
+                                                  constraints: const BoxConstraints(maxWidth: 760),
+                                                  child: _buildOrderDetailContent(resolvedSelected),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              ],
+                            );
+                          }
+
+                          final horizontalPad = bodyConstraints.maxWidth > 760
+                              ? (bodyConstraints.maxWidth - 760) / 2
+                              : 16.0;
+
+                          return Column(
+                            children: [
+                              _buildStatusFilterBar(
+                                orders,
+                                wrapPills: isTabletLayout,
+                                showRefresh: !widget.showAppBar,
+                              ),
+                              Expanded(
+                                child: RefreshIndicator(
+                                  color: AppColors.primaryGold,
+                                  backgroundColor: AppColors.darkCharcoal,
+                                  onRefresh: () => orderProvider.fetchCustomerOrders(
+                                    customer.id,
+                                    userPhone: customer.phone,
+                                  ),
+                                  child: filteredOrders.isEmpty
+                                      ? _buildEmptyFilterState(scrollable: true)
+                                      : ListView.builder(
+                                          padding: EdgeInsets.fromLTRB(
+                                            horizontalPad,
+                                            12,
+                                            horizontalPad,
+                                            24,
+                                          ),
+                                          physics: const AlwaysScrollableScrollPhysics(
+                                            parent: BouncingScrollPhysics(),
+                                          ),
+                                          itemCount: filteredOrders.length,
+                                          itemBuilder: (context, index) {
+                                            final order = filteredOrders[index];
+                                            return _buildOrderCard(
+                                              order,
+                                              onTap: () => _showOrderDetailsSheet(context, order),
+                                            );
+                                          },
+                                        ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
       ),
     );
   }
 
-  /// Builds the horizontal status filter row with counts and distinct status colors.
-  Widget _buildStatusFilterBar(List<OrderModel> allOrders) {
+  Widget _buildEmptyFilterState({required bool scrollable}) {
+    final visuals = OrderStatusVisuals.fromStatus(_selectedStatusFilter);
+    final content = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: visuals.backgroundColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: visuals.borderColor),
+                ),
+                child: Icon(visuals.icon, size: 36, color: visuals.primaryColor),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No ${visuals.label} Orders',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.darkCharcoal,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'You currently do not have any orders with status "${visuals.label}".',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: AppColors.secondaryText, fontSize: 12.5),
+              ),
+              const SizedBox(height: 18),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _selectedStatusFilter = 'ALL'),
+                icon: const Icon(Icons.all_inbox_rounded, size: 16),
+                label: const Text('Show All Orders'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.darkCharcoal,
+                  side: const BorderSide(color: AppColors.primaryGold),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!scrollable) return content;
+
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: content,
+        ),
+      ),
+    );
+  }
+
+  /// Builds the status filter row with counts and distinct status colors.
+  Widget _buildStatusFilterBar(
+    List<OrderModel> allOrders, {
+    bool wrapPills = false,
+    bool showRefresh = true,
+  }) {
     final totalCount = allOrders.length;
     final pendingCount = allOrders.where((o) => o.isPending).length;
     final confirmedCount = allOrders.where((o) => o.isConfirmed).length;
     final deliveredCount = allOrders.where((o) => o.isDelivered).length;
     final cancelledCount = allOrders.where((o) => o.isCancelled).length;
+
+    final pills = [
+      _buildFilterPill(
+        label: 'All',
+        filterKey: 'ALL',
+        count: totalCount,
+        icon: Icons.all_inbox_rounded,
+        color: AppColors.darkHeader,
+      ),
+      _buildFilterPill(
+        label: 'Requested',
+        filterKey: 'PENDING',
+        count: pendingCount,
+        icon: Icons.hourglass_top_rounded,
+        color: const Color(0xFFD97706),
+      ),
+      _buildFilterPill(
+        label: 'Confirmed',
+        filterKey: 'CONFIRMED',
+        count: confirmedCount,
+        icon: Icons.check_circle_outline_rounded,
+        color: const Color(0xFF0284C7),
+      ),
+      _buildFilterPill(
+        label: 'Completed',
+        filterKey: 'DELIVERED',
+        count: deliveredCount,
+        icon: Icons.task_alt_rounded,
+        color: const Color(0xFF059669),
+      ),
+      _buildFilterPill(
+        label: 'Cancelled',
+        filterKey: 'CANCELLED',
+        count: cancelledCount,
+        icon: Icons.cancel_outlined,
+        color: const Color(0xFFDC2626),
+      ),
+    ];
 
     return Container(
       width: double.infinity,
@@ -890,59 +1117,42 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.only(left: 16, right: 8),
-        child: Row(
-          children: [
-            _buildFilterPill(
-              label: 'All',
-              filterKey: 'ALL',
-              count: totalCount,
-              icon: Icons.all_inbox_rounded,
-              color: AppColors.darkHeader,
-            ),
-            const SizedBox(width: 8),
-            _buildFilterPill(
-              label: 'Requested',
-              filterKey: 'PENDING',
-              count: pendingCount,
-              icon: Icons.hourglass_top_rounded,
-              color: const Color(0xFFD97706),
-            ),
-            const SizedBox(width: 8),
-            _buildFilterPill(
-              label: 'Confirmed',
-              filterKey: 'CONFIRMED',
-              count: confirmedCount,
-              icon: Icons.check_circle_outline_rounded,
-              color: const Color(0xFF0284C7),
-            ),
-            const SizedBox(width: 8),
-            _buildFilterPill(
-              label: 'Completed',
-              filterKey: 'DELIVERED',
-              count: deliveredCount,
-              icon: Icons.task_alt_rounded,
-              color: const Color(0xFF059669),
-            ),
-            const SizedBox(width: 8),
-            _buildFilterPill(
-              label: 'Cancelled',
-              filterKey: 'CANCELLED',
-              count: cancelledCount,
-              icon: Icons.cancel_outlined,
-              color: const Color(0xFFDC2626),
-            ),
-          ],
-        ),
-            ),
+            child: wrapPills
+                ? Padding(
+                    padding: EdgeInsets.only(
+                      left: 16,
+                      right: showRefresh ? 8 : 16,
+                    ),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: pills,
+                    ),
+                  )
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.only(
+                      left: 16,
+                      right: showRefresh ? 8 : 16,
+                    ),
+                    child: Row(
+                      children: [
+                        for (int i = 0; i < pills.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 8),
+                          pills[i],
+                        ],
+                      ],
+                    ),
+                  ),
           ),
-          _buildRefreshButton(),
-          const SizedBox(width: 4),
+          if (showRefresh) ...[
+            _buildRefreshButton(),
+            const SizedBox(width: 4),
+          ],
         ],
       ),
     );
@@ -1027,22 +1237,31 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
     );
   }
 
-  Widget _buildOrderCard(OrderModel order) {
+  Widget _buildOrderCard(
+    OrderModel order, {
+    bool isSelected = false,
+    VoidCallback? onTap,
+  }) {
     final visuals = OrderStatusVisuals.fromStatus(order.status);
     final distinctItems = order.distinctItems;
     final isMultiItem = distinctItems.length > 1;
 
     return InkWell(
       key: ValueKey(order.id.isNotEmpty ? order.id : order.orderNumber),
-      onTap: () => _showOrderDetailsSheet(context, order),
+      onTap: onTap ?? () => _showOrderDetailsSheet(context, order),
       borderRadius: BorderRadius.circular(14),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isSelected ? AppColors.warmGold.withValues(alpha: 0.06) : Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: visuals.borderColor.withValues(alpha: 0.9), width: 1.2),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.warmGold
+                : visuals.borderColor.withValues(alpha: 0.9),
+            width: isSelected ? 1.8 : 1.2,
+          ),
           boxShadow: [
             BoxShadow(
               color: visuals.primaryColor.withValues(alpha: 0.04),
@@ -1058,21 +1277,34 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      order.orderNumber,
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.darkCharcoal),
-                    ),
-                    if (order.createdAt != null) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        '${order.createdAt!.day}/${order.createdAt!.month}/${order.createdAt!.year}',
-                        style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          order.orderNumber,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            color: AppColors.darkCharcoal,
+                          ),
+                        ),
                       ),
+                      if (order.createdAt != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '${order.createdAt!.day}/${order.createdAt!.month}/${order.createdAt!.year}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                   decoration: BoxDecoration(
@@ -1140,11 +1372,14 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                         isMultiItem
                             ? '${distinctItems.length} parts • ${order.totalItemUnits} units'
                             : '${order.companyName} • Qty: ${order.quantity}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [

@@ -6,6 +6,7 @@ import '../../models/order_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/contact_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/responsive_helper.dart';
 import 'user_home_screen.dart';
 
 /// Dedicated celebratory screen shown immediately after placing a spare parts order.

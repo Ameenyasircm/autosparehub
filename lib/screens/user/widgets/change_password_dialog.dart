@@ -106,8 +106,10 @@ class _ChangeUserPasswordDialogState extends State<ChangeUserPasswordDialog> {
           ),
         ],
       ),
-      content: SingleChildScrollView(
-        child: Form(
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: SingleChildScrollView(
+          child: Form(
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -226,6 +228,7 @@ class _ChangeUserPasswordDialogState extends State<ChangeUserPasswordDialog> {
           ),
         ),
       ),
+      ),
       actions: [
         TextButton(
           onPressed: authProvider.isLoading ? null : () => Navigator.of(context).pop(),
@@ -235,7 +238,7 @@ class _ChangeUserPasswordDialogState extends State<ChangeUserPasswordDialog> {
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.darkCharcoal,
             foregroundColor: AppColors.primaryGold,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           onPressed: authProvider.isLoading ? null : _submit,
@@ -248,7 +251,12 @@ class _ChangeUserPasswordDialogState extends State<ChangeUserPasswordDialog> {
                     valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGold),
                   ),
                 )
-              : const Text('Update Password', style: TextStyle(fontWeight: FontWeight.w800)),
+              : const Text(
+                  'Update Password',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
         ),
       ],
     );

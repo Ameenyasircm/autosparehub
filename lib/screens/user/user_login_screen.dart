@@ -219,7 +219,12 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
           children: const [
             Icon(Icons.cancel_rounded, color: AppColors.error, size: 26),
             SizedBox(width: 10),
-            Text('Account Not Approved', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            Expanded(
+              child: Text(
+                'Account Not Approved',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+            ),
           ],
         ),
         content: Column(

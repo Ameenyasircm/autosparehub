@@ -94,44 +94,49 @@ class _ApprovalPendingDialogWidgetState
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.green.shade200),
-              ),
-              child: const Text(
-                'Great news! Your garage account registration has just been approved by the administrator. You now have full access to browse and place spare part orders.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF14532D),
-                  height: 1.4,
-                  fontWeight: FontWeight.w600,
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: const Text(
+                    'Great news! Your garage account registration has just been approved by the administrator. You now have full access to browse and place spare part orders.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF14532D),
+                      height: 1.4,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF0FDF4),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'നിങ്ങളുടെ അക്കൗണ്ടിന് അഡ്മിൻ അനുമതി നൽകിയിരിക്കുന്നു! നിങ്ങൾക്ക് ഇപ്പോൾ ഓർഡറുകൾ നൽകാം.',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: Color(0xFF166534),
-                  height: 1.4,
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'നിങ്ങളുടെ അക്കൗണ്ടിന് അഡ്മിൻ അനുമതി നൽകിയിരിക്കുന്നു! നിങ്ങൾക്ക് ഇപ്പോൾ ഓർഡറുകൾ നൽകാം.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Color(0xFF166534),
+                      height: 1.4,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
         actions: [
           ElevatedButton(
@@ -181,37 +186,41 @@ class _ApprovalPendingDialogWidgetState
           ),
         ],
       ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (displayPhone.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F6F9),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE5E9F0)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.phone_android_rounded, size: 14, color: AppColors.secondaryText),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Your Mobile: +91 $displayPhone',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12.5,
-                        color: AppColors.darkCharcoal,
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (displayPhone.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F6F9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFE5E9F0)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.phone_android_rounded, size: 14, color: AppColors.secondaryText),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'Your Mobile: +91 $displayPhone',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                            color: AppColors.darkCharcoal,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-            ],
+                const SizedBox(height: 10),
+              ],
 
             const Text(
               'Your garage account registration has been submitted and is currently waiting for administrator authorization. Once approved, you can log in and place orders directly.',
@@ -257,16 +266,18 @@ class _ApprovalPendingDialogWidgetState
                     children: [
                       const Icon(Icons.support_agent_rounded, size: 16, color: AppColors.warmGold),
                       const SizedBox(width: 6),
-                      const Text(
-                        'Admin Helpline',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.darkHeader,
+                      const Expanded(
+                        child: Text(
+                          'Admin Helpline',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.darkHeader,
+                          ),
                         ),
                       ),
-                      const Spacer(),
-                      if (!_isLoadingContact)
+                      if (!_isLoadingContact) ...[
+                        const SizedBox(width: 6),
                         InkWell(
                           onTap: () {
                             Clipboard.setData(ClipboardData(text: _adminPhone));
@@ -278,6 +289,7 @@ class _ApprovalPendingDialogWidgetState
                             );
                           },
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: const [
                               Icon(Icons.copy_rounded, size: 12, color: AppColors.secondaryText),
                               SizedBox(width: 3),
@@ -292,6 +304,7 @@ class _ApprovalPendingDialogWidgetState
                             ],
                           ),
                         ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -316,7 +329,7 @@ class _ApprovalPendingDialogWidgetState
                             backgroundColor: AppColors.darkButton,
                             foregroundColor: AppColors.warmGold,
                             elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -325,9 +338,13 @@ class _ApprovalPendingDialogWidgetState
                             _contactService.launchPhoneCall(_adminPhone);
                           },
                           icon: const Icon(Icons.phone_in_talk_rounded, size: 16, color: AppColors.warmGold),
-                          label: const Text(
-                            'Call',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Call',
+                              maxLines: 1,
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                            ),
                           ),
                         ),
                       ),
@@ -340,7 +357,7 @@ class _ApprovalPendingDialogWidgetState
                             backgroundColor: const Color(0xFF25D366),
                             foregroundColor: Colors.white,
                             elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -357,9 +374,13 @@ class _ApprovalPendingDialogWidgetState
                             height: 18,
                             fit: BoxFit.contain,
                           ),
-                          label: const Text(
-                            'WhatsApp',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'WhatsApp',
+                              maxLines: 1,
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                            ),
                           ),
                         ),
                       ),
@@ -369,6 +390,7 @@ class _ApprovalPendingDialogWidgetState
               ),
             ),
           ],
+          ),
         ),
       ),
       actionsAlignment: MainAxisAlignment.center,
