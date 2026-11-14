@@ -42,7 +42,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Approval Pending'), findsOneWidget);
-      expect(find.text('Your Mobile: +91 9876543210'), findsOneWidget);
+      expect(find.text('Your Mobile: 9876543210'), findsOneWidget);
       expect(find.textContaining('waiting for administrator authorization'),
           findsOneWidget);
       expect(
@@ -84,7 +84,7 @@ void main() {
       await tester.tap(find.text('Show Alert'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Your Mobile: +91 9876543210'), findsOneWidget);
+      expect(find.text('Your Mobile: 9876543210'), findsOneWidget);
     });
   });
 

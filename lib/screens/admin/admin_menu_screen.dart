@@ -5,7 +5,6 @@ import '../../providers/customer_management_provider.dart';
 import '../../services/admin_authorization_service.dart';
 import '../../services/contact_service.dart';
 import '../../theme/app_theme.dart';
-import '../../utils/phone_helper.dart';
 import '../admin_login_screen.dart';
 import 'admin_management_screen.dart';
 import 'categories_screen.dart';
@@ -14,6 +13,7 @@ import 'customer_approvals_screen.dart';
 import 'product_form_screen.dart';
 import 'products_screen.dart';
 import 'sales/sales_hub_screen.dart';
+import 'widgets/edit_contact_numbers_dialog.dart';
 
 /// Admin Menu Screen hosting all management options, approvals, catalog controls,
 /// contact details settings, and admin session management.
@@ -26,7 +26,7 @@ class AdminMenuScreen extends StatefulWidget {
 
 class _AdminMenuScreenState extends State<AdminMenuScreen> {
   final ContactService _contactService = ContactService();
-  String _activeContactPhone = ContactService.defaultPhoneNumber;
+  List<String> _activeContactPhones = const [ContactService.defaultPhoneNumber];
   bool _isLoadingContact = true;
 
   @override
@@ -36,10 +36,10 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
   }
 
   Future<void> _loadContactPhone() async {
-    final phone = await _contactService.fetchContactPhone();
+    final phones = await _contactService.fetchContactPhones();
     if (mounted) {
       setState(() {
-        _activeContactPhone = phone;
+        _activeContactPhones = phones;
         _isLoadingContact = false;
       });
     }
@@ -126,147 +126,15 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
     );
   }
 
-  void _showEditContactDialog(BuildContext context) {
-    final controller = TextEditingController(text: _activeContactPhone);
-    bool isSaving = false;
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-            titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            title: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCCFBF1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.contact_phone_rounded,
-                    color: Color(0xFF0D9488),
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Store Contact Number',
-                    style: TextStyle(
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.darkHeader,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'This 10-digit number is displayed on the customer profile for instant calling and WhatsApp inquiries.',
-                  style: TextStyle(fontSize: 12.5, color: AppColors.secondaryText, height: 1.4),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: controller,
-                  keyboardType: TextInputType.phone,
-                  maxLength: 10,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.phone_rounded, color: AppColors.warmGold, size: 20),
-                    prefixText: '+91 ',
-                    prefixStyle: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.darkHeader),
-                    labelText: 'Customer Helpline Phone',
-                    hintText: '9048112233',
-                    counterText: '',
-                    filled: true,
-                    fillColor: const Color(0xFFF7F8FA),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFDDE1E6)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.warmGold, width: 1.8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogCtx).pop(),
-                child: const Text('Cancel', style: TextStyle(color: AppColors.secondaryText)),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.darkButton,
-                  foregroundColor: AppColors.warmGold,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                ),
-                onPressed: isSaving
-                    ? null
-                    : () async {
-                        final val = controller.text.trim();
-                        final clean = PhoneHelper.extract10Digits(val);
-                        if (clean.length != 10) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please enter a valid 10-digit mobile number.'),
-                              backgroundColor: AppColors.error,
-                            ),
-                          );
-                          return;
-                        }
-                        final messenger = ScaffoldMessenger.of(context);
-                        setDialogState(() => isSaving = true);
-                        final ok = await _contactService.updateContactPhone(clean);
-                        if (dialogCtx.mounted) {
-                          Navigator.of(dialogCtx).pop();
-                        }
-                        if (mounted) {
-                          if (ok) {
-                            setState(() => _activeContactPhone = clean);
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text('Helpline phone updated to +91 $clean'),
-                                backgroundColor: AppColors.darkHeader,
-                              ),
-                            );
-                          } else {
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Failed to update helpline number.'),
-                                backgroundColor: AppColors.error,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                child: isSaving
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.warmGold),
-                      )
-                    : const Text('Change & Save', style: TextStyle(fontWeight: FontWeight.w800)),
-              ),
-            ],
-          );
-        },
-      ),
+  Future<void> _showEditContactDialog(BuildContext context) async {
+    final saved = await showEditContactNumbersDialog(
+      context,
+      contactService: _contactService,
+      currentPhones: _activeContactPhones,
     );
+    if (saved != null && mounted) {
+      setState(() => _activeContactPhones = saved);
+    }
   }
 
   @override
@@ -429,7 +297,7 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
             icon: Icons.contact_phone_rounded,
             iconColor: const Color(0xFF0D9488),
             iconBgColor: const Color(0xFFCCFBF1),
-            badge: _isLoadingContact ? '...' : _contactService.formatForDisplay(_activeContactPhone),
+            badge: _isLoadingContact ? '...' : formatContactPhones(_activeContactPhones, separator: '\n'),
             badgeColor: const Color(0xFF0D9488),
             onTap: () => _showEditContactDialog(context),
           ),

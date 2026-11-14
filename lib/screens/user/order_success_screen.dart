@@ -239,12 +239,12 @@ class OrderSuccessScreen extends StatelessWidget {
 
                       // Support number set by the admin (Customer Helpline Contact).
                       _SupportPhoneBuilder(
-                        builder: (phone) => _buildInfoBullet(
+                        builder: (phones) => _buildInfoBullet(
                           icon: Icons.phone_callback_rounded,
                           title: 'Our Manager Will Contact You Shortly',
-                          subtitle: phone == null
+                          subtitle: phones == null
                               ? 'Our team will call or WhatsApp you shortly to confirm exact part compatibility, pricing, and fulfilment.'
-                              : 'Our team will call or WhatsApp you shortly at +91 $phone to confirm exact part compatibility, pricing, and fulfilment.',
+                              : 'Our team will call or WhatsApp you shortly from ${phones.join(' / ')} to confirm exact part compatibility, pricing, and fulfilment.',
                           malayalamSubtitle:
                               'ഓർഡർ സ്ഥിരീകരിക്കുന്നതിനായി ഞങ്ങളുടെ മാനേജർ നിങ്ങളെ ഉടൻ ബന്ധപ്പെടുന്നതാണ്.',
                         ),
@@ -542,7 +542,7 @@ class OrderSuccessScreen extends StatelessWidget {
 /// Loads the support phone number (CONTACT_DETAILS, set by the admin) once
 /// and rebuilds with it. Passes null while loading.
 class _SupportPhoneBuilder extends StatefulWidget {
-  final Widget Function(String? phone) builder;
+  final Widget Function(List<String>? phones) builder;
   const _SupportPhoneBuilder({required this.builder});
 
   @override
@@ -550,12 +550,12 @@ class _SupportPhoneBuilder extends StatefulWidget {
 }
 
 class _SupportPhoneBuilderState extends State<_SupportPhoneBuilder> {
-  late final Future<String> _phone = ContactService().fetchContactPhone();
+  late final Future<List<String>> _phones = ContactService().fetchContactPhones();
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String>(
-      future: _phone,
+    return FutureBuilder<List<String>>(
+      future: _phones,
       builder: (context, snap) => widget.builder(snap.data),
     );
   }

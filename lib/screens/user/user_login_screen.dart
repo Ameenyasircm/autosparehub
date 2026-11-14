@@ -231,7 +231,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Mobile: +91 $phone', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+            Text('Mobile: $phone', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
             const SizedBox(height: 8),
             const Text(
               'This registration request was not approved by the administrator. Please reach out to customer support to re-verify your garage credentials.',

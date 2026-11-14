@@ -141,7 +141,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Your account (+91 ${_phoneController.text.trim()}) and password have been created. It is currently under review by our administrator.',
+                'Your account (${_phoneController.text.trim()}) and password have been created. It is currently under review by our administrator.',
                 style: const TextStyle(color: AppColors.secondaryText, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 10),
@@ -272,7 +272,7 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Your registration for +91 $phone is under review by our administrator (submitted on $dateStr).',
+              'Your registration for $phone is under review by our administrator (submitted on $dateStr).',
               style: const TextStyle(color: AppColors.darkCharcoal, fontSize: 13, height: 1.45),
             ),
             const SizedBox(height: 10),
@@ -671,15 +671,6 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
                 mainAxisSize: MainAxisSize.min,
                 children: const [
                   Icon(Icons.phone_android_outlined, size: 18, color: AppColors.primaryGold),
-                  SizedBox(width: 4),
-                  Text(
-                    '+91 ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.darkCharcoal,
-                      fontSize: 13.5,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -825,15 +816,6 @@ class _CustomerRegistrationSheetState extends State<CustomerRegistrationSheet> {
                 mainAxisSize: MainAxisSize.min,
                 children: const [
                   Icon(Icons.phone_android_outlined, size: 18, color: AppColors.primaryGold),
-                  SizedBox(width: 4),
-                  Text(
-                    '+91 ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.darkCharcoal,
-                      fontSize: 13.5,
-                    ),
-                  ),
                 ],
               ),
             ),

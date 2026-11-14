@@ -12,9 +12,9 @@ void main() {
 
     test('formats 10-digit phone number cleanly for UI display', () {
       final service = ContactService();
-      expect(service.formatForDisplay('9048112233'), '+91 90481 12233');
-      expect(service.formatForDisplay('+919048112233'), '+91 90481 12233');
-      expect(service.formatForDisplay('09048112233'), '+91 90481 12233');
+      expect(service.formatForDisplay('9048112233'), '90481 12233');
+      expect(service.formatForDisplay('+919048112233'), '90481 12233');
+      expect(service.formatForDisplay('09048112233'), '90481 12233');
     });
 
     test('verifies constant collection path /CONTACT_DETAILS/1234PHONE', () {

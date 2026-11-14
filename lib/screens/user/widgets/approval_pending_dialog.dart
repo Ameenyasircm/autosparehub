@@ -43,7 +43,7 @@ class _ApprovalPendingDialogWidget extends StatefulWidget {
 class _ApprovalPendingDialogWidgetState
     extends State<_ApprovalPendingDialogWidget> {
   final ContactService _contactService = ContactService();
-  String _adminPhone = ContactService.defaultPhoneNumber;
+  List<String> _adminPhones = const [ContactService.defaultPhoneNumber];
   bool _isLoadingContact = true;
 
   @override
@@ -53,10 +53,10 @@ class _ApprovalPendingDialogWidgetState
   }
 
   Future<void> _fetchAdminPhone() async {
-    final phone = await _contactService.fetchContactPhone();
+    final phones = await _contactService.fetchContactPhones();
     if (mounted) {
       setState(() {
-        _adminPhone = phone;
+        _adminPhones = phones;
         _isLoadingContact = false;
       });
     }
@@ -163,8 +163,6 @@ class _ApprovalPendingDialogWidgetState
         ? cleanPhone.substring(cleanPhone.length - 10)
         : cleanPhone;
 
-    final formattedAdminPhone = _contactService.formatForDisplay(_adminPhone);
-
     return AlertDialog(
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -208,7 +206,7 @@ class _ApprovalPendingDialogWidgetState
                       const SizedBox(width: 6),
                       Flexible(
                         child: Text(
-                          'Your Mobile: +91 $displayPhone',
+                          'Your Mobile: $displayPhone',
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 12.5,
@@ -276,116 +274,13 @@ class _ApprovalPendingDialogWidgetState
                           ),
                         ),
                       ),
-                      if (!_isLoadingContact) ...[
-                        const SizedBox(width: 6),
-                        InkWell(
-                          onTap: () {
-                            Clipboard.setData(ClipboardData(text: _adminPhone));
-                            ScaffoldMessenger.of(context).showSnackBarAutoHide(
-                              SnackBar(
-                                content: Text('Copied $_adminPhone to clipboard'),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.copy_rounded, size: 12, color: AppColors.secondaryText),
-                              SizedBox(width: 3),
-                              Text(
-                                'Copy',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.secondaryText,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    _isLoadingContact ? 'Loading contact info...' : formattedAdminPhone,
-                    style: const TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.darkHeader,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Call & WhatsApp Action Buttons
-                  Row(
-                    children: [
-                      // Direct Call Button
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.darkButton,
-                            foregroundColor: AppColors.warmGold,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          onPressed: () {
-                            _contactService.launchPhoneCall(_adminPhone);
-                          },
-                          icon: const Icon(Icons.phone_in_talk_rounded, size: 16, color: AppColors.warmGold),
-                          label: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              'Call',
-                              maxLines: 1,
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // WhatsApp Button
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF25D366),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          onPressed: () {
-                            final msg = displayPhone.isNotEmpty
-                                ? 'Hello Admin, I have registered my garage account (+91 $displayPhone) on Auto Spare Hub and am awaiting approval.'
-                                : 'Hello Admin, I have registered my garage account on Auto Spare Hub and am awaiting approval.';
-                            _contactService.launchWhatsApp(_adminPhone, msg);
-                          },
-                          icon: Image.asset(
-                            'assets/member_whats_app.png',
-                            width: 18,
-                            height: 18,
-                            fit: BoxFit.contain,
-                          ),
-                          label: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              'WhatsApp',
-                              maxLines: 1,
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  for (var i = 0; i < _adminPhones.length; i++) ...[
+                    if (i > 0) const Divider(height: 22, color: Color(0xFFE5E9F0)),
+                    _buildHelplineNumber(_adminPhones[i], displayPhone),
+                  ],
                 ],
               ),
             ),
@@ -409,6 +304,126 @@ class _ApprovalPendingDialogWidgetState
             'OK',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           ),
+        ),
+      ],
+    );
+  }
+
+  /// One helpline number with Copy, Call and WhatsApp actions.
+  Widget _buildHelplineNumber(String phone, String displayPhone) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _isLoadingContact ? 'Loading contact info...' : _contactService.formatForDisplay(phone),
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.darkHeader,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+            if (!_isLoadingContact)
+              InkWell(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: phone));
+                  ScaffoldMessenger.of(context).showSnackBarAutoHide(
+                    SnackBar(
+                      content: Text('Copied $phone to clipboard'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.copy_rounded, size: 12, color: AppColors.secondaryText),
+                    SizedBox(width: 3),
+                    Text(
+                      'Copy',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Call & WhatsApp Action Buttons
+        Row(
+          children: [
+            // Direct Call Button
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.darkButton,
+                  foregroundColor: AppColors.warmGold,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: () {
+                  _contactService.launchPhoneCall(phone);
+                },
+                icon: const Icon(Icons.phone_in_talk_rounded, size: 16, color: AppColors.warmGold),
+                label: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Call',
+                    maxLines: 1,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // WhatsApp Button
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: () {
+                  final msg = displayPhone.isNotEmpty
+                      ? 'Hello Admin, I have registered my garage account ($displayPhone) on Auto Spare Hub and am awaiting approval.'
+                      : 'Hello Admin, I have registered my garage account on Auto Spare Hub and am awaiting approval.';
+                  _contactService.launchWhatsApp(phone, msg);
+                },
+                icon: Image.asset(
+                  'assets/member_whats_app.png',
+                  width: 18,
+                  height: 18,
+                  fit: BoxFit.contain,
+                ),
+                label: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'WhatsApp',
+                    maxLines: 1,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

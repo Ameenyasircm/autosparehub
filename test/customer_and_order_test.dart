@@ -32,7 +32,7 @@ void main() {
 
       expect(PhoneHelper.normalizeTo91('9876543210'), '919876543210');
       expect(PhoneHelper.toDocId('9876543210'), 'USR_919876543210');
-      expect(PhoneHelper.formatForDisplay('9876543210'), '+91 98765 43210');
+      expect(PhoneHelper.formatForDisplay('9876543210'), '98765 43210');
     });
   });
 

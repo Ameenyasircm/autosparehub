@@ -15,6 +15,7 @@ import '../../providers/product_provider.dart';
 import '../../providers/user_auth_provider.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/phone_helper.dart';
 import '../../utils/responsive_helper.dart';
 import 'cart_screen.dart';
 import 'user_login_screen.dart';
@@ -3712,7 +3713,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              '+91 ${customer?.phone ?? ''}',
+                              PhoneHelper.formatForDisplay(customer?.phone),
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: AppColors.secondaryText,

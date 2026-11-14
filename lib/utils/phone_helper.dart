@@ -30,12 +30,12 @@ class PhoneHelper {
     return 'USR_${normalizeTo91(raw)}';
   }
 
-  /// Formats a 10-digit number for display: '+91 98765 43210'.
+  /// Formats a 10-digit number for display: '98765 43210' (no country code).
   static String formatForDisplay(String? raw) {
     if (raw == null || raw.trim().isEmpty) return '';
     final ten = extract10Digits(raw);
     if (ten.length == 10) {
-      return '+91 ${ten.substring(0, 5)} ${ten.substring(5)}';
+      return '${ten.substring(0, 5)} ${ten.substring(5)}';
     }
     return raw;
   }

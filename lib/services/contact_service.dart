@@ -18,13 +18,24 @@ class ContactService {
   static const String documentId = '1234PHONE';
   static const String defaultPhoneNumber = '9048112233';
 
+  /// Field holding the optional second store number.
+  static const String secondaryPhoneField = 'PHONE_2';
+
   String? _cachedPhoneNumber;
+  String? _cachedSecondaryPhone;
 
   /// Returns the cached phone number or default if not yet fetched
   String get activePhoneNumber => _cachedPhoneNumber ?? defaultPhoneNumber;
 
-  /// Fetches contact phone dynamically from /CONTACT_DETAILS/1234PHONE
+  /// Fetches the primary contact phone from /CONTACT_DETAILS/1234PHONE
   Future<String> fetchContactPhone() async {
+    final phones = await fetchContactPhones();
+    return phones.first;
+  }
+
+  /// Fetches all store contact numbers: the primary number first, then the
+  /// optional second number when one is set. Never returns an empty list.
+  Future<List<String>> fetchContactPhones() async {
     try {
       final doc = await _firestore
           .collection(collectionName)
@@ -47,33 +58,44 @@ class ContactService {
 
         if (val != null) {
           final digits = PhoneHelper.extract10Digits(val.toString());
-          if (digits.isNotEmpty) {
-            _cachedPhoneNumber = digits;
-            return digits;
-          }
+          if (digits.isNotEmpty) _cachedPhoneNumber = digits;
         }
+
+        final second = PhoneHelper.extract10Digits((data[secondaryPhoneField] ?? '').toString());
+        _cachedSecondaryPhone = second.length == 10 ? second : null;
       }
     } catch (e) {
-      debugPrint('ContactService.fetchContactPhone error: $e');
+      debugPrint('ContactService.fetchContactPhones error: $e');
     }
 
     _cachedPhoneNumber ??= defaultPhoneNumber;
-    return _cachedPhoneNumber!;
+    return [
+      _cachedPhoneNumber!,
+      if (_cachedSecondaryPhone != null && _cachedSecondaryPhone != _cachedPhoneNumber)
+        _cachedSecondaryPhone!,
+    ];
   }
 
-  /// Updates the store contact phone number in /CONTACT_DETAILS/1234PHONE
-  Future<bool> updateContactPhone(String newPhone) async {
-    final clean = PhoneHelper.extract10Digits(newPhone);
-    if (clean.length != 10) return false;
+  /// Saves the store contact numbers in /CONTACT_DETAILS/1234PHONE.
+  /// [primary] must be a valid 10-digit number. An empty [secondary]
+  /// removes the second number. Returns false on invalid input or failure.
+  Future<bool> updateContactPhones(String primary, [String? secondary]) async {
+    final cleanPrimary = PhoneHelper.extract10Digits(primary);
+    if (cleanPrimary.length != 10) return false;
+    final cleanSecondary = PhoneHelper.extract10Digits(secondary ?? '');
+    if (cleanSecondary.isNotEmpty && cleanSecondary.length != 10) return false;
+
     try {
       await _firestore.collection(collectionName).doc(documentId).set({
-        'PHONE': clean,
+        'PHONE': cleanPrimary,
+        secondaryPhoneField: cleanSecondary.isEmpty ? FieldValue.delete() : cleanSecondary,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-      _cachedPhoneNumber = clean;
+      _cachedPhoneNumber = cleanPrimary;
+      _cachedSecondaryPhone = cleanSecondary.isEmpty ? null : cleanSecondary;
       return true;
     } catch (e) {
-      debugPrint('ContactService.updateContactPhone error: $e');
+      debugPrint('ContactService.updateContactPhones error: $e');
       return false;
     }
   }
@@ -137,12 +159,12 @@ class ContactService {
     }
   }
 
-  /// Format phone number nicely for display (e.g. "+91 90481 12233")
+  /// Format phone number nicely for display (e.g. "90481 12233", no country code)
   String formatForDisplay([String? phone]) {
     final raw = phone ?? activePhoneNumber;
     final digits = PhoneHelper.extract10Digits(raw);
     if (digits.length == 10) {
-      return '+91 ${digits.substring(0, 5)} ${digits.substring(5)}';
+      return '${digits.substring(0, 5)} ${digits.substring(5)}';
     }
     return raw;
   }
