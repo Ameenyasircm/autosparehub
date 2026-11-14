@@ -200,7 +200,7 @@ void main() {
         imageFile: dummyFile,
       );
       expect(missingCompanyAdd, isFalse);
-      expect(provider.errorMessage, 'Please select a company for this category.');
+      expect(provider.errorMessage, 'Please select a brand for this category.');
 
       final dupAdd = await provider.addCategory(
         name: 'engine parts',
@@ -220,7 +220,7 @@ void main() {
         isActive: true,
       );
       expect(missingCompanyEdit, isFalse);
-      expect(provider.errorMessage, 'Please select a company for this category.');
+      expect(provider.errorMessage, 'Please select a brand for this category.');
 
       final dupEdit = await provider.editCategory(
         id: 'CAT_3',

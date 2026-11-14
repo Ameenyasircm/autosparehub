@@ -125,7 +125,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
     if (_selectedCompanyId == null || _selectedCompanyId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a company for this category.'),
+          content: Text('Please select a brand for this category.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -238,7 +238,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'This existing category is not mapped to a company yet. Select the company it belongs to and tap Update Category.',
+                          'This existing category is not mapped to a brand yet. Select the brand it belongs to and tap Update Category.',
                           style: TextStyle(
                             color: Colors.amber.shade900,
                             fontSize: 12.5,
@@ -394,17 +394,17 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
 
               // Company Selector Field (Mandatory parent company)
               AppDropdownField<String>(
-                label: 'Company',
+                label: 'Brand',
                 hint: companyProvider.companies.isEmpty
-                    ? 'No companies available'
-                    : 'Select company',
+                    ? 'No brands available'
+                    : 'Select brand',
                 isRequired: true,
                 enabled: !provider.isSaving,
                 value: hasValidCompany ? _selectedCompanyId : null,
                 prefixIcon: Icons.business_outlined,
                 isDarkTheme: true,
                 helperText: companyProvider.companies.isEmpty
-                    ? 'Add a company first before creating categories.'
+                    ? 'Add a brand first before creating categories.'
                     : null,
                 items: companyProvider.companies.map((c) {
                   return DropdownMenuItem<String>(
@@ -425,7 +425,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                     });
                   }
                 },
-                validator: (val) => val == null || val.isEmpty ? 'Please select a company' : null,
+                validator: (val) => val == null || val.isEmpty ? 'Please select a brand' : null,
               ),
 
               const SizedBox(height: 18),

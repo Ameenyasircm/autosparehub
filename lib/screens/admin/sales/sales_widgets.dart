@@ -192,7 +192,7 @@ Future<ProductModel?> showProductPicker(BuildContext context, {required bool for
       final list = provider.products.where((p) {
         if (query.isEmpty) return true;
         return p.name.toLowerCase().contains(query) ||
-            (p.refNo ?? '').toLowerCase().contains(query) ||
+            p.application.toLowerCase().contains(query) ||
             p.companyName.toLowerCase().contains(query);
       }).toList()
         ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
@@ -213,7 +213,7 @@ Future<ProductModel?> showProductPicker(BuildContext context, {required bool for
             title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
             subtitle: Text(
               [
-                if ((p.refNo ?? '').isNotEmpty) p.refNo!,
+                if (p.productCode != null) 'Code: ${p.productCode}',
                 p.companyName,
                 if (!p.isActive) 'Inactive',
               ].join(' • '),

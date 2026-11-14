@@ -202,7 +202,6 @@ class OrderModel {
     final itemsList = distinctItems;
     for (final item in itemsList) {
       final brand = item.companyName.trim().isNotEmpty ? ' (${item.companyName.trim()})' : '';
-      final ref = (item.refNo != null && item.refNo!.trim().isNotEmpty) ? ' [Ref: ${item.refNo!.trim()}]' : '';
       final totalStr = item.totalPrice % 1 == 0
           ? item.totalPrice.toStringAsFixed(0)
           : item.totalPrice.toStringAsFixed(2);
@@ -211,9 +210,9 @@ class OrderModel {
         final unitStr = item.unitPrice % 1 == 0
             ? item.unitPrice.toStringAsFixed(0)
             : item.unitPrice.toStringAsFixed(2);
-        buffer.writeln('• ${item.productName}$brand$ref - Qty: ${item.quantity} (₹$unitStr each = ₹$totalStr)');
+        buffer.writeln('• ${item.productName}$brand - Qty: ${item.quantity} (₹$unitStr each = ₹$totalStr)');
       } else {
-        buffer.writeln('• ${item.productName}$brand$ref - Qty: ${item.quantity} (₹$totalStr)');
+        buffer.writeln('• ${item.productName}$brand - Qty: ${item.quantity} (₹$totalStr)');
       }
     }
 

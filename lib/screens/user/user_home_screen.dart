@@ -1395,7 +1395,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildCatalogSearchBar(
-          hintText: 'Search companies, categories, spares...',
+          hintText: 'Search brands, categories, spares...',
           onChanged: (val) {
             productProvider.setSearchQuery(val);
             setState(() {});
@@ -1479,7 +1479,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    '${searchProducts.length} Spares Found (All Companies)',
+                    '${searchProducts.length} Spares Found (All Brands)',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1536,7 +1536,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    '${filteredCompanies.length} ${filteredCompanies.length == 1 ? 'Company' : 'Companies'} matching "$query"',
+                    '${filteredCompanies.length} ${filteredCompanies.length == 1 ? 'Brand' : 'Brands'} matching "$query"',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1699,7 +1699,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                           children: [
                             const Expanded(
                               child: Text(
-                                'Vehicle Companies',
+                                'Brands',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -1712,7 +1712,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '${activeCompanies.length} ${activeCompanies.length == 1 ? 'Company' : 'Companies'}',
+                              '${activeCompanies.length} ${activeCompanies.length == 1 ? 'Brand' : 'Brands'}',
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -2047,7 +2047,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             _EmptyBoxAnimation(),
             SizedBox(height: 14),
             Text(
-              'No categories are added under this company yet. Please check back later.',
+              'No categories are added under this brand yet. Please check back later.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.secondaryText,
@@ -2219,14 +2219,14 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             const Icon(Icons.business_outlined, size: 52, color: Colors.grey),
             const SizedBox(height: 14),
             Text(
-              query.isNotEmpty ? 'No Matching Results' : 'No Companies Found',
+              query.isNotEmpty ? 'No Matching Results' : 'No Brands Found',
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 6),
             Text(
               query.isNotEmpty
-                  ? 'No companies, categories, or parts match "$query". Try another keyword.'
-                  : 'Vehicle companies will appear here once added.',
+                  ? 'No brands, categories, or parts match "$query". Try another keyword.'
+                  : 'Brands will appear here once added.',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.grey, fontSize: 13),
             ),
@@ -2324,7 +2324,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       Icon(Icons.arrow_back_rounded, color: AppColors.warmGold, size: 16),
                       SizedBox(width: 4),
                       Text(
-                        'Companies',
+                        'Brands',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -3167,7 +3167,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   onPressed: () => _onBackToCompanies(productProvider),
-                  child: const Text('All Companies'),
+                  child: const Text('All Brands'),
                 ),
               ],
             ),
@@ -3372,11 +3372,9 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
                 const SizedBox(height: 2),
 
-                // Product Code / Application No snippet
+                // Brand snippet (product codes are admin-only)
                 Text(
-                  product.refNo != null && product.refNo!.isNotEmpty
-                      ? 'Sorl No: ${product.refNo}'
-                      : (product.application.isNotEmpty ? 'App No: ${product.application}' : 'Genuine OEM Part'),
+                  product.companyName.isNotEmpty ? product.companyName : 'Genuine Spare Part',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(

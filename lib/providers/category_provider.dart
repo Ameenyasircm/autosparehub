@@ -196,7 +196,7 @@ class CategoryProvider extends ChangeNotifier {
     final cleanCompanyId = companyId.trim();
     final cleanCompanyName = companyName.trim();
     if (cleanCompanyId.isEmpty) {
-      _errorMessage = 'Please select a company for this category.';
+      _errorMessage = 'Please select a brand for this category.';
       notifyListeners();
       return false;
     }
@@ -217,7 +217,7 @@ class CategoryProvider extends ChangeNotifier {
         companyId: cleanCompanyId,
       );
       if (isDuplicate) {
-        final companyLabel = cleanCompanyName.isNotEmpty ? cleanCompanyName : 'this company';
+        final companyLabel = cleanCompanyName.isNotEmpty ? cleanCompanyName : 'this brand';
         _errorMessage = 'A category named "$cleanName" already exists under $companyLabel.';
         _isSaving = false;
         notifyListeners();
@@ -298,7 +298,7 @@ class CategoryProvider extends ChangeNotifier {
     final cleanCompanyId = companyId.trim();
     final cleanCompanyName = companyName.trim();
     if (cleanCompanyId.isEmpty) {
-      _errorMessage = 'Please select a company for this category.';
+      _errorMessage = 'Please select a brand for this category.';
       notifyListeners();
       return false;
     }
@@ -320,7 +320,7 @@ class CategoryProvider extends ChangeNotifier {
         excludeId: id,
       );
       if (isDuplicate) {
-        final companyLabel = cleanCompanyName.isNotEmpty ? cleanCompanyName : 'this company';
+        final companyLabel = cleanCompanyName.isNotEmpty ? cleanCompanyName : 'this brand';
         _errorMessage = 'Another category named "$cleanName" already exists under $companyLabel.';
         _isSaving = false;
         notifyListeners();

@@ -211,7 +211,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     decoration: InputDecoration(
                       hintText: widget.company != null
                           ? 'Search categories in ${widget.company!.name}...'
-                          : 'Search categories or companies...',
+                          : 'Search categories or brands...',
                       prefixIcon: const Icon(Icons.search, size: 22),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
@@ -234,7 +234,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         physics: const BouncingScrollPhysics(),
                         children: [
                           _buildCompanyFilterChip(
-                            label: 'All Companies',
+                            label: 'All Brands',
                             isSelected: _selectedCompanyId == 'ALL',
                             onTap: () => setState(() => _selectedCompanyId = 'ALL'),
                           ),
@@ -279,7 +279,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              '$unassignedCount existing ${unassignedCount == 1 ? 'category needs' : 'categories need'} a company. Tap any category to map it.',
+                              '$unassignedCount existing ${unassignedCount == 1 ? 'category needs' : 'categories need'} a brand. Tap any category to map it.',
                               style: TextStyle(
                                 color: Colors.amber.shade900,
                                 fontSize: 12,
@@ -418,7 +418,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 provider.searchQuery.isNotEmpty
                     ? 'No categories match "${provider.searchQuery}"'
                     : (isUnassignedView
-                        ? 'All categories are mapped to a company!'
+                        ? 'All categories are mapped to a brand!'
                         : (widget.company != null
                             ? 'No categories added under ${widget.company!.name} yet.'
                             : 'No spare parts categories created.')),
@@ -432,8 +432,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               const SizedBox(height: 6),
               Text(
                 isUnassignedView
-                    ? 'Every category in your catalog belongs to a company.'
-                    : 'Organize catalog parts into Engine, Brakes, Transmission under each company.',
+                    ? 'Every category in your catalog belongs to a brand.'
+                    : 'Organize catalog parts into Engine, Brakes, Transmission under each brand.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: AppColors.secondaryText, fontSize: 13),
               ),
@@ -487,8 +487,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final resolvedCompanyName = _resolveCompanyName(category, companyProvider);
     final isAssigned = category.hasCompany;
     final companyLabel = isAssigned
-        ? (resolvedCompanyName.isNotEmpty ? resolvedCompanyName : 'Assigned Company')
-        : 'Unassigned — Tap to set company';
+        ? (resolvedCompanyName.isNotEmpty ? resolvedCompanyName : 'Assigned Brand')
+        : 'Unassigned — Tap to set brand';
 
     return Card(
           elevation: 1.5,

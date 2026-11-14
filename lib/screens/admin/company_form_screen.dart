@@ -87,7 +87,7 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
     if (!widget.isEditing && _selectedImageFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a company logo image.'),
+          content: Text('Please select a brand logo image.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -122,8 +122,8 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
         SnackBar(
           content: Text(
             widget.isEditing
-                ? 'Company updated successfully.'
-                : 'Company added successfully.',
+                ? 'Brand updated successfully.'
+                : 'Brand added successfully.',
           ),
           backgroundColor: AppColors.success,
         ),
@@ -143,7 +143,7 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
         backgroundColor: AppColors.darkCharcoal,
         elevation: 0,
         title: Text(
-          widget.isEditing ? 'Edit Vehicle Company' : 'Add Vehicle Company',
+          widget.isEditing ? 'Edit Brand' : 'Add Brand',
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,
@@ -188,7 +188,7 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
 
               // LOGO PICKER SECTION
               const Text(
-                'Company Logo *',
+                'Brand Logo *',
                 style: TextStyle(
                   color: AppColors.darkCharcoal,
                   fontSize: 13.5,
@@ -303,8 +303,8 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
 
               // Company Name Field
               AppTextField(
-                label: 'Company / Brand Name',
-                hint: 'Enter vehicle company or brand name',
+                label: 'Brand Name',
+                hint: 'Enter brand name',
                 controller: _nameController,
                 isRequired: true,
                 textCapitalization: TextCapitalization.words,
@@ -313,7 +313,7 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
                 isDarkTheme: true,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
-                    return 'Company name is required';
+                    return 'Brand name is required';
                   }
                   return null;
                 },
@@ -349,7 +349,7 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Company Visibility',
+                          'Brand Visibility',
                           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                         ),
                         Text(
@@ -376,8 +376,8 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
 
               // Submit Button with modern spinner and informative text
               AppSubmitButton(
-                label: widget.isEditing ? 'Update Company' : 'Save Company',
-                loadingLabel: 'Uploading & Saving Company...',
+                label: widget.isEditing ? 'Update Brand' : 'Save Brand',
+                loadingLabel: 'Uploading & Saving Brand...',
                 isLoading: provider.isSaving,
                 icon: widget.isEditing ? Icons.check_circle_outline : Icons.save_outlined,
                 backgroundColor: AppColors.primaryGold,

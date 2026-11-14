@@ -666,7 +666,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             prefixIcon: Icons.category_outlined,
             isDarkTheme: true,
             helperText: _selectedCompanyId != null && availableCategories.isEmpty
-                ? 'Add a category under this company first.'
+                ? 'Add a category under this brand first.'
                 : null,
             items: availableCategories.map((c) {
               return DropdownMenuItem<String>(
@@ -755,40 +755,19 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
   }
 
-  // --- 4. VEHICLE APPLICATION & FITMENT CARD ---
+  // --- 4. PRODUCT CODE CARD ---
+  // Stored in the APPLICATION field. Optional, and shown to admins only.
   Widget _buildFitmentCard(ProductProvider provider) {
     return AppFormCard(
-      title: 'OEM Part No & Part Number',
-      icon: Icons.directions_car_outlined,
-      isRequired: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AppTextField(
-            label: 'OEM Part No',
-            hint: 'Enter OEM Part No',
-            controller: _applicationController,
-            isRequired: true,
-            enabled: !provider.isSaving,
-            prefixIcon: Icons.directions_car_outlined,
-            isDarkTheme: true,
-            validator: (val) {
-              if (val == null || val.trim().isEmpty) {
-                return 'OEM Part No is required';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 14),
-          AppTextField(
-            label: 'Part Number',
-            hint: 'Enter product code / Sorl no',
-            controller: _refNoController,
-            enabled: !provider.isSaving,
-            prefixIcon: Icons.tag_rounded,
-            isDarkTheme: true,
-          ),
-        ],
+      title: 'Product Code',
+      icon: Icons.tag_rounded,
+      child: AppTextField(
+        label: 'Product Code',
+        hint: 'Enter product code (optional)',
+        controller: _applicationController,
+        enabled: !provider.isSaving,
+        prefixIcon: Icons.tag_rounded,
+        isDarkTheme: true,
       ),
     );
   }

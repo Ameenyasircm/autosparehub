@@ -257,15 +257,6 @@ class _ProductDetailContent extends StatelessWidget {
         ),
         const SizedBox(height: 4),
 
-        // Product Code / Sorl No (if available)
-        if (product.refNo != null && product.refNo!.trim().isNotEmpty) ...[
-          Text(
-            'Product Code / Sorl No: ${product.refNo}',
-            style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
-          ),
-          const SizedBox(height: 2),
-        ],
-
         // Brand
         Text(
           'Brand: ${product.companyName.isNotEmpty ? product.companyName : 'Generic / OEM'}',
@@ -293,10 +284,6 @@ class _ProductDetailContent extends StatelessWidget {
         const SizedBox(height: 10),
 
         _buildSpecRow('Part category', product.categoryName),
-        _buildSpecRow(
-          'Application No',
-          product.application.isNotEmpty ? product.application : 'Not specified',
-        ),
 
         const SizedBox(height: 18),
 

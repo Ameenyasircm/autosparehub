@@ -419,8 +419,6 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
   Widget _buildCartItemCard(CartItemModel item, CartProvider cartProvider) {
     final p = item.product;
     final unitPrice = p.price ?? 0.0;
-    final hasRefNo = p.refNo != null && p.refNo!.trim().isNotEmpty;
-    final hasApp = p.application.trim().isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -527,7 +525,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
               ),
               const SizedBox(width: 12),
 
-              // Right Column: Title, Brand & Category, Part No, Application, Genuine Price
+              // Right Column: Title, Brand & Category, Price
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,33 +554,6 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                         color: AppColors.secondaryText,
                       ),
                     ),
-
-                    if (hasRefNo) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        'Sorl No: ${p.refNo}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.darkCharcoal,
-                        ),
-                      ),
-                    ],
-
-                    if (hasApp) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        'App No: ${p.application}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF6B7280),
-                        ),
-                      ),
-                    ],
 
                     const SizedBox(height: 8),
 

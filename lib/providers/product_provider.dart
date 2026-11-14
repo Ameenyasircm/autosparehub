@@ -271,7 +271,7 @@ class ProductProvider extends ChangeNotifier {
       return false;
     }
     if (companyId.isEmpty) {
-      _errorMessage = 'Please select a company/manufacturer.';
+      _errorMessage = 'Please select a brand.';
       notifyListeners();
       return false;
     }
@@ -280,12 +280,6 @@ class ProductProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-    if (application.trim().isEmpty) {
-      _errorMessage = 'Application number is required.';
-      notifyListeners();
-      return false;
-    }
-
     _isSaving = true;
     _errorMessage = null;
     notifyListeners();

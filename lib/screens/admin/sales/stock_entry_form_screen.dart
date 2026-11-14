@@ -60,7 +60,7 @@ class _EditableLine {
   StockLineItem toItem() => StockLineItem(
         productId: product.id,
         productName: product.name,
-        refNo: product.refNo,
+        refNo: product.productCode,
         quantity: quantity,
         unitPrice: unitPrice,
       );
@@ -484,7 +484,7 @@ class _StockEntryFormScreenState extends State<StockEntryFormScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                     Text(
                       [
-                        if ((line.product.refNo ?? '').isNotEmpty) line.product.refNo!,
+                        if (line.product.productCode != null) 'Code: ${line.product.productCode}',
                         'In stock: $stock',
                       ].join(' • '),
                       style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),

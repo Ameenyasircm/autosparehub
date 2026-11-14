@@ -9,6 +9,9 @@ class ProductModel {
   final String companyName;
   final String categoryId;
   final String categoryName;
+
+  /// Product Code entered in the admin form (stored as APPLICATION).
+  /// Optional, and shown to admins only.
   final String application;
   final String? description;
 
@@ -32,6 +35,9 @@ class ProductModel {
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  /// The product code, or null when none was entered.
+  String? get productCode => application.trim().isEmpty ? null : application.trim();
 
   const ProductModel({
     required this.id,

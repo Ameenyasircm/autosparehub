@@ -128,12 +128,12 @@ class CompanyProvider extends ChangeNotifier {
       notifyListeners();
     } on TimeoutException {
       debugPrint('CompanyProvider.fetchCompanies: Timeout');
-      _errorMessage = 'Connection timed out while loading companies.';
+      _errorMessage = 'Connection timed out while loading brands.';
       _isLoading = false;
       notifyListeners();
     } catch (e) {
       debugPrint('CompanyProvider.fetchCompanies Error: $e');
-      _errorMessage = 'Failed to load vehicle companies. Please try again.';
+      _errorMessage = 'Failed to load brands. Please try again.';
       _isLoading = false;
       notifyListeners();
     } finally {
@@ -153,7 +153,7 @@ class CompanyProvider extends ChangeNotifier {
   }) async {
     final cleanName = name.trim();
     if (cleanName.isEmpty) {
-      _errorMessage = 'Company name is required.';
+      _errorMessage = 'Brand name is required.';
       notifyListeners();
       return false;
     }
@@ -168,7 +168,7 @@ class CompanyProvider extends ChangeNotifier {
         (c) => c.name.toLowerCase() == cleanName.toLowerCase(),
       );
       if (isDuplicate) {
-        _errorMessage = 'A company with the name "$cleanName" already exists.';
+        _errorMessage = 'A brand with the name "$cleanName" already exists.';
         _isSaving = false;
         notifyListeners();
         return false;
@@ -181,7 +181,7 @@ class CompanyProvider extends ChangeNotifier {
       );
 
       if (uploadedUrl == null || uploadedUrl.isEmpty) {
-        _errorMessage = 'Failed to upload company logo to Cloudinary. Please check your network and retry.';
+        _errorMessage = 'Failed to upload brand logo to Cloudinary. Please check your network and retry.';
         _isSaving = false;
         notifyListeners();
         return false;
@@ -213,13 +213,13 @@ class CompanyProvider extends ChangeNotifier {
       return true;
     } on TimeoutException {
       debugPrint('CompanyProvider.addCompany: Timeout');
-      _errorMessage = 'Connection timed out while saving company. Please check your network.';
+      _errorMessage = 'Connection timed out while saving brand. Please check your network.';
       _isSaving = false;
       notifyListeners();
       return false;
     } catch (e) {
       debugPrint('CompanyProvider.addCompany Error: $e');
-      _errorMessage = 'Failed to save company: $e';
+      _errorMessage = 'Failed to save brand: $e';
       _isSaving = false;
       notifyListeners();
       return false;
@@ -242,7 +242,7 @@ class CompanyProvider extends ChangeNotifier {
   }) async {
     final cleanName = name.trim();
     if (cleanName.isEmpty) {
-      _errorMessage = 'Company name is required.';
+      _errorMessage = 'Brand name is required.';
       notifyListeners();
       return false;
     }
@@ -257,7 +257,7 @@ class CompanyProvider extends ChangeNotifier {
         (c) => c.id != id && c.name.toLowerCase() == cleanName.toLowerCase(),
       );
       if (isDuplicate) {
-        _errorMessage = 'Another company with the name "$cleanName" already exists.';
+        _errorMessage = 'Another brand with the name "$cleanName" already exists.';
         _isSaving = false;
         notifyListeners();
         return false;
@@ -322,13 +322,13 @@ class CompanyProvider extends ChangeNotifier {
       return true;
     } on TimeoutException {
       debugPrint('CompanyProvider.editCompany: Timeout');
-      _errorMessage = 'Connection timed out while updating company.';
+      _errorMessage = 'Connection timed out while updating brand.';
       _isSaving = false;
       notifyListeners();
       return false;
     } catch (e) {
       debugPrint('CompanyProvider.editCompany Error: $e');
-      _errorMessage = 'Failed to update company: $e';
+      _errorMessage = 'Failed to update brand: $e';
       _isSaving = false;
       notifyListeners();
       return false;
@@ -371,7 +371,7 @@ class CompanyProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('CompanyProvider.deleteCompany Error: $e');
-      _errorMessage = 'Failed to delete company: $e';
+      _errorMessage = 'Failed to delete brand: $e';
       notifyListeners();
       return false;
     }

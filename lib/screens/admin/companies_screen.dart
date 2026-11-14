@@ -73,11 +73,11 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
           children: const [
             Icon(Icons.warning_amber_rounded, color: AppColors.error),
             SizedBox(width: 10),
-            Text('Delete Company', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            Text('Delete Brand', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           ],
         ),
         content: Text(
-          'Are you sure you want to delete "${company.name}"?\n\nIf categories or spare parts are linked to this manufacturer, deactivating the company is recommended instead of deletion.',
+          'Are you sure you want to delete "${company.name}"?\n\nIf categories or spare parts are linked to this manufacturer, deactivating the brand is recommended instead of deletion.',
           style: const TextStyle(color: AppColors.secondaryText, fontSize: 13.5, height: 1.4),
         ),
         actions: [
@@ -100,7 +100,7 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
                   _refreshDashboardCountsSafely();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Company "${company.name}" deleted.'),
+                      content: Text('Brand "${company.name}" deleted.'),
                       backgroundColor: AppColors.darkCharcoal,
                     ),
                   );
@@ -153,7 +153,7 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
         backgroundColor: AppColors.darkCharcoal,
         elevation: 0,
         title: const Text(
-          'Companies & Brands',
+          'Brands',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,
@@ -165,7 +165,7 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
         backgroundColor: AppColors.primaryGold,
         foregroundColor: AppColors.darkCharcoal,
         icon: const Icon(Icons.add, size: 20),
-        label: const Text('Add Company', style: TextStyle(fontWeight: FontWeight.w800)),
+        label: const Text('Add Brand', style: TextStyle(fontWeight: FontWeight.w800)),
         onPressed: () => _openCompanyForm(),
       ),
       body: SafeArea(
@@ -180,7 +180,7 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
               controller: _searchController,
               onChanged: (val) => provider.setSearchQuery(val),
               decoration: InputDecoration(
-                hintText: 'Search companies by name...',
+                hintText: 'Search brands by name...',
                 prefixIcon: const Icon(Icons.search, size: 22),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -263,8 +263,8 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
               const SizedBox(height: 12),
               Text(
                 provider.searchQuery.isNotEmpty
-                    ? 'No companies match "${provider.searchQuery}"'
-                    : 'No vehicle companies registered.',
+                    ? 'No brands match "${provider.searchQuery}"'
+                    : 'No brands registered.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: AppColors.darkCharcoal,
@@ -489,7 +489,7 @@ class _CompaniesScreenState extends State<CompaniesScreen> {
                       children: [
                         Icon(Icons.edit_outlined, size: 18),
                         SizedBox(width: 10),
-                        Text('Edit Company'),
+                        Text('Edit Brand'),
                       ],
                     ),
                   ),

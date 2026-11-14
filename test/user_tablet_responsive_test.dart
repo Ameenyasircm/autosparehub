@@ -245,7 +245,7 @@ void main() {
           ),
         );
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.text('Vehicle Companies'), findsOneWidget);
+        expect(find.text('Brands'), findsOneWidget);
         expect(tester.takeException(), isNull);
 
         // Level 2: Categories

@@ -709,7 +709,7 @@ class _AdminShellScreenState extends State<AdminShellScreen> {
                 _buildSidebarItem(
                   index: 3,
                   icon: Icons.business_rounded,
-                  title: 'Car Companies',
+                  title: 'Brands',
                 ),
                 _buildSidebarItem(
                   index: 4,

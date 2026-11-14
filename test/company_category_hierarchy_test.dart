@@ -109,13 +109,13 @@ void main() {
       await tester.pumpWidget(wrapAdmin(const CategoryFormScreen()));
       await tester.pump();
 
-      expect(find.text('Select company'), findsOneWidget);
+      expect(find.text('Select brand'), findsOneWidget);
 
       await tester.ensureVisible(find.text('Save Category'));
       await tester.tap(find.text('Save Category'));
       await tester.pump();
 
-      expect(find.text('Please select a company'), findsOneWidget);
+      expect(find.text('Please select a brand'), findsOneWidget);
       expect(find.text('Category name is required'), findsOneWidget);
 
       // Mount a fresh CategoryFormScreen pre-selected from a company's category list
@@ -127,7 +127,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Toyota'), findsOneWidget);
-      expect(find.text('Select company'), findsNothing);
+      expect(find.text('Select brand'), findsNothing);
     });
 
     testWidgets('CategoriesScreen filters by company, flags unassigned, and drills from CompaniesScreen',
@@ -137,7 +137,7 @@ void main() {
 
       // Unassigned banner + all categories visible initially
       expect(find.text('Unassigned (1)'), findsOneWidget);
-      expect(find.text('Unassigned — Tap to set company'), findsOneWidget);
+      expect(find.text('Unassigned — Tap to set brand'), findsOneWidget);
       expect(find.text('Engine Parts'), findsNWidgets(2));
       expect(find.text('Brake System'), findsOneWidget);
       expect(find.text('Legacy Belts'), findsOneWidget);
@@ -164,11 +164,11 @@ void main() {
       expect(find.text('Legacy Belts'), findsOneWidget);
       expect(
         find.text(
-          'This existing category is not mapped to a company yet. Select the company it belongs to and tap Update Category.',
+          'This existing category is not mapped to a brand yet. Select the brand it belongs to and tap Update Category.',
         ),
         findsOneWidget,
       );
-      expect(find.text('Select company'), findsOneWidget);
+      expect(find.text('Select brand'), findsOneWidget);
       expect(find.text('Update Category'), findsOneWidget);
     });
 
@@ -412,8 +412,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // LEVEL 1: Companies first (active only)
-      expect(find.text('Vehicle Companies'), findsOneWidget);
-      expect(find.text('3 Companies'), findsOneWidget);
+      expect(find.text('Brands'), findsOneWidget);
+      expect(find.text('3 Brands'), findsOneWidget);
       expect(find.text('Honda'), findsOneWidget);
       expect(find.text('Toyota'), findsOneWidget);
       expect(find.text('Tata'), findsOneWidget);
@@ -427,7 +427,7 @@ void main() {
       await tester.tap(find.text('Tata'));
       await tester.pump(const Duration(milliseconds: 100));
       expect(
-        find.text('No categories are added under this company yet. Please check back later.'),
+        find.text('No categories are added under this brand yet. Please check back later.'),
         findsOneWidget,
       );
       await tester.tap(find.text('OK'));
@@ -438,7 +438,7 @@ void main() {
       await tester.tap(find.text('Honda'));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Companies'), findsOneWidget);
+      expect(find.text('Brands'), findsOneWidget);
       expect(find.text('Honda'), findsOneWidget);
       expect(find.text('3 Categories Available'), findsOneWidget);
       expect(find.text('Engine Parts'), findsOneWidget);
@@ -486,7 +486,7 @@ void main() {
       // System back step 2 -> returns from Categories to Companies
       await tester.binding.handlePopRoute();
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('Vehicle Companies'), findsOneWidget);
+      expect(find.text('Brands'), findsOneWidget);
       expect(find.text('3 Categories Available'), findsNothing);
     });
 
@@ -506,14 +506,14 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Shock');
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('1 Spares Found (All Companies)'), findsOneWidget);
+      expect(find.text('1 Spares Found (All Brands)'), findsOneWidget);
       expect(find.text('Toyota Shock Absorber'), findsOneWidget);
       expect(find.text('Honda Timing Belt'), findsNothing);
 
       // Clear search returns to Companies list
       await tester.tap(find.text('Clear Search ×'));
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('Vehicle Companies'), findsOneWidget);
+      expect(find.text('Brands'), findsOneWidget);
 
       // Enter Honda Level 2 and search for Toyota's "Shock" -> must NOT appear inside Honda
       await tester.ensureVisible(find.text('Honda'));
@@ -579,7 +579,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Vehicle Companies'), findsOneWidget);
+      expect(find.text('Brands'), findsOneWidget);
       expect(find.text('Honda'), findsNothing);
       expect(find.text('Toyota'), findsOneWidget);
     });
@@ -598,7 +598,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       final bannerFinder = find.byKey(const ValueKey('welcome_truck_poster_banner'));
-      final headerFinder = find.text('Vehicle Companies');
+      final headerFinder = find.text('Brands');
       expect(bannerFinder, findsOneWidget);
       expect(headerFinder, findsOneWidget);
 

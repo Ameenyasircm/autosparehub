@@ -792,7 +792,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               style: const TextStyle(fontSize: 13.5, color: AppColors.darkCharcoal),
               onChanged: (val) => provider.setSearchQuery(val),
               decoration: InputDecoration(
-                hintText: 'Search part name, Application No, Sorl No...',
+                hintText: 'Search part name or product code...',
                 hintStyle: const TextStyle(color: Color(0xFF9AA3AF), fontSize: 13),
                 prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primaryGold, size: 20),
                 suffixIcon: _searchController.text.isNotEmpty
@@ -1260,35 +1260,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                       const SizedBox(height: 4),
 
-                      // Application No
-                      Row(
-                        children: [
-                          const Icon(Icons.directions_car_outlined, size: 12, color: Color(0xFF7A8499)),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: Text(
-                              'App: ${product.application}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 10.5,
-                                color: Color(0xFF6B7280),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Sorl No (if present)
-                      if (product.refNo != null && product.refNo!.isNotEmpty) ...[
-                        const SizedBox(height: 2),
+                      // Product Code (if present)
+                      if (product.application.isNotEmpty)
                         Row(
                           children: [
                             const Icon(Icons.tag_rounded, size: 12, color: AppColors.primaryGold),
                             const SizedBox(width: 3),
                             Expanded(
                               child: Text(
-                                'Sorl: ${product.refNo!}',
+                                'Code: ${product.application}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -1300,7 +1280,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ),
                           ],
                         ),
-                      ],
 
                       const Spacer(),
 
@@ -1484,37 +1463,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
                       const SizedBox(height: 3),
 
-                      // Application No & Sorl No
-                      Row(
-                        children: [
-                          const Icon(Icons.directions_car_outlined, size: 12, color: Color(0xFF7A8499)),
-                          const SizedBox(width: 3),
-                          Expanded(
-                            child: Text(
-                              'App: ${product.application}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF6B7280),
-                              ),
-                            ),
-                          ),
-                          if (product.refNo != null && product.refNo!.isNotEmpty) ...[
-                            const SizedBox(width: 8),
+                      // Product Code (if present)
+                      if (product.application.isNotEmpty)
+                        Row(
+                          children: [
                             const Icon(Icons.tag_rounded, size: 12, color: AppColors.primaryGold),
-                            const SizedBox(width: 2),
-                            Text(
-                              'Sorl: ${product.refNo!}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.darkCharcoal,
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                'Code: ${product.application}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.darkCharcoal,
+                                ),
                               ),
                             ),
                           ],
-                        ],
-                      ),
+                        ),
 
                       const SizedBox(height: 5),
 

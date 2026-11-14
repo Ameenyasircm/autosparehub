@@ -252,8 +252,6 @@ class ProductDetailScreen extends StatelessWidget {
                     children: [
                       _buildTag(Icons.business_outlined, currentProduct.companyName),
                       _buildTag(Icons.category_outlined, currentProduct.categoryName),
-                      if (currentProduct.refNo != null && currentProduct.refNo!.isNotEmpty)
-                        _buildTag(Icons.tag_rounded, 'Sorl No: ${currentProduct.refNo!}'),
                     ],
                   ),
                 ],
@@ -262,7 +260,7 @@ class ProductDetailScreen extends StatelessWidget {
 
             const SizedBox(height: 18),
 
-            // --- APPLICATION NO ---
+            // --- PRODUCT CODE ---
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -275,10 +273,10 @@ class ProductDetailScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: const [
-                      Icon(Icons.directions_car_outlined, color: AppColors.primaryGold, size: 20),
+                      Icon(Icons.tag_rounded, color: AppColors.primaryGold, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        'Application No',
+                        'Product Code',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
@@ -370,7 +368,6 @@ class ProductDetailScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  _buildSpecRow('Product Code (Sorl No)', currentProduct.refNo),
                   _buildSpecRow('Displacement', currentProduct.displacement),
                   _buildSpecRow('Max Pressure', currentProduct.maxPressure),
                   _buildSpecRow('Controlled Flow', currentProduct.controlledFlow),

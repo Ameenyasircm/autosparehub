@@ -1688,7 +1688,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                       ),
                                       if (item.refNo != null && item.refNo!.isNotEmpty)
                                         Text(
-                                          'Sorl #: ${item.refNo}',
+                                          'Code: ${item.refNo}',
                                           style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
                                         ),
                                       Text(
@@ -2314,7 +2314,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                         if (item.refNo != null && item.refNo!.isNotEmpty) ...[
                                           const Text('•', style: TextStyle(color: AppColors.secondaryText, fontSize: 10)),
                                           Text(
-                                            'Ref: ${item.refNo}',
+                                            'Code: ${item.refNo}',
                                             style: const TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
                                           ),
                                         ],

@@ -167,7 +167,7 @@ void main() {
       expect(find.text('Orders & Requests'), findsOneWidget);
       expect(find.text('Customer Approvals'), findsOneWidget);
       expect(find.text('Products Catalog'), findsOneWidget);
-      expect(find.text('Car Companies'), findsOneWidget);
+      expect(find.text('Brands'), findsOneWidget);
       expect(find.text('Part Categories'), findsOneWidget);
       expect(find.text('Admin Accounts'), findsOneWidget);
       expect(find.text('Store Helpline'), findsOneWidget);
@@ -351,8 +351,8 @@ void main() {
       // Verifies product rendered properly without bottom overflow
       expect(find.text('Heavy Duty Premium Brake Shoes Assembly'), findsOneWidget);
       expect(find.text('BREMBO SYSTEMS • BRAKE PARTS'), findsOneWidget);
-      expect(find.text('App: Tata Prima / Signa 4018 Heavy Haulage'), findsOneWidget);
-      expect(find.text('Sorl: SORL-998811'), findsOneWidget);
+      expect(find.text('Code: Tata Prima / Signa 4018 Heavy Haulage'), findsOneWidget);
+      expect(find.textContaining('SORL-998811'), findsNothing);
       expect(find.text('₹ 4850.00'), findsOneWidget);
     });
   });
