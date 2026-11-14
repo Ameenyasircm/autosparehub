@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../services/contact_service.dart';
 import '../../../theme/app_theme.dart';
 
-/// Store name, address, email and contact numbers, shown at the bottom of the
-/// user home screen. The phone numbers are the ones set by the admin
-/// (Store Contact Numbers); each line is tappable.
+/// Compact store details shown at the bottom of the user home screen:
+/// name, address, email and the contact numbers set by the admin.
+/// Each line is tappable (maps, email, call).
 class StoreAddressCard extends StatefulWidget {
   const StoreAddressCard({super.key});
 
@@ -15,7 +15,7 @@ class StoreAddressCard extends StatefulWidget {
 
 class _StoreAddressCardState extends State<StoreAddressCard> {
   final ContactService _contactService = ContactService();
-  List<String> _phones = const [];
+  List<String> _phones = const [ContactService.defaultPhoneNumber];
 
   @override
   void initState() {
@@ -30,127 +30,94 @@ class _StoreAddressCardState extends State<StoreAddressCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.sizeOf(context).width >= 600;
-
-    final addressLines = [
-      _buildInfoRow(
-        icon: Icons.location_on_rounded,
-        text: ContactService.storeAddress,
-        onTap: _contactService.launchStoreLocation,
-      ),
-      _buildInfoRow(
-        icon: Icons.email_rounded,
-        text: ContactService.storeEmail,
-        onTap: _contactService.launchEmail,
-      ),
-    ];
-    final phoneLines = [
-      for (final phone in _phones)
-        _buildInfoRow(
-          icon: Icons.phone_rounded,
-          text: _contactService.formatForDisplay(phone),
-          onTap: () => _contactService.launchPhoneCall(phone),
-        ),
-    ];
-
     return Container(
       key: const ValueKey('store_address_card'),
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       decoration: BoxDecoration(
-        color: AppColors.darkHeader,
-        borderRadius: BorderRadius.circular(18),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E9F0), width: 1.1),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.warmGold.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.warmGold.withValues(alpha: 0.4), width: 0.8),
+              ClipOval(
+                child: Image.asset(
+                  'assets/AutoSpareLogo.jpg',
+                  width: 30,
+                  height: 30,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const Icon(Icons.storefront_rounded, size: 22, color: AppColors.warmGold),
                 ),
-                child: const Icon(Icons.storefront_rounded, color: AppColors.warmGold, size: 20),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'VISIT OUR STORE',
-                      style: TextStyle(
-                        color: AppColors.warmGold,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.6,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      ContactService.storeName,
-                      style: TextStyle(
-                        color: AppColors.textLight,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  ContactService.storeName,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.darkHeader,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Divider(height: 1, color: Colors.white.withValues(alpha: 0.08)),
-          const SizedBox(height: 4),
-          if (isWide)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: Column(children: addressLines)),
-                const SizedBox(width: 16),
-                Expanded(child: Column(children: phoneLines)),
-              ],
-            )
-          else
-            ...addressLines,
-          if (!isWide) ...phoneLines,
+          const SizedBox(height: 6),
+          _line(
+            Icons.location_on_outlined,
+            ContactService.storeAddress.replaceAll('\n', ' '),
+            _contactService.launchStoreLocation,
+          ),
+          _line(Icons.mail_outline_rounded, ContactService.storeEmail, _contactService.launchEmail),
+          // Phone numbers side by side; each one is its own tap target.
+          Wrap(
+            spacing: 14,
+            children: [
+              for (final phone in _phones)
+                _line(
+                  Icons.phone_outlined,
+                  _contactService.formatForDisplay(phone),
+                  () => _contactService.launchPhoneCall(phone),
+                  expand: false,
+                ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String text,
-    required VoidCallback onTap,
-  }) {
+  Widget _line(IconData icon, String text, VoidCallback onTap, {bool expand = true}) {
+    final label = Text(
+      text,
+      style: const TextStyle(
+        fontSize: 12.5,
+        color: AppColors.secondaryText,
+        fontWeight: FontWeight.w500,
+        height: 1.35,
+      ),
+    );
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(6),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
+          mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 17, color: AppColors.warmGold),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  height: 1.35,
-                ),
-              ),
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(icon, size: 15, color: AppColors.warmGold),
             ),
+            const SizedBox(width: 8),
+            if (expand) Expanded(child: label) else label,
           ],
         ),
       ),
