@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('UserSplashScreen Tests', () {
-    testWidgets('renders logo and SN AUTO HUB branding cleanly',
+    testWidgets('renders logo and SN AUTO SPARE HUB branding cleanly',
         (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -20,24 +20,18 @@ void main() {
 
       expect(find.byType(UserSplashScreen), findsOneWidget);
       expect(find.byType(Image), findsOneWidget);
-      expect(find.text('SN AUTO HUB'), findsOneWidget);
+      expect(find.text('SN AUTO'), findsOneWidget);
+      expect(find.text('SPARE HUB'), findsOneWidget);
+      expect(find.text('Auto Hydraulics & Brake System'), findsOneWidget);
 
-      final textWidget = tester.widget<Text>(find.text('SN AUTO HUB'));
-      expect(textWidget.textSpan, isNotNull);
-      final rootSpan = textWidget.textSpan! as TextSpan;
-      expect(rootSpan.children, hasLength(2));
-
-      final prefixSpan = rootSpan.children![0] as TextSpan;
-      final hubSpan = rootSpan.children![1] as TextSpan;
-      expect(prefixSpan.text, 'SN AUTO ');
-      expect(prefixSpan.style?.color, AppColors.textLight);
-      expect(prefixSpan.style?.fontWeight, FontWeight.w900);
-      expect(hubSpan.text, 'HUB');
-      expect(hubSpan.style?.color, AppColors.warmGold);
-      expect(hubSpan.style?.fontWeight, FontWeight.w900);
+      final title = tester.widget<Text>(find.text('SN AUTO'));
+      expect(title.style?.color, AppColors.textLight);
+      expect(title.style?.fontWeight, FontWeight.w900);
+      final subtitle = tester.widget<Text>(find.text('SPARE HUB'));
+      expect(subtitle.style?.color, AppColors.warmGold);
 
       // Advance through animations and splash timer to verify clean navigation
-      await tester.pump(const Duration(milliseconds: 2200));
+      await tester.pump(const Duration(milliseconds: 3200));
       await tester.pumpAndSettle();
 
       expect(find.text('Home Destination'), findsOneWidget);
@@ -60,10 +54,10 @@ void main() {
       );
 
       await tester.pump(const Duration(milliseconds: 1400));
-      expect(find.text('SN AUTO HUB'), findsOneWidget);
+      expect(find.text('SN AUTO'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
-      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump(const Duration(milliseconds: 1800));
       await tester.pumpAndSettle();
     });
 
@@ -80,7 +74,7 @@ void main() {
 
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
-      await tester.pump(const Duration(milliseconds: 2000));
+      await tester.pump(const Duration(milliseconds: 3000));
 
       expect(find.text('Should Not Navigate'), findsNothing);
     });

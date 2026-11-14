@@ -10,32 +10,26 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('Admin Splash Screen renders logo and SN AUTO HUB branding cleanly',
+  testWidgets('Admin Splash Screen renders logo and SN AUTO SPARE HUB branding cleanly',
       (WidgetTester tester) async {
     // Build MyApp and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
-    // Verify AdminSplashScreen renders with centered branding logo and SN AUTO HUB text
+    // Verify AdminSplashScreen renders with centered branding logo and SN AUTO SPARE HUB text
     expect(find.byType(AdminSplashScreen), findsOneWidget);
     expect(find.byType(Image), findsOneWidget);
-    expect(find.text('SN AUTO HUB'), findsOneWidget);
+    expect(find.text('SN AUTO'), findsOneWidget);
+    expect(find.text('SPARE HUB'), findsOneWidget);
+    expect(find.text('ADMIN PORTAL'), findsOneWidget);
 
-    final textWidget = tester.widget<Text>(find.text('SN AUTO HUB'));
-    expect(textWidget.textSpan, isNotNull);
-    final rootSpan = textWidget.textSpan! as TextSpan;
-    expect(rootSpan.children, hasLength(2));
-
-    final prefixSpan = rootSpan.children![0] as TextSpan;
-    final hubSpan = rootSpan.children![1] as TextSpan;
-    expect(prefixSpan.text, 'SN AUTO ');
-    expect(prefixSpan.style?.color, AppColors.textLight);
-    expect(prefixSpan.style?.fontWeight, FontWeight.w900);
-    expect(hubSpan.text, 'HUB');
-    expect(hubSpan.style?.color, AppColors.warmGold);
-    expect(hubSpan.style?.fontWeight, FontWeight.w900);
+    final title = tester.widget<Text>(find.text('SN AUTO'));
+    expect(title.style?.color, AppColors.textLight);
+    expect(title.style?.fontWeight, FontWeight.w900);
+    final subtitle = tester.widget<Text>(find.text('SPARE HUB'));
+    expect(subtitle.style?.color, AppColors.warmGold);
 
     // Advance clock past splash timer to avoid hanging pending timers
-    await tester.pump(const Duration(milliseconds: 2200));
+    await tester.pump(const Duration(milliseconds: 3200));
     await tester.pumpAndSettle();
   });
 
@@ -49,10 +43,10 @@ void main() {
     await tester.pumpWidget(const MyApp());
 
     await tester.pump(const Duration(milliseconds: 1400));
-    expect(find.text('SN AUTO HUB'), findsOneWidget);
+    expect(find.text('SN AUTO'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
-    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump(const Duration(milliseconds: 1800));
     await tester.pumpAndSettle();
   });
 }
