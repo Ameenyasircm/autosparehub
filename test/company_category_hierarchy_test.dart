@@ -585,7 +585,7 @@ void main() {
     });
 
     testWidgets(
-        'renders compact blurred heavy truck welcome poster banner above Vehicle Companies',
+        'renders compact heavy truck welcome banner above Brands',
         (tester) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1.0;
@@ -608,11 +608,7 @@ void main() {
       expect(bannerRect.bottom, lessThanOrEqualTo(headerRect.top));
       expect(bannerRect.height, inInclusiveRange(140.0, 200.0));
 
-      // Verify blurred heavy truck asset and SN AUTO welcome copy
-      expect(
-        find.descendant(of: bannerFinder, matching: find.byType(ImageFiltered)),
-        findsOneWidget,
-      );
+      // Verify the truck background asset and the welcome copy
       expect(
         find.descendant(
           of: bannerFinder,
@@ -626,8 +622,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('WELCOME TO'), findsOneWidget);
-      expect(find.text('SN AUTO HUB'), findsOneWidget);
-      expect(find.text('Heavy Truck & Commercial Spares'), findsOneWidget);
+      expect(find.text('SN AUTO\nSPARE HUB'), findsOneWidget);
+      expect(find.text('Auto Hydraulics & Brake System'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       // Hides while searching so search results stay prioritized

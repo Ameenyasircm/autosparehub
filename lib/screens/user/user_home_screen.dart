@@ -1,4 +1,3 @@
-import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:auto_spare_hub/utils/snackbar_helper.dart';
@@ -1767,231 +1766,177 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
   Widget _buildWelcomePosterBanner(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final bannerMinHeight = screenWidth >= 600 ? 180.0 : 156.0;
+    final bannerHeight = screenWidth >= 600 ? 184.0 : 160.0;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
       child: Container(
         key: const ValueKey('welcome_truck_poster_banner'),
+        height: bannerHeight,
         decoration: BoxDecoration(
           color: AppColors.darkHeader,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppColors.warmGold.withValues(alpha: 0.45),
-            width: 1.2,
-          ),
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: AppColors.darkHeader.withValues(alpha: 0.16),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
+              color: AppColors.darkHeader.withValues(alpha: 0.22),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(13),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: bannerMinHeight),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Positioned.fill(
-                  child: Transform.scale(
-                    scale: 1.08,
-                    child: ImageFiltered(
-                      imageFilter: ImageFilter.blur(
-                        sigmaX: 2.6,
-                        sigmaY: 2.6,
-                        tileMode: TileMode.mirror,
-                      ),
-                      child: Image.asset(
-                        'assets/heavy_truck_banner.jpg',
-                        fit: BoxFit.cover,
-                        alignment: const Alignment(0.0, 0.05),
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildPosterFallbackBackground(),
-                      ),
+          borderRadius: BorderRadius.circular(18),
+          child: Stack(
+            children: [
+              // Truck photo, sharp, anchored left so the truck stays in view.
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/heavy_truck_banner.jpg',
+                  fit: BoxFit.cover,
+                  alignment: const Alignment(-0.85, 0.35),
+                  errorBuilder: (context, error, stackTrace) => _buildPosterFallbackBackground(),
+                ),
+              ),
+
+              // Fade the photo into the dark card on the right, where the text sits.
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      stops: [0.0, 0.32, 0.55, 1.0],
+                      colors: [
+                        Color(0x14000000),
+                        Color(0x661E222B),
+                        Color(0xF21E222B),
+                        Color(0xFF1E222B),
+                      ],
                     ),
                   ),
                 ),
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xCC12161E),
-                          const Color(0x9E1E222B),
-                          const Color(0xD412161E),
-                        ],
-                      ),
+              ),
+
+              // Soft bottom shade to ground the truck.
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.center,
+                      colors: [Color(0x99000000), Color(0x00000000)],
                     ),
                   ),
                 ),
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        center: const Alignment(0.0, -0.15),
-                        radius: 0.95,
-                        colors: [
-                          AppColors.warmGold.withValues(alpha: 0.16),
-                          Colors.transparent,
-                        ],
-                      ),
+              ),
+
+              // Subtle gold glow behind the text.
+              Positioned(
+                right: -50,
+                top: -60,
+                child: Container(
+                  width: 190,
+                  height: 190,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.warmGold.withValues(alpha: 0.20),
+                        AppColors.warmGold.withValues(alpha: 0.0),
+                      ],
                     ),
                   ),
                 ),
-                Positioned.fill(
+              ),
+
+              // Welcome copy on the right half.
+              Align(
+                alignment: Alignment.centerRight,
+                child: FractionallySizedBox(
+                  widthFactor: 0.56,
                   child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: AppColors.warmGold.withValues(alpha: 0.30),
-                          width: 1,
+                    padding: const EdgeInsets.fromLTRB(4, 12, 18, 12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.warmGold.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: AppColors.warmGold.withValues(alpha: 0.5),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: const Text(
+                            'WELCOME TO',
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: AppColors.lightGold,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.8,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 9),
+                        const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'SN AUTO\n',
+                                  style: TextStyle(color: AppColors.textLight),
+                                ),
+                                TextSpan(
+                                  text: 'SPARE HUB',
+                                  style: TextStyle(color: AppColors.warmGold),
+                                ),
+                              ],
+                            ),
+                            maxLines: 2,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.6,
+                              height: 1.08,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: 34,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: AppColors.warmGold,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Auto Hydraulics & Brake System',
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.82),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 3.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.38),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: AppColors.warmGold.withValues(alpha: 0.45),
-                            width: 0.9,
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.local_shipping_rounded,
-                              size: 12,
-                              color: AppColors.warmGold,
-                            ),
-                            SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                'WELCOME TO',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: AppColors.lightGold,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 2.0,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: 'SN AUTO ',
-                                style: TextStyle(
-                                  color: AppColors.textLight,
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 2.0,
-                                  height: 1.15,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black.withValues(alpha: 0.75),
-                                      offset: const Offset(0, 2),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              TextSpan(
-                                text: 'HUB',
-                                style: TextStyle(
-                                  color: AppColors.warmGold,
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 2.0,
-                                  height: 1.15,
-                                  shadows: [
-                                    Shadow(
-                                      color: AppColors.primaryGold.withValues(alpha: 0.35),
-                                      blurRadius: 12,
-                                    ),
-                                    Shadow(
-                                      color: Colors.black.withValues(alpha: 0.75),
-                                      offset: const Offset(0, 2),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 7),
-                      Container(
-                        width: 54,
-                        height: 2,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          gradient: const LinearGradient(
-                            colors: [
-                              Colors.transparent,
-                              AppColors.warmGold,
-                              AppColors.lightGold,
-                              AppColors.warmGold,
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        'Heavy Truck & Commercial Spares',
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.35,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.75),
-                              offset: const Offset(0, 1),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -2105,92 +2050,96 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
             }
             _selectCompany(company, productProvider);
           },
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Logo fills the whole top of the card, edge to edge.
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
                   child: Container(
                     width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF7F8FA),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: company.logoUrl.isNotEmpty
-                          ? Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Image.network(
-                                company.logoUrl,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => _buildCompanyFallbackIcon(),
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(
-                                    child: SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: AppColors.warmGold,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            )
-                          : _buildCompanyFallbackIcon(),
-                    ),
+                    color: Colors.white,
+                    padding: const EdgeInsets.all(6),
+                    child: company.logoUrl.isNotEmpty
+                        ? Image.network(
+                            company.logoUrl,
+                            fit: BoxFit.contain,
+                            width: double.infinity,
+                            height: double.infinity,
+                            filterQuality: FilterQuality.medium,
+                            errorBuilder: (_, __, ___) => _buildCompanyFallbackIcon(),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.warmGold,
+                                  ),
+                                ),
+                              );
+                            },
+                          )
+                        : _buildCompanyFallbackIcon(),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  company.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.darkHeader,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ),
+              const Divider(height: 1, thickness: 1, color: Color(0xFFEEF1F5)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 9, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        '$categoryCount ${categoryCount == 1 ? 'Category' : 'Categories'}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.secondaryText,
-                        ),
+                    Text(
+                      company.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.darkHeader,
+                        letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: const BoxDecoration(
-                        color: AppColors.badgeGoldBg,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 10,
-                        color: AppColors.badgeGoldText,
-                      ),
+                    const SizedBox(height: 5),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '$categoryCount ${categoryCount == 1 ? 'Category' : 'Categories'}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: const BoxDecoration(
+                            color: AppColors.badgeGoldBg,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 10,
+                            color: AppColors.badgeGoldText,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
