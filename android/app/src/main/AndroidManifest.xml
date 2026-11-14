@@ -53,6 +53,11 @@
             <action android:name="android.intent.action.DIAL" />
             <data android:scheme="tel" />
         </intent>
+        <!-- For Email Links -->
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
         <!-- For Web / WhatsApp Links -->
         <intent>
             <action android:name="android.intent.action.VIEW" />

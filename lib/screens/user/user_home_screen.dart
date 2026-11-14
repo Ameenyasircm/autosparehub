@@ -16,6 +16,7 @@ import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/phone_helper.dart';
 import '../../utils/responsive_helper.dart';
+import '../../widgets/scroll_effects.dart';
 import 'cart_screen.dart';
 import 'user_login_screen.dart';
 import 'user_orders_screen.dart';
@@ -24,6 +25,7 @@ import 'widgets/approval_pending_dialog.dart';
 import 'widgets/change_password_dialog.dart';
 import 'widgets/contact_us_sheet.dart';
 import 'widgets/order_access_guard.dart';
+import 'widgets/store_address_card.dart';
 
 /// Customer Storefront Home Screen:
 /// - Dark AppBar (#12151B) with circular logo, "AUTO SPARE HUB" rich title, and rounded square cart button with badge dot
@@ -1730,7 +1732,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                       )
                     else
                       SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(16, 2, 16, 24),
+                        padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
                         sliver: SliverGrid(
                           gridDelegate: _buildCategoryGridDelegate(
                             context: context,
@@ -1742,18 +1744,23 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                               final catCount = activeCategories
                                   .where((c) => c.companyId == company.id)
                                   .length;
-                              return _buildCompanyCard(
-                                context,
-                                company,
-                                catCount,
-                                categoryProvider,
-                                productProvider,
+                              return FadeSlideIn(
+                                index: index,
+                                child: _buildCompanyCard(
+                                  context,
+                                  company,
+                                  catCount,
+                                  categoryProvider,
+                                  productProvider,
+                                ),
                               );
                             },
                             childCount: activeCompanies.length,
                           ),
                         ),
                       ),
+                    // Store address & contact details after the brand list.
+                    const SliverToBoxAdapter(child: StoreAddressCard()),
                   ],
                 ),
               ),
@@ -1771,233 +1778,257 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: Container(
-        key: const ValueKey('welcome_truck_poster_banner'),
-        height: bannerHeight,
-        decoration: BoxDecoration(
-          color: AppColors.darkHeader,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.darkHeader.withValues(alpha: 0.22),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
+      child: ScrollOffsetBuilder(
+        // Fade out and shrink slightly as the banner scrolls away.
+        builder: (context, offset, child) {
+          final t = (offset / (bannerHeight + 16)).clamp(0.0, 1.0);
+          return Opacity(
+            opacity: 1 - 0.85 * t,
+            child: Transform.scale(
+              scale: 1 - 0.06 * t,
+              alignment: Alignment.bottomCenter,
+              child: child,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // The photo box is sized from the banner height (max 2:1), so the truck
-              // is cropped the same way on phones and on wide tablet banners.
-              final cardWidth = constraints.maxWidth;
-              final photoWidth = cardWidth < bannerHeight * 2.0 ? cardWidth : bannerHeight * 2.0;
-              final textLeft = photoWidth * 0.44;
-              // Wide (tablet) banners have spare room on the right for the store logo.
-              final logoSize = bannerHeight - 44;
-              final showLogo = cardWidth - textLeft >= 260 + logoSize + 48;
+          );
+        },
+        child: Container(
+          key: const ValueKey('welcome_truck_poster_banner'),
+          height: bannerHeight,
+          decoration: BoxDecoration(
+            color: AppColors.darkHeader,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.darkHeader.withValues(alpha: 0.22),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // The photo box is sized from the banner height (max 2:1), so the truck
+                // is cropped the same way on phones and on wide tablet banners.
+                final cardWidth = constraints.maxWidth;
+                final photoWidth = cardWidth < bannerHeight * 2.0 ? cardWidth : bannerHeight * 2.0;
+                final textLeft = photoWidth * 0.44;
+                // Wide (tablet) banners have spare room on the right for the store logo.
+                final logoSize = bannerHeight - 44;
+                final showLogo = cardWidth - textLeft >= 260 + logoSize + 48;
 
-              return Stack(
-                children: [
-                  // Truck photo, sharp, anchored left so the truck stays in view.
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: photoWidth,
-                    child: Image.asset(
-                      'assets/heavy_truck_banner.jpg',
-                      fit: BoxFit.cover,
-                      alignment: const Alignment(-0.85, 0.35),
-                      errorBuilder: (context, error, stackTrace) => _buildPosterFallbackBackground(),
-                    ),
-                  ),
-
-                  // Soft bottom shade to ground the truck.
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: photoWidth,
-                    child: const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.center,
-                          colors: [Color(0x99000000), Color(0x00000000)],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Fade the photo into the dark card, where the text sits.
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: photoWidth + 1,
-                    child: const DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          stops: [0.0, 0.32, 0.55, 1.0],
-                          colors: [
-                            Color(0x14000000),
-                            Color(0x661E222B),
-                            Color(0xF21E222B),
-                            Color(0xFF1E222B),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Subtle gold glow behind the text.
-                  Positioned(
-                    left: textLeft + 40,
-                    top: -70,
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            AppColors.warmGold.withValues(alpha: 0.18),
-                            AppColors.warmGold.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  if (showLogo)
+                return Stack(
+                  children: [
+                    // Truck photo, sharp, anchored left so the truck stays in view.
                     Positioned(
-                      right: 32,
+                      left: 0,
                       top: 0,
                       bottom: 0,
-                      child: Center(
-                        child: Container(
-                          width: logoSize,
-                          height: logoSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.warmGold.withValues(alpha: 0.28),
-                                blurRadius: 28,
+                      width: photoWidth,
+                      child: ScrollOffsetBuilder(
+                        // Parallax: the photo drifts slower than the card; zooms when pulled down.
+                        builder: (context, offset, child) => Transform.translate(
+                          offset: Offset(0, offset > 0 ? offset * 0.35 : 0),
+                          child: Transform.scale(
+                            scale: offset < 0 ? 1 + (-offset / 400).clamp(0.0, 0.25) : 1,
+                            child: child,
+                          ),
+                        ),
+                        child: Image.asset(
+                          'assets/heavy_truck_banner.jpg',
+                          fit: BoxFit.cover,
+                          alignment: const Alignment(-0.85, 0.35),
+                          errorBuilder: (context, error, stackTrace) => _buildPosterFallbackBackground(),
+                        ),
+                      ),
+                    ),
+
+                    // Soft bottom shade to ground the truck.
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: photoWidth,
+                      child: const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.center,
+                            colors: [Color(0x99000000), Color(0x00000000)],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Fade the photo into the dark card, where the text sits.
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: photoWidth + 1,
+                      child: const DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            stops: [0.0, 0.32, 0.55, 1.0],
+                            colors: [
+                              Color(0x14000000),
+                              Color(0x661E222B),
+                              Color(0xF21E222B),
+                              Color(0xFF1E222B),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Subtle gold glow behind the text.
+                    Positioned(
+                      left: textLeft + 40,
+                      top: -70,
+                      child: Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              AppColors.warmGold.withValues(alpha: 0.18),
+                              AppColors.warmGold.withValues(alpha: 0.0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    if (showLogo)
+                      Positioned(
+                        right: 32,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: Container(
+                            width: logoSize,
+                            height: logoSize,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.warmGold.withValues(alpha: 0.28),
+                                  blurRadius: 28,
+                                ),
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: Transform.scale(
+                                scale: 1.12,
+                                child: Image.asset(
+                                  'assets/AutoSpareLogo.jpg',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Welcome copy, starting where the photo fades out.
+                    Positioned(
+                      left: textLeft,
+                      right: showLogo ? logoSize + 48 : 0,
+                      top: 0,
+                      bottom: 0,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 12, 18, 12),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.warmGold.withValues(alpha: 0.14),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: AppColors.warmGold.withValues(alpha: 0.5),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  'WELCOME TO',
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    color: AppColors.lightGold,
+                                    fontSize: isWide ? 10 : 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.8,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: isWide ? 10 : 9),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text.rich(
+                                  const TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: 'SN AUTO\n',
+                                        style: TextStyle(color: AppColors.textLight),
+                                      ),
+                                      TextSpan(
+                                        text: 'SPARE HUB',
+                                        style: TextStyle(color: AppColors.warmGold),
+                                      ),
+                                    ],
+                                  ),
+                                  maxLines: 2,
+                                  style: TextStyle(
+                                    fontSize: isWide ? 26 : 22,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.6,
+                                    height: 1.08,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                width: isWide ? 40 : 34,
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  color: AppColors.warmGold,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'Auto Hydraulics & Brake System',
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.82),
+                                    fontSize: isWide ? 13 : 11,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.3,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                          child: ClipOval(
-                            child: Transform.scale(
-                              scale: 1.12,
-                              child: Image.asset(
-                                'assets/AutoSpareLogo.jpg',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-                              ),
-                            ),
-                          ),
                         ),
                       ),
                     ),
-
-                  // Welcome copy, starting where the photo fades out.
-                  Positioned(
-                    left: textLeft,
-                    right: showLogo ? logoSize + 48 : 0,
-                    top: 0,
-                    bottom: 0,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 12, 18, 12),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.warmGold.withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: AppColors.warmGold.withValues(alpha: 0.5),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Text(
-                                'WELCOME TO',
-                                maxLines: 1,
-                                style: TextStyle(
-                                  color: AppColors.lightGold,
-                                  fontSize: isWide ? 10 : 9,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.8,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: isWide ? 10 : 9),
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text.rich(
-                                const TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: 'SN AUTO\n',
-                                      style: TextStyle(color: AppColors.textLight),
-                                    ),
-                                    TextSpan(
-                                      text: 'SPARE HUB',
-                                      style: TextStyle(color: AppColors.warmGold),
-                                    ),
-                                  ],
-                                ),
-                                maxLines: 2,
-                                style: TextStyle(
-                                  fontSize: isWide ? 26 : 22,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.6,
-                                  height: 1.08,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              width: isWide ? 40 : 34,
-                              height: 3,
-                              decoration: BoxDecoration(
-                                color: AppColors.warmGold,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                'Auto Hydraulics & Brake System',
-                                maxLines: 1,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.82),
-                                  fontSize: isWide ? 13 : 11,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),

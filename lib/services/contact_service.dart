@@ -18,6 +18,11 @@ class ContactService {
   static const String documentId = '1234PHONE';
   static const String defaultPhoneNumber = '9048112233';
 
+  /// Store details shown to customers (home screen footer).
+  static const String storeName = 'SN Auto Hydraulics & Brake System';
+  static const String storeAddress = 'CH Bypass, Pandikkad Road,\nManjeri - 676122';
+  static const String storeEmail = 'snautohydraulics@gmail.com';
+
   /// Field holding the optional second store number.
   static const String secondaryPhoneField = 'PHONE_2';
 
@@ -155,6 +160,28 @@ class ContactService {
       return await launchUrl(webUri);
     } catch (e) {
       debugPrint('ContactService.launchWhatsApp error: $e');
+      return false;
+    }
+  }
+
+  /// Open the email app addressed to [email] (defaults to the store email).
+  Future<bool> launchEmail([String email = storeEmail]) async {
+    try {
+      return await launchUrl(Uri(scheme: 'mailto', path: email), mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('ContactService.launchEmail error: $e');
+      return false;
+    }
+  }
+
+  /// Open the store address in Google Maps.
+  Future<bool> launchStoreLocation() async {
+    final query = Uri.encodeComponent('$storeName, ${storeAddress.replaceAll('\n', ' ')}');
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      debugPrint('ContactService.launchStoreLocation error: $e');
       return false;
     }
   }
