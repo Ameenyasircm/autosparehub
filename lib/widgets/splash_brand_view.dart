@@ -39,7 +39,56 @@ class SplashBrandView extends StatelessWidget {
       backgroundColor: AppColors.darkHeader,
       body: Stack(
         children: [
-          // Spotlight background: lighter behind the logo, darker at the edges.
+          // Faded truck photo in the lower part of the screen, so the truck
+          // (front view, coming down the highway) sits below the logo.
+          // Its top edge melts into the dark background.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: size.height * (isTablet ? 0.62 : 0.58),
+            child: FadeTransition(
+              opacity: logoFade,
+              child: ShaderMask(
+                blendMode: BlendMode.dstIn,
+                shaderCallback: (rect) => const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.35, 1.0],
+                  colors: [Colors.transparent, Colors.white, Colors.white],
+                ).createShader(rect),
+                child: Image.asset(
+                  'assets/splash_truck_bg.jpg',
+                  fit: BoxFit.cover,
+                  alignment: const Alignment(-0.1, 0.0),
+                  filterQuality: FilterQuality.medium,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+
+          // Dark wash over the photo: solid at the top and behind the logo,
+          // lighter around the truck, darker again at the very bottom.
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.45, 0.75, 1.0],
+                  colors: [
+                    Color(0xF514171D),
+                    Color(0xD91E222B),
+                    Color(0x941E222B),
+                    Color(0xE014171D),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Spotlight: lighter behind the logo, darker at the edges.
           const Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -47,9 +96,9 @@ class SplashBrandView extends StatelessWidget {
                   center: Alignment(0, -0.25),
                   radius: 1.1,
                   colors: [
-                    Color(0xFF2C313D),
-                    AppColors.darkHeader,
-                    Color(0xFF14171D),
+                    Color(0x592C313D),
+                    Color(0x001E222B),
+                    Color(0x9914171D),
                   ],
                   stops: [0.0, 0.55, 1.0],
                 ),
