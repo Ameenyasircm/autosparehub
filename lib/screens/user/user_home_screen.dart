@@ -64,6 +64,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   int _currentTabIndex = 0;
   final List<int> _tabHistory = [];
   final _searchController = TextEditingController();
+  final _brandsHeaderKey = GlobalKey();
   bool _isInitialLoading = true;
   bool _isCheckingApproval = false;
   CompanyModel? _selectedCompany;
@@ -1695,6 +1696,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     ),
                     SliverToBoxAdapter(
                       child: Padding(
+                        key: _brandsHeaderKey,
                         padding: const EdgeInsets.fromLTRB(18, 2, 18, 10),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1771,6 +1773,16 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     );
   }
 
+  void _scrollToBrands() {
+    final ctx = _brandsHeaderKey.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   Widget _buildWelcomePosterBanner(BuildContext context) {
     return Padding(
       // Same 16px side padding as the brand grid, so edges line up.
@@ -1779,15 +1791,15 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         builder: (context, constraints) {
           final cardWidth = constraints.maxWidth;
           final isWide = cardWidth >= 560;
-          // Taller than a brand card on phones; capped on tablets.
+          // Tall hero poster: clearly bigger than a brand card on phones.
           final bannerHeight = isWide
-              ? (cardWidth * 0.30).clamp(230.0, 280.0)
-              : (cardWidth * 0.64).clamp(210.0, 250.0);
+              ? (cardWidth * 0.32).clamp(260.0, 320.0)
+              : (cardWidth * 0.80).clamp(250.0, 300.0);
 
-          // Photo box keeps roughly the image's own ratio, anchored left,
-          // so the truck is framed the same on every screen width.
-          final photoWidth = cardWidth < bannerHeight * 1.75 ? cardWidth : bannerHeight * 1.75;
-          final textLeft = photoWidth * 0.50;
+          // Photo box uses the image's own 3:2 ratio, anchored left, so the
+          // truck (left ~half of the photo) stays clear of the text panel.
+          final photoWidth = cardWidth < bannerHeight * 1.5 ? cardWidth : bannerHeight * 1.5;
+          final textLeft = photoWidth * 0.55;
           final logoSize = (bannerHeight - 80).clamp(120.0, 180.0);
           final showLogo = isWide && cardWidth - textLeft >= 300 + logoSize + 48;
 
@@ -1824,7 +1836,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     child: Image.asset(
                       'assets/heavy_truck_banner.jpg',
                       fit: BoxFit.cover,
-                      alignment: const Alignment(-0.7, 0.2),
+                      alignment: const Alignment(-1.0, 0.2),
                       filterQuality: FilterQuality.medium,
                       errorBuilder: (context, error, stackTrace) =>
                           _buildPosterFallbackBackground(),
@@ -1842,10 +1854,10 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                         gradient: LinearGradient(
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
-                          stops: [0.0, 0.34, 0.52, 0.70, 1.0],
+                          stops: [0.0, 0.40, 0.56, 0.70, 1.0],
                           colors: [
                             Color(0x001E222B),
-                            Color(0x261E222B),
+                            Color(0x1A1E222B),
                             Color(0xB31E222B),
                             Color(0xF21E222B),
                             Color(0xFF1E222B),
@@ -2051,6 +2063,44 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                               fontSize: isWide ? 14 : 12,
                               fontWeight: FontWeight.w600,
                               height: 1.35,
+                            ),
+                          ),
+                          SizedBox(height: isWide ? 18 : 14),
+                          Material(
+                            color: AppColors.warmGold,
+                            borderRadius: BorderRadius.circular(22),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(22),
+                              onTap: _scrollToBrands,
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isWide ? 16 : 12,
+                                  vertical: isWide ? 9 : 7,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        'Browse Brands',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: AppColors.darkHeader,
+                                          fontSize: isWide ? 13 : 11.5,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.arrow_downward_rounded,
+                                      size: isWide ? 16 : 14,
+                                      color: AppColors.darkHeader,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ],
