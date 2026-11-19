@@ -386,6 +386,19 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
                           ),
+                          if (item.refNo != null && item.refNo!.trim().isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Part No: ${item.refNo}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.darkCharcoal,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 2),
                           Text(
                             'Qty: ${item.quantity}   •   ₹ ${item.unitPrice.toStringAsFixed(0)} each',

@@ -328,6 +328,18 @@ class OrderSuccessScreen extends StatelessWidget {
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
+                                    if (item.refNo != null &&
+                                        item.refNo!.trim().isNotEmpty)
+                                      Text(
+                                        'Part No: ${item.refNo}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          color: AppColors.darkCharcoal,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
                                     Text(
                                       '${item.companyName} • Qty: ${item.quantity}',
                                       style: const TextStyle(

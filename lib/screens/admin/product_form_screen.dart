@@ -755,15 +755,15 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
   }
 
-  // --- 4. PRODUCT CODE CARD ---
+  // --- 4. PART NUMBER CARD ---
   // Stored in the APPLICATION field. Optional, and shown to admins only.
   Widget _buildFitmentCard(ProductProvider provider) {
     return AppFormCard(
-      title: 'Product Code',
+      title: 'Part Number',
       icon: Icons.tag_rounded,
       child: AppTextField(
-        label: 'Product Code',
-        hint: 'Enter product code (optional)',
+        label: 'Part Number',
+        hint: 'Enter part number (optional)',
         controller: _applicationController,
         enabled: !provider.isSaving,
         prefixIcon: Icons.tag_rounded,

@@ -266,7 +266,7 @@ void main() {
       expect(adminMsg.contains('📦 *Order Details:*'), isTrue);
       expect(adminMsg.contains('• Power Steering Pump (BOSCH) - Qty: 2 (₹4500 each = ₹9000)'), isTrue);
       expect(adminMsg.contains('• Brake Disc Rotor (BREMBO) - Qty: 1 (₹2200)'), isTrue);
-      expect(adminMsg.contains('P-992'), isFalse); // product codes are admin-only
+      expect(adminMsg.contains('P-992'), isFalse); // part numbers are admin-only
       expect(adminMsg.contains('💰 *Total Amount:* ₹11200'), isTrue);
       expect(adminMsg.contains('Thank you for choosing *SN AutoSpare Hub*!'), isTrue);
 

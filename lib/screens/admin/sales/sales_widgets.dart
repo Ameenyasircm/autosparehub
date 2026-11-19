@@ -213,7 +213,7 @@ Future<ProductModel?> showProductPicker(BuildContext context, {required bool for
             title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
             subtitle: Text(
               [
-                if (p.productCode != null) 'Code: ${p.productCode}',
+                if (p.productCode != null) 'Part No: ${p.productCode}',
                 p.companyName,
                 if (!p.isActive) 'Inactive',
               ].join(' • '),

@@ -484,7 +484,7 @@ class _StockEntryFormScreenState extends State<StockEntryFormScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                     Text(
                       [
-                        if (line.product.productCode != null) 'Code: ${line.product.productCode}',
+                        if (line.product.productCode != null) 'Part No: ${line.product.productCode}',
                         'In stock: $stock',
                       ].join(' • '),
                       style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),

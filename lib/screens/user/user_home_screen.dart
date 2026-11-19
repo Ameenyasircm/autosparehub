@@ -15,6 +15,7 @@ import '../../providers/user_auth_provider.dart';
 import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/phone_helper.dart';
+import '../../utils/product_search.dart';
 import '../../utils/responsive_helper.dart';
 import '../../widgets/scroll_effects.dart';
 import 'cart_screen.dart';
@@ -1308,7 +1309,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         (availableWidth - horizontalPadding - (crossAxisCount - 1) * spacing) /
             crossAxisCount;
     final imageHeight = (colWidth * 0.68).clamp(88.0, 146.0);
-    final detailsHeight = 114.0 * textScale + 58.0;
+    final detailsHeight = 130.0 * textScale + 58.0;
     final cardHeight = (imageHeight + detailsHeight).ceilToDouble();
 
     return SliverGridDelegateWithFixedCrossAxisCount(
@@ -1380,25 +1381,20 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         : <CategoryModel>[];
 
     final searchProducts = isSearching
-        ? productProvider.products.where((p) {
-            if (!p.isActive) return false;
-            if (!companyById.containsKey(p.companyId)) return false;
-            if (!activeCategoryIds.contains(p.categoryId)) return false;
-            return p.name.toLowerCase().contains(query) ||
-                (p.refNo?.toLowerCase().contains(query) ?? false) ||
-                p.application.toLowerCase().contains(query) ||
-                (p.description?.toLowerCase().contains(query) ?? false) ||
-                p.companyName.toLowerCase().contains(query) ||
-                p.categoryName.toLowerCase().contains(query) ||
-                p.searchKeywords.any((k) => k.toLowerCase().contains(query));
-          }).toList()
+        ? ProductSearch.search(
+            productProvider.products.where((p) =>
+                p.isActive &&
+                companyById.containsKey(p.companyId) &&
+                activeCategoryIds.contains(p.categoryId)),
+            query,
+          )
         : <ProductModel>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildCatalogSearchBar(
-          hintText: 'Search brands, categories, spares...',
+          hintText: 'Search part name, part number, brand...',
           onChanged: (val) {
             productProvider.setSearchQuery(val);
             setState(() {});
@@ -2408,17 +2404,13 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         : companyCategories;
 
     final searchProducts = isSearching
-        ? productProvider.products.where((p) {
-            if (!p.isActive) return false;
-            if (p.companyId != company.id) return false;
-            if (!companyCategoryIds.contains(p.categoryId)) return false;
-            return p.name.toLowerCase().contains(query) ||
-                (p.refNo?.toLowerCase().contains(query) ?? false) ||
-                p.application.toLowerCase().contains(query) ||
-                (p.description?.toLowerCase().contains(query) ?? false) ||
-                p.categoryName.toLowerCase().contains(query) ||
-                p.searchKeywords.any((k) => k.toLowerCase().contains(query));
-          }).toList()
+        ? ProductSearch.search(
+            productProvider.products.where((p) =>
+                p.isActive &&
+                p.companyId == company.id &&
+                companyCategoryIds.contains(p.categoryId)),
+            query,
+          )
         : <ProductModel>[];
 
     return Column(
@@ -2965,21 +2957,15 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
     final query = _searchController.text.trim().toLowerCase();
     final isSearching = query.isNotEmpty;
 
-    final displayedProducts = productProvider.products.where((p) {
+    final scopedProducts = productProvider.products.where((p) {
       if (!p.isActive || p.companyId != company.id) return false;
-      final inScope = isSearching
+      return isSearching
           ? companyCategoryIds.contains(p.categoryId)
           : p.categoryId == category.id;
-      if (!inScope) return false;
-      if (!isSearching) return true;
-      return p.name.toLowerCase().contains(query) ||
-          (p.refNo?.toLowerCase().contains(query) ?? false) ||
-          p.application.toLowerCase().contains(query) ||
-          (p.description?.toLowerCase().contains(query) ?? false) ||
-          p.companyName.toLowerCase().contains(query) ||
-          p.categoryName.toLowerCase().contains(query) ||
-          p.searchKeywords.any((k) => k.toLowerCase().contains(query));
-    }).toList();
+    });
+    final displayedProducts = isSearching
+        ? ProductSearch.search(scopedProducts, query)
+        : scopedProducts.toList();
 
     return Column(
       children: [
@@ -3505,7 +3491,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
 
                 const SizedBox(height: 2),
 
-                // Brand snippet (product codes are admin-only)
+                // Brand snippet
                 Text(
                   product.companyName.isNotEmpty ? product.companyName : 'Genuine Spare Part',
                   maxLines: 1,
@@ -3514,6 +3500,20 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                     fontSize: 11,
                     color: Color(0xFF7A8499),
                     fontWeight: FontWeight.w500,
+                  ),
+                ),
+
+                const SizedBox(height: 2),
+
+                // Part Number (always reserves a line so cards stay aligned)
+                Text(
+                  product.partNumber != null ? 'Part No: ${product.partNumber}' : 'Part No: —',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.darkHeader,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
 

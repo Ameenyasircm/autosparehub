@@ -260,7 +260,7 @@ class ProductDetailScreen extends StatelessWidget {
 
             const SizedBox(height: 18),
 
-            // --- PRODUCT CODE ---
+            // --- PART NUMBER ---
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -276,7 +276,7 @@ class ProductDetailScreen extends StatelessWidget {
                       Icon(Icons.tag_rounded, color: AppColors.primaryGold, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        'Product Code',
+                        'Part Number',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,

@@ -351,7 +351,7 @@ void main() {
       // Verifies product rendered properly without bottom overflow
       expect(find.text('Heavy Duty Premium Brake Shoes Assembly'), findsOneWidget);
       expect(find.text('BREMBO SYSTEMS • BRAKE PARTS'), findsOneWidget);
-      expect(find.text('Code: Tata Prima / Signa 4018 Heavy Haulage'), findsOneWidget);
+      expect(find.text('Part No: Tata Prima / Signa 4018 Heavy Haulage'), findsOneWidget);
       expect(find.textContaining('SORL-998811'), findsNothing);
       expect(find.text('₹ 4850.00'), findsOneWidget);
     });

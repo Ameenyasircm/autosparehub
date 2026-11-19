@@ -792,7 +792,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               style: const TextStyle(fontSize: 13.5, color: AppColors.darkCharcoal),
               onChanged: (val) => provider.setSearchQuery(val),
               decoration: InputDecoration(
-                hintText: 'Search part name or product code...',
+                hintText: 'Search part name or part number...',
                 hintStyle: const TextStyle(color: Color(0xFF9AA3AF), fontSize: 13),
                 prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primaryGold, size: 20),
                 suffixIcon: _searchController.text.isNotEmpty
@@ -1260,7 +1260,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                       const SizedBox(height: 4),
 
-                      // Product Code (if present)
+                      // Part Number (if present)
                       if (product.application.isNotEmpty)
                         Row(
                           children: [
@@ -1268,7 +1268,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             const SizedBox(width: 3),
                             Expanded(
                               child: Text(
-                                'Code: ${product.application}',
+                                'Part No: ${product.application}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -1463,7 +1463,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
                       const SizedBox(height: 3),
 
-                      // Product Code (if present)
+                      // Part Number (if present)
                       if (product.application.isNotEmpty)
                         Row(
                           children: [
@@ -1471,7 +1471,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             const SizedBox(width: 3),
                             Expanded(
                               child: Text(
-                                'Code: ${product.application}',
+                                'Part No: ${product.application}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(

@@ -164,6 +164,15 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
                       '${widget.product.companyName} • ${widget.product.categoryName}',
                       style: const TextStyle(fontSize: 11.5, color: AppColors.secondaryGold, fontWeight: FontWeight.w600),
                     ),
+                    if (widget.product.partNumber != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Part No: ${widget.product.partNumber}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11.5, color: AppColors.darkCharcoal, fontWeight: FontWeight.w700),
+                      ),
+                    ],
                     const SizedBox(height: 2),
                     Text(
                       '₹ ${price.toStringAsFixed(2)} per unit',

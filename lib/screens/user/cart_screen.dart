@@ -555,6 +555,20 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
                       ),
                     ),
 
+                    if (p.partNumber != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Part No: ${p.partNumber}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.darkCharcoal,
+                      ),
+                      ),
+                    ],
+
                     const SizedBox(height: 8),
 
                     // Authentic Price Display

@@ -9,7 +9,7 @@ import 'cart_screen.dart';
 
 /// Product detail sheet and screen matching Image 4 with precision:
 /// - Crisp centered product image
-/// - Product title, Part No, Brand, Product ID
+/// - Product title, Brand, Part No
 /// - Key-value Product Specifications
 /// - Description section
 /// - Requested quantity stepper with warm orange/gold container
@@ -264,10 +264,14 @@ class _ProductDetailContent extends StatelessWidget {
         ),
         const SizedBox(height: 2),
 
-        // Product ID
+        // Part Number
         Text(
-          'Product ID: ${product.id}',
-          style: const TextStyle(fontSize: 12.5, color: AppColors.secondaryText),
+          'Part No: ${product.partNumber ?? '—'}',
+          style: const TextStyle(
+            fontSize: 12.5,
+            color: AppColors.darkCharcoal,
+            fontWeight: FontWeight.w700,
+          ),
         ),
 
         const SizedBox(height: 20),

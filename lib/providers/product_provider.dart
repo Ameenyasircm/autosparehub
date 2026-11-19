@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../models/product_model.dart';
 import '../services/cloudinary_service.dart';
 import '../services/keyword_generator.dart';
+import '../utils/product_search.dart';
 
 enum ProductSortOption {
   newest,
@@ -72,16 +73,8 @@ class ProductProvider extends ChangeNotifier {
           _selectedCategoryId == 'ALL' ||
           product.categoryId == _selectedCategoryId;
 
-      // Search Query Filter (Matches Name, Ref No, Application, or Search Keywords)
-      final query = _searchQuery.toLowerCase().trim();
-      final matchesSearch = query.isEmpty ||
-          product.name.toLowerCase().contains(query) ||
-          (product.refNo?.toLowerCase().contains(query) ?? false) ||
-          product.application.toLowerCase().contains(query) ||
-          (product.description?.toLowerCase().contains(query) ?? false) ||
-          product.companyName.toLowerCase().contains(query) ||
-          product.categoryName.toLowerCase().contains(query) ||
-          product.searchKeywords.any((k) => k.contains(query));
+      // Search Query Filter (Name, Part Number, Ref No, Brand, Category, Keywords)
+      final matchesSearch = ProductSearch.matches(product, _searchQuery);
 
       return matchesCompany && matchesCategory && matchesSearch;
     }).toList();
