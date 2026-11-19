@@ -12,6 +12,8 @@ class DefaultFirebaseOptions {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return currentAndroidPlatform;
+      case TargetPlatform.iOS:
+        return currentIosPlatform;
       case TargetPlatform.windows:
         return windows;
       default:
@@ -25,6 +27,36 @@ class DefaultFirebaseOptions {
     }
     return androidUser;
   }
+
+  static FirebaseOptions get currentIosPlatform {
+    if (appFlavor == 'admin') {
+      return iosAdmin;
+    }
+    return iosUser;
+  }
+
+  /// iOS configuration for the 'user' flavor
+  static const FirebaseOptions iosUser = FirebaseOptions(
+    apiKey: 'AIzaSyCUF9djASHGex4l_vIfd6aCHN1sa_lzzRo',
+    appId: '1:157612280338:ios:c7008abb9704a33e9fa6cb',
+    messagingSenderId: '157612280338',
+    projectId: 'autosparehub-ce005',
+    storageBucket: 'autosparehub-ce005.firebasestorage.app',
+    iosBundleId: 'com.codemates.autoSpareHub',
+  );
+
+  /// iOS configuration for the 'admin' flavor
+  static const FirebaseOptions iosAdmin = FirebaseOptions(
+    apiKey: 'AIzaSyCUF9djASHGex4l_vIfd6aCHN1sa_lzzRo',
+    appId: '1:157612280338:ios:3f4f0b84042bd5d79fa6cb',
+    messagingSenderId: '157612280338',
+    projectId: 'autosparehub-ce005',
+    storageBucket: 'autosparehub-ce005.firebasestorage.app',
+    iosBundleId: 'com.codemates.autoSpareHubAdmin',
+  );
+
+  /// Default ios fallback
+  static const FirebaseOptions ios = iosUser;
 
   /// Android configuration for the 'user' flavor
   static const FirebaseOptions androidUser = FirebaseOptions(

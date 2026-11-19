@@ -172,7 +172,10 @@ class NotificationService {
     try {
       final fcm = _fcm;
       if (fcm == null) return null;
-      // ignore: deprecated_member_use
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final apnsToken = await fcm.getAPNSToken();
+        debugPrint('APNs Token: $apnsToken');
+      }
       final token = await fcm.getToken();
       debugPrint('FCM Device Token: $token');
       return token;
