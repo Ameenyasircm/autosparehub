@@ -17,6 +17,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/phone_helper.dart';
 import '../../utils/product_search.dart';
 import '../../utils/responsive_helper.dart';
+import '../../widgets/rounded_contain_image.dart';
 import '../../widgets/scroll_effects.dart';
 import 'cart_screen.dart';
 import 'user_login_screen.dart';
@@ -2239,28 +2240,22 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
                   child: Container(
                     width: double.infinity,
                     color: Colors.white,
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.all(8),
                     child: company.logoUrl.isNotEmpty
-                        ? Image.network(
-                            company.logoUrl,
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                            height: double.infinity,
-                            filterQuality: FilterQuality.medium,
-                            errorBuilder: (_, __, ___) => _buildCompanyFallbackIcon(),
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.warmGold,
-                                  ),
+                        ? RoundedContainImage(
+                            url: company.logoUrl,
+                            radius: 12,
+                            errorBuilder: (_) => _buildCompanyFallbackIcon(),
+                            loadingBuilder: (_) => const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.warmGold,
                                 ),
-                              );
-                            },
+                              ),
+                            ),
                           )
                         : _buildCompanyFallbackIcon(),
                   ),
