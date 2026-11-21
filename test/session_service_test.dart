@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:auto_spare_hub/models/admin_model.dart';
 import 'package:auto_spare_hub/services/session_service.dart';
 import 'package:auto_spare_hub/providers/admin_login_provider.dart';
+import 'package:auto_spare_hub/services/admin_auth_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -70,7 +71,7 @@ void main() {
       final sessionService = SessionService();
       await sessionService.saveAdminSession(testAdmin);
 
-      final provider = AdminLoginProvider(sessionService: sessionService);
+      final provider = AdminLoginProvider(sessionService: sessionService, authService: _OfflineSignedInAdminAuth());
       expect(provider.isAuthenticated, isFalse);
 
       final restored = await provider.checkSavedSession();
@@ -82,7 +83,7 @@ void main() {
 
     test('checkSavedSession returns false if no session exists', () async {
       final sessionService = SessionService();
-      final provider = AdminLoginProvider(sessionService: sessionService);
+      final provider = AdminLoginProvider(sessionService: sessionService, authService: _OfflineSignedInAdminAuth());
 
       final restored = await provider.checkSavedSession();
       expect(restored, isFalse);
@@ -94,7 +95,7 @@ void main() {
       final sessionService = SessionService();
       await sessionService.saveAdminSession(testAdmin);
 
-      final provider = AdminLoginProvider(sessionService: sessionService);
+      final provider = AdminLoginProvider(sessionService: sessionService, authService: _OfflineSignedInAdminAuth());
       await provider.checkSavedSession();
       expect(provider.isAuthenticated, isTrue);
 
@@ -106,4 +107,18 @@ void main() {
       expect(sessionAfterLogout, isNull);
     });
   });
+}
+
+/// A Firebase sign-in exists but the server cannot be reached, so the cached
+/// admin session is used (the real app's offline behaviour).
+class _OfflineSignedInAdminAuth extends AdminAuthService {
+  @override
+  Future<bool> hasSignedInUser() async => true;
+  @override
+  Future<AdminModel?> loadSignedInAdmin({bool fromServer = false}) async =>
+      throw Exception('offline');
+  @override
+  Future<void> syncAdminFcmToken(String adminDocId) async {}
+  @override
+  Future<void> signOut() async {}
 }

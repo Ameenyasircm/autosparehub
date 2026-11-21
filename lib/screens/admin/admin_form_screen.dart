@@ -7,6 +7,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_dropdown_field.dart';
 import '../../widgets/app_submit_button.dart';
 import '../../widgets/app_text_field.dart';
+import '../../widgets/responsive_center.dart';
 
 /// Form screen for creating or editing administrator accounts.
 class AdminFormScreen extends StatefulWidget {
@@ -66,6 +67,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
         type: _selectedRole,
         currentIsActive: _isActive,
         originalPhoneNumber: widget.adminToEdit!.phoneNumber,
+        newPassword: _passwordController.text,
       );
     } else {
       success = await provider.addAdmin(
@@ -110,7 +112,8 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
           ),
         ),
       ),
-      body: SafeArea(
+      body: ResponsiveCenter.form(
+        child: SafeArea(
         top: false,
         child: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -224,36 +227,38 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
                 },
               ),
 
-              // Password Field (Only when creating new admin)
-              if (!widget.isEditing) ...[
-                const SizedBox(height: 18),
-                AppTextField(
-                  label: 'Initial Password',
-                  hint: 'Enter initial login password',
-                  controller: _passwordController,
-                  isRequired: true,
-                  obscureText: _obscurePassword,
-                  enabled: !provider.isSaving,
-                  prefixIcon: Icons.lock_outline,
-                  isDarkTheme: true,
-                  suffixWidget: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      color: AppColors.secondaryText,
-                    ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              // Password: required when creating; optional reset when editing.
+              const SizedBox(height: 18),
+              AppTextField(
+                label: widget.isEditing ? 'New Password (optional)' : 'Initial Password',
+                hint: widget.isEditing
+                    ? 'Leave blank to keep the current password'
+                    : 'Enter initial login password',
+                controller: _passwordController,
+                isRequired: !widget.isEditing,
+                obscureText: _obscurePassword,
+                enabled: !provider.isSaving,
+                prefixIcon: Icons.lock_outline,
+                isDarkTheme: true,
+                suffixWidget: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: AppColors.secondaryText,
                   ),
-                  validator: (val) {
-                    if (val == null || val.isEmpty) {
-                      return 'Initial password is required';
-                    }
-                    if (val.length < 4) {
-                      return 'Password must be at least 4 characters';
-                    }
-                    return null;
-                  },
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                 ),
-              ] else ...[
+                validator: (val) {
+                  final v = val ?? '';
+                  if (v.isEmpty) {
+                    return widget.isEditing ? null : 'Initial password is required';
+                  }
+                  if (v.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
+              ),
+              if (widget.isEditing) ...[
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -268,7 +273,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Existing passwords are preserved securely and not displayed or overwritten during profile edits.',
+                          'Passwords are never stored or shown. Enter a new one only to reset it; the old password stops working immediately.',
                           style: TextStyle(color: Colors.blue, fontSize: 12),
                         ),
                       ),
@@ -333,6 +338,7 @@ class _AdminFormScreenState extends State<AdminFormScreen> {
             ],
           ),
         ),
+      ),
       ),
       ),
     );

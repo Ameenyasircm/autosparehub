@@ -143,9 +143,12 @@ class _ContactUsSheetState extends State<ContactUsSheet> {
             children: const [
               Icon(Icons.schedule_rounded, size: 14, color: AppColors.secondaryText),
               SizedBox(width: 6),
-              Text(
-                'Available: Monday - Saturday • 9:00 AM - 8:30 PM',
-                style: TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
+              Flexible(
+                child: Text(
+                  'Available: Monday - Saturday • 9:00 AM - 8:30 PM',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11.5, color: AppColors.secondaryText),
+                ),
               ),
             ],
           ),
@@ -296,12 +299,16 @@ class _ContactUsSheetState extends State<ContactUsSheet> {
             children: [
               icon,
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.darkCharcoal,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.darkCharcoal,
+                  ),
                 ),
               ),
             ],

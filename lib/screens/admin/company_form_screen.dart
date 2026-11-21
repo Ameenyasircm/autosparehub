@@ -7,6 +7,7 @@ import '../../providers/company_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_submit_button.dart';
 import '../../widgets/app_text_field.dart';
+import '../../widgets/responsive_center.dart';
 
 /// Form screen to add or edit a vehicle company / brand with Cloudinary logo upload.
 class CompanyFormScreen extends StatefulWidget {
@@ -151,7 +152,8 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
           ),
         ),
       ),
-      body: SafeArea(
+      body: ResponsiveCenter.form(
+        child: SafeArea(
         top: false,
         child: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -388,6 +390,7 @@ class _CompanyFormScreenState extends State<CompanyFormScreen> {
             ],
           ),
         ),
+      ),
       ),
       ),
     );

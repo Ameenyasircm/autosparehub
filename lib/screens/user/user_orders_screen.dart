@@ -1300,18 +1300,21 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                       ),
                       if (order.createdAt != null) ...[
                         const SizedBox(width: 8),
-                        Text(
-                          '${order.createdAt!.day}/${order.createdAt!.month}/${order.createdAt!.year}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                        Flexible(
+                          child: Text(
+                            '${order.createdAt!.day}/${order.createdAt!.month}/${order.createdAt!.year}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 11, color: AppColors.secondaryText),
+                          ),
                         ),
                       ],
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                Container(
+                Flexible(
+                  child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                   decoration: BoxDecoration(
                     color: visuals.backgroundColor,
@@ -1323,15 +1326,20 @@ class _UserOrdersScreenState extends State<UserOrdersScreen> {
                     children: [
                       Icon(visuals.icon, size: 11.5, color: visuals.primaryColor),
                       const SizedBox(width: 4),
-                      Text(
-                        visuals.label,
-                        style: TextStyle(
-                          color: visuals.primaryColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                      Flexible(
+                        child: Text(
+                          visuals.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: visuals.primaryColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ],
+                  ),
                   ),
                 ),
               ],

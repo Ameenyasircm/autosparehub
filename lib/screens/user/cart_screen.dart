@@ -810,6 +810,7 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
         children: [
           // Total Amount on left
           Expanded(
+            flex: 2,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -840,9 +841,10 @@ class _CartScreenState extends State<CartScreen> with SingleTickerProviderStateM
           ),
           const SizedBox(width: 12),
 
-          // Vibrant Yellow / Gold CTA button (Flipkart style)
+          // Vibrant Yellow / Gold CTA button (Flipkart style).
+          // Flexible so it shrinks on narrow phones; the label scales down.
           Flexible(
-            flex: 0,
+            flex: 3,
             child: SizedBox(
               height: 44,
               child: ElevatedButton(

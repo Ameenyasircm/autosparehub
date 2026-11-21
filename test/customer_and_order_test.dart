@@ -87,7 +87,7 @@ void main() {
         name: 'Ameen Yasir',
         phone: '+919876543210',
         status: 'PENDING',
-        password: 'securePassword123',
+        authUid: 'uid-123',
         requestedAt: now,
       );
 
@@ -96,33 +96,34 @@ void main() {
       expect(map['NAME'], 'Ameen Yasir');
       expect(map['PHONE_NUMBER'], '+919876543210');
       expect(map['STATUS'], 'PENDING');
-      expect(map['PASSWORD'], 'securePassword123');
+      expect(map.containsKey('PASSWORD'), isFalse); // passwords never stored
+      expect(map['AUTH_UID'], 'uid-123');
 
       final fromMap = CustomerModel.fromMap(map, 'USR1776788421000');
       expect(fromMap.id, 'USR1776788421000');
       expect(fromMap.name, 'Ameen Yasir');
       expect(fromMap.phone, '+919876543210');
-      expect(fromMap.password, 'securePassword123');
+      expect(fromMap.authUid, 'uid-123');
       expect(fromMap.isPending, isTrue);
       expect(fromMap.isApproved, isFalse);
     });
 
-    test('copyWith updates password and status correctly', () {
+    test('copyWith updates auth uid and status correctly', () {
       const original = CustomerModel(
         id: 'USR1',
         name: 'Buyer',
         phone: '9988776655',
         status: 'PENDING',
-        password: 'oldPassword',
+        authUid: 'old-uid',
       );
 
       final updated = original.copyWith(
         status: 'APPROVED',
-        password: 'newPassword456',
+        authUid: 'new-uid',
       );
 
       expect(updated.status, 'APPROVED');
-      expect(updated.password, 'newPassword456');
+      expect(updated.authUid, 'new-uid');
       expect(updated.name, 'Buyer');
     });
 
@@ -189,7 +190,6 @@ void main() {
         name: 'Rahul',
         phone: '9988776655',
         status: 'APPROVED',
-        password: 'mySecretPass789',
       );
 
       await sessionService.saveCustomerSession(customer);
@@ -200,7 +200,9 @@ void main() {
       expect(session.name, 'Rahul');
       expect(session.phone, '9988776655');
       expect(session.status, 'APPROVED');
-      expect(session.password, 'mySecretPass789');
+      // No password is ever written to device storage.
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('autospare_customer_session')!.contains('password'), isFalse);
 
       await sessionService.clearCustomerSession();
       final cleared = await sessionService.getCustomerSession();

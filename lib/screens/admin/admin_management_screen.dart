@@ -6,6 +6,7 @@ import '../../providers/admin_login_provider.dart';
 import '../../providers/admin_management_provider.dart';
 import '../../theme/app_theme.dart';
 import 'admin_form_screen.dart';
+import '../../widgets/responsive_center.dart';
 
 /// Professional Admin Management screen for managing administrator accounts, roles, and access.
 class AdminManagementScreen extends StatefulWidget {
@@ -140,7 +141,8 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
         label: const Text('Add Admin', style: TextStyle(fontWeight: FontWeight.w800)),
         onPressed: () => _openAdminForm(),
       ),
-      body: SafeArea(
+      body: ResponsiveCenter.list(
+        child: SafeArea(
         top: false,
         child: Column(
           children: [
@@ -204,6 +206,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
             ),
           ),
         ],
+      ),
       ),
       ),
     );

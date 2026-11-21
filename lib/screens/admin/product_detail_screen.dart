@@ -5,6 +5,7 @@ import '../../providers/admin_dashboard_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../theme/app_theme.dart';
 import 'product_form_screen.dart';
+import '../../widgets/responsive_center.dart';
 
 /// Detailed automotive specification sheet screen for an individual spare part.
 class ProductDetailScreen extends StatelessWidget {
@@ -109,7 +110,8 @@ class ProductDetailScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SafeArea(
+      body: ResponsiveCenter.form(
+        child: SafeArea(
         top: false,
         child: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -431,6 +433,7 @@ class ProductDetailScreen extends StatelessWidget {
             ],
           ],
         ),
+      ),
       ),
       ),
     );

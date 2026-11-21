@@ -1,0 +1,281 @@
+rules_version = '2';
+
+// =============================================================================
+// AutoSpare Hub – Cloud Firestore security rules
+//
+// Identity
+//   * Every user signs in with Firebase Authentication (email/password, with an
+//     internal e-mail derived from the phone number – see lib/services/auth_service.dart).
+//   * Customer: e-mail `c{10 digits}[_{n}]@autosparehub.app`. Their record is
+//     USERS/USR_91{10 digits} and is only theirs while USERS.AUTH_UID equals
+//     their uid (an admin password reset swaps AUTH_UID, which locks out the
+//     old sign-in immediately).
+//   * Admin: has ROLES/{uid} = { ADMIN_ID, ROLE: MANAGER|STAFF, IS_ACTIVE }.
+//     Only MANAGERs can create/modify admins and roles.
+//
+// Anything not explicitly allowed below is denied.
+// Deploy:  firebase deploy --only firestore:rules,database
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------- helpers
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function authEmail() {
+      return signedIn() ? request.auth.token.get('email', '') : '';
+    }
+
+    // ---- customers
+
+    function isCustomerAccount() {
+      return authEmail().matches('^c[0-9]{10}(_[0-9]+)?@autosparehub[.]app$');
+    }
+
+    // 10-digit phone taken from the sign-in e-mail.
+    function custPhone() {
+      return authEmail().split('@')[0].split('_')[0].replace('^c', '');
+    }
+
+    function myUserId() {
+      return 'USR_91' + custPhone();
+    }
+
+    function myUserPath() {
+      return /databases/$(database)/documents/USERS/$(myUserId());
+    }
+
+    // Signed in AND currently owns their USERS record.
+    function isCustomer() {
+      return isCustomerAccount()
+        && exists(myUserPath())
+        && get(myUserPath()).data.get('AUTH_UID', '') == request.auth.uid;
+    }
+
+    function isApprovedCustomer() {
+      return isCustomer() && get(myUserPath()).data.get('STATUS', '') == 'APPROVED';
+    }
+
+    // ---- admins
+
+    function rolePath() {
+      return /databases/$(database)/documents/ROLES/$(request.auth.uid);
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(rolePath())
+        && get(rolePath()).data.get('IS_ACTIVE', false) == true;
+    }
+
+    function isManager() {
+      return isAdmin() && get(rolePath()).data.get('ROLE', '') == 'MANAGER';
+    }
+
+    function myAdminId() {
+      return get(rolePath()).data.get('ADMIN_ID', '');
+    }
+
+    // ---- data helpers
+
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // Plain-text passwords must never be written to Firestore. Legacy values
+    // may stay untouched (or be deleted), but cannot be set or changed.
+    function noNewPassword() {
+      return !('PASSWORD' in request.resource.data)
+        || (resource != null
+            && 'PASSWORD' in resource.data
+            && request.resource.data.PASSWORD == resource.data.PASSWORD);
+    }
+
+    function isShortString(v, max) {
+      return v is string && v.size() > 0 && v.size() <= max;
+    }
+
+    // ------------------------------------------------------------- login lookup
+
+    // LOGIN_INDEX/{key} = { EMAIL } – maps a phone to its internal sign-in
+    // e-mail. Needed before sign-in, so single documents are public; listing
+    // (enumerating every phone number) is not allowed.
+    match /LOGIN_INDEX/{key} {
+      allow get: if true;
+      allow list: if false;
+
+      // Customer self-registration: only their own phone -> own e-mail.
+      allow create: if isCustomerAccount()
+        && key == 'C91' + custPhone()
+        && request.resource.data.keys().hasOnly(['EMAIL', 'UPDATED_AT'])
+        && request.resource.data.EMAIL == authEmail();
+
+      // Admins manage customer keys; only managers manage admin keys.
+      allow create, update, delete: if (key.matches('^C.*') && isAdmin()) || isManager();
+    }
+
+    // ------------------------------------------------------------- roles & admins
+
+    match /ROLES/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      allow write: if isManager();
+    }
+
+    match /ADMINS/{adminId} {
+      // Admins can read all admins; any signed-in admin account can read its
+      // own record (so a deactivated admin gets a clear message at login).
+      allow read: if isAdmin()
+        || (signedIn() && resource != null && resource.data.get('AUTH_UID', '') == request.auth.uid);
+
+      allow create, delete: if isManager() && noNewPassword();
+
+      allow update: if noNewPassword() && (
+        isManager()
+        || (isAdmin() && adminId == myAdminId()
+            && onlyChanges(['FCM_TOKEN', 'FCM_UPDATED_AT']))
+      );
+    }
+
+    // ------------------------------------------------------------- customers
+
+    match /USERS/{userId} {
+      allow get: if isAdmin()
+        || (signedIn() && resource != null && resource.data.get('AUTH_UID', '') == request.auth.uid)
+        // lets a signed-in customer find out their record does not exist yet
+        || (isCustomerAccount() && userId == myUserId() && resource == null);
+
+      allow list: if isAdmin();
+
+      allow create: if noNewPassword() && (
+        isAdmin()
+        || (isCustomerAccount()
+            && userId == myUserId()
+            && request.resource.data.keys().hasOnly([
+                 'ID', 'NAME', 'PHONE_NUMBER', 'STATUS', 'AUTH_UID', 'FCM_TOKEN',
+                 'REQUESTED_AT', 'APPROVED_AT', 'REJECTION_REASON', 'UPDATED_AT',
+                 'NORMALIZED_PHONE', 'DISPLAY_PHONE'])
+            && request.resource.data.ID == userId
+            && request.resource.data.AUTH_UID == request.auth.uid
+            && request.resource.data.PHONE_NUMBER == custPhone()
+            && request.resource.data.STATUS == 'PENDING'
+            && request.resource.data.APPROVED_AT == null
+            && isShortString(request.resource.data.NAME, 100))
+      );
+
+      allow update: if noNewPassword() && (
+        isAdmin()
+        || (isCustomer() && userId == myUserId() && (
+              // device token for push notifications
+              onlyChanges(['FCM_TOKEN', 'FCM_UPDATED_AT'])
+              // re-apply after a rejection
+              || (resource.data.get('STATUS', '') == 'REJECTED'
+                  && request.resource.data.STATUS == 'PENDING'
+                  && onlyChanges(['STATUS', 'REQUESTED_AT', 'REJECTION_REASON', 'UPDATED_AT']))
+           ))
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    match /CARTS/{userId} {
+      allow read, delete: if isCustomer() && userId == myUserId();
+      allow create, update: if isCustomer() && userId == myUserId()
+        && request.resource.data.ITEMS is list
+        && request.resource.data.ITEMS.size() <= 200;
+    }
+
+    // ------------------------------------------------------------- orders
+
+    match /ORDERS/{orderId} {
+      allow get: if isAdmin()
+        || (isCustomer() && (resource.data.get('USER_ID', '') == myUserId()
+                             || resource.data.get('USER_PHONE', '') == custPhone()));
+
+      // Customer queries filter on USER_ID or USER_PHONE.
+      allow list: if isAdmin();
+      allow list: if isCustomer() && resource.data.USER_ID == myUserId();
+      allow list: if isCustomer() && resource.data.USER_PHONE == custPhone();
+
+      // Approved customers place PENDING orders for themselves only.
+      allow create: if isAdmin()
+        || (isApprovedCustomer()
+            && request.resource.data.keys().hasOnly([
+                 'ID', 'ORDER_NUMBER', 'USER_ID', 'USER_NAME', 'USER_PHONE',
+                 'PRODUCT_ID', 'PRODUCT_NAME', 'PRODUCT_IMAGE', 'COMPANY_NAME',
+                 'CATEGORY_NAME', 'UNIT_PRICE', 'QUANTITY', 'TOTAL_AMOUNT',
+                 'SHIPPING_ADDRESS', 'CUSTOMER_NOTE', 'ADMIN_REMARK', 'STATUS',
+                 'ITEMS', 'CATEGORY_NAMES', 'CREATED_AT', 'UPDATED_AT'])
+            && request.resource.data.ID == orderId
+            && request.resource.data.USER_ID == myUserId()
+            && request.resource.data.USER_PHONE == custPhone()
+            && request.resource.data.STATUS == 'PENDING'
+            && request.resource.data.ADMIN_REMARK == null
+            && request.resource.data.ITEMS is list
+            && request.resource.data.ITEMS.size() > 0
+            && request.resource.data.ITEMS.size() <= 100
+            && request.resource.data.QUANTITY is int
+            && request.resource.data.QUANTITY > 0);
+
+      // Status changes, remarks and deletion are admin-only.
+      allow update, delete: if isAdmin();
+    }
+
+    // In-app alert records. Customers may only create admin alerts.
+    match /NOTIFICATIONS/{notificationId} {
+      allow create: if isAdmin()
+        || (isCustomer()
+            && request.resource.data.RECIPIENT_TYPE == 'ADMIN'
+            && request.resource.data.keys().size() <= 20);
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ------------------------------------------------------------- catalogue (public read)
+
+    match /COMPANIES/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /CATEGORIES/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /PRODUCTS/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /CONTACT_DETAILS/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ------------------------------------------------------------- back office (admin only)
+
+    match /SALES/{saleId}/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /SALES/{saleId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /PURCHASES/{purchaseId}/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /PURCHASES/{purchaseId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /COUNTERS/{counterId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

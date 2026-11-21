@@ -158,13 +158,17 @@ class OrderSuccessScreen extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                'Order Ref: ${order.orderNumber}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 14.5,
-                                  color: AppColors.darkCharcoal,
-                                  letterSpacing: 0.5,
+                              Flexible(
+                                child: Text(
+                                  'Order Ref: ${order.orderNumber}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 14.5,
+                                    color: AppColors.darkCharcoal,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -271,12 +275,14 @@ class OrderSuccessScreen extends StatelessWidget {
                           const Icon(Icons.inventory_2_outlined,
                               size: 19, color: AppColors.primaryGold),
                           const SizedBox(width: 8),
-                          Text(
-                            'Order Summary (${order.distinctItems.length} ${order.distinctItems.length == 1 ? 'part' : 'parts'})',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.darkCharcoal,
+                          Expanded(
+                            child: Text(
+                              'Order Summary (${order.distinctItems.length} ${order.distinctItems.length == 1 ? 'part' : 'parts'})',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.darkCharcoal,
+                              ),
                             ),
                           ),
                         ],
@@ -371,20 +377,29 @@ class OrderSuccessScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Estimated Total Amount:',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.secondaryText,
+                          const Flexible(
+                            child: Text(
+                              'Estimated Total Amount:',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.secondaryText,
+                              ),
                             ),
                           ),
-                          Text(
-                            '₹ ${order.totalAmount.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.darkCharcoal,
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                '₹ ${order.totalAmount.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.darkCharcoal,
+                                ),
+                              ),
                             ),
                           ),
                         ],

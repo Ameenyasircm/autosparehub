@@ -28,6 +28,7 @@ import 'screens/user/cart_screen.dart';
 import 'screens/user/user_home_screen.dart';
 import 'screens/user/user_orders_screen.dart';
 import 'screens/user/user_splash_screen.dart';
+import 'services/app_check_setup.dart';
 import 'services/database_service.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
@@ -39,6 +40,7 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    await activateAppCheck();
     FirebaseFirestore.instance.settings = const Settings(
       persistenceEnabled: true,
       cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,

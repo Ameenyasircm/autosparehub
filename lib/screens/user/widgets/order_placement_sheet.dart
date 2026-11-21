@@ -35,7 +35,12 @@ class OrderPlacementSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
-      constraints: isTablet ? const BoxConstraints(maxWidth: 540) : null,
+      // Max 90% height: the sheet scrolls inside, and the dimmed area above
+      // stays visible so it can always be tapped to close.
+      constraints: BoxConstraints(
+        maxWidth: isTablet ? 540 : double.infinity,
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -113,7 +118,9 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
     final price = widget.product.price ?? 0.0;
 
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
+        // Scrolls when the keyboard or a short/large-text screen leaves too
+        // little height for the whole sheet.
         padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -192,10 +199,13 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Order Quantity',
-                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
+              const Flexible(
+                child: Text(
+                  'Order Quantity',
+                  style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.darkCharcoal),
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 decoration: BoxDecoration(
                   border: Border.all(color: AppColors.borderLight),
@@ -275,16 +285,25 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Total Payable Amount',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey),
+                const Flexible(
+                  child: Text(
+                    'Total Payable Amount',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey),
+                  ),
                 ),
-                Text(
-                  '₹ ${_totalPrice.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.darkCharcoal,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '₹ ${_totalPrice.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.darkCharcoal,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -329,20 +348,23 @@ class _OrderPlacementSheetState extends State<OrderPlacementSheet> {
                       height: 22,
                       child: CircularProgressIndicator(strokeWidth: 2.2, valueColor: AlwaysStoppedAnimation(AppColors.darkCharcoal)),
                     )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.shopping_bag_outlined, color: AppColors.darkCharcoal, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'Submit Order Request',
-                          style: TextStyle(
-                            color: AppColors.darkCharcoal,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
+                  : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.shopping_bag_outlined, color: AppColors.darkCharcoal, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Submit Order Request',
+                            style: TextStyle(
+                              color: AppColors.darkCharcoal,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
             ),
           ),

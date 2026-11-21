@@ -3,6 +3,7 @@ import '../../../theme/app_theme.dart';
 import 'customer_form_screen.dart';
 import 'day_wise_sales_screen.dart';
 import 'stock_entry_form_screen.dart';
+import '../../../widgets/responsive_center.dart';
 
 /// Entry point for the simple sales system, opened from the admin menu.
 class SalesHubScreen extends StatelessWidget {
@@ -22,7 +23,8 @@ class SalesHubScreen extends StatelessWidget {
         title: const Text('Sales & Purchases',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17)),
       ),
-      body: ListView(
+      body: ResponsiveCenter.list(
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _HubTile(
@@ -54,6 +56,7 @@ class SalesHubScreen extends StatelessWidget {
             onTap: () => open(const DayWiseSalesScreen()),
           ),
         ],
+      ),
       ),
     );
   }

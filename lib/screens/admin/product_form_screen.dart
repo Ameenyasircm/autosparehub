@@ -13,6 +13,7 @@ import '../../widgets/app_dropdown_field.dart';
 import '../../widgets/app_form_card.dart';
 import '../../widgets/app_submit_button.dart';
 import '../../widgets/app_text_field.dart';
+import '../../widgets/responsive_center.dart';
 
 /// Professional automotive spare parts product studio form with modern e-commerce UX,
 /// dedicated photography studio uploader, live stock preview, and organized specification cards.
@@ -331,7 +332,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         ),
       ),
       bottomNavigationBar: _buildBottomActionBar(provider),
-      body: SafeArea(
+      body: ResponsiveCenter.form(
+        child: SafeArea(
         top: false,
         child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -377,6 +379,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             ],
           ),
         ),
+      ),
       ),
       ),
     );

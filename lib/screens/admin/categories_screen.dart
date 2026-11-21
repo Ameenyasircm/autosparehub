@@ -7,6 +7,7 @@ import '../../providers/category_provider.dart';
 import '../../providers/company_provider.dart';
 import '../../theme/app_theme.dart';
 import 'category_form_screen.dart';
+import '../../widgets/responsive_center.dart';
 
 /// Screen listing spare parts categories with company filtering, search, thumbnail preview, status toggle, and edit/delete actions.
 class CategoriesScreen extends StatefulWidget {
@@ -194,7 +195,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         label: const Text('Add Category', style: TextStyle(fontWeight: FontWeight.w800)),
         onPressed: () => _openCategoryForm(),
       ),
-      body: SafeArea(
+      body: ResponsiveCenter.list(
+        child: SafeArea(
         top: false,
         child: Column(
           children: [
@@ -316,6 +318,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

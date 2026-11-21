@@ -26,7 +26,8 @@ class UserSessionService {
         'requestedAt': customer.requestedAt?.millisecondsSinceEpoch,
         'approvedAt': customer.approvedAt?.millisecondsSinceEpoch,
         'rejectionReason': customer.rejectionReason,
-        'password': customer.password,
+        // No password is stored on the device: Firebase Auth keeps the
+        // sign-in session securely.
       };
       await prefs.setString(_keyCustomerSession, jsonEncode(jsonMap));
     } catch (e) {

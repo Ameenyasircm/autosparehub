@@ -10,6 +10,12 @@ class AdminModel {
   final bool isActive;
   final String? fcmToken;
 
+  /// Firebase Auth account of this admin (rules look up ROLES/{authUid}).
+  final String? authUid;
+
+  /// Internal sign-in e-mail of [authUid] (never shown to users).
+  final String? authEmail;
+
   const AdminModel({
     required this.id,
     required this.name,
@@ -17,6 +23,8 @@ class AdminModel {
     required this.type,
     required this.isActive,
     this.fcmToken,
+    this.authUid,
+    this.authEmail,
   });
 
   /// Check whether the administrator holds the MANAGER role
@@ -47,6 +55,8 @@ class AdminModel {
       type: (data['TYPE'] ?? data['type'] ?? 'STAFF').toString().trim().toUpperCase(),
       isActive: parseIsActive(data['IS_ACTIVE'] ?? data['isActive']),
       fcmToken: (data['FCM_TOKEN'] ?? data['fcmToken'] ?? data['FCM_ID'] ?? data['fcmId'])?.toString().trim(),
+      authUid: data['AUTH_UID']?.toString(),
+      authEmail: data['AUTH_EMAIL']?.toString(),
     );
   }
 
@@ -59,6 +69,8 @@ class AdminModel {
       'TYPE': type,
       'IS_ACTIVE': isActive,
       if (fcmToken != null && fcmToken!.isNotEmpty) 'FCM_TOKEN': fcmToken,
+      if (authUid != null) 'AUTH_UID': authUid,
+      if (authEmail != null) 'AUTH_EMAIL': authEmail,
     };
   }
 
@@ -70,6 +82,8 @@ class AdminModel {
     String? type,
     bool? isActive,
     String? fcmToken,
+    String? authUid,
+    String? authEmail,
   }) {
     return AdminModel(
       id: id ?? this.id,
@@ -78,6 +92,8 @@ class AdminModel {
       type: type ?? this.type,
       isActive: isActive ?? this.isActive,
       fcmToken: fcmToken ?? this.fcmToken,
+      authUid: authUid ?? this.authUid,
+      authEmail: authEmail ?? this.authEmail,
     );
   }
 

@@ -1842,88 +1842,108 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 bottom: BorderSide(color: Color(0xFFECEFF3), width: 1.2),
               ),
             ),
-            child: Row(
+            // Title + status on the first line; actions wrap onto the next
+            // line when the detail pane is narrow (tablet split view).
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          order.orderNumber,
-                          style: const TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.darkHeader,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(Icons.copy_rounded, size: 16, color: AppColors.secondaryText),
-                          tooltip: 'Copy Order Number',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: order.orderNumber));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Order number copied: ${order.orderNumber}'),
-                                duration: const Duration(seconds: 2),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  order.orderNumber,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.darkHeader,
+                                  ),
+                                ),
                               ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    if (order.createdAt != null)
-                      Text(
-                        'Placed on ${_formatDateTime(order.createdAt!)}',
-                        style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: const Icon(Icons.copy_rounded, size: 16, color: AppColors.secondaryText),
+                                tooltip: 'Copy Order Number',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: order.orderNumber));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Order number copied: ${order.orderNumber}'),
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          if (order.createdAt != null)
+                            Text(
+                              'Placed on ${_formatDateTime(order.createdAt!)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
+                            ),
+                        ],
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: badgeBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: badgeColor.withValues(alpha: 0.35)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(statusIcon, size: 15, color: badgeColor),
+                          const SizedBox(width: 5),
+                          Text(
+                            order.status,
+                            style: TextStyle(
+                              color: badgeColor,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                const Spacer(),
-                // Status Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: badgeBg,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: badgeColor.withValues(alpha: 0.35)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(statusIcon, size: 15, color: badgeColor),
-                      const SizedBox(width: 5),
-                      Text(
-                        order.status,
-                        style: TextStyle(
-                          color: badgeColor,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12.5,
-                        ),
+                const SizedBox(height: 10),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildSaleAction(order),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.darkButton,
+                        foregroundColor: AppColors.warmGold,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                _buildSaleAction(order),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.darkButton,
-                    foregroundColor: AppColors.warmGold,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    elevation: 0,
-                  ),
-                  onPressed: () => _showOrderStatusDialog(context, order),
-                  icon: const Icon(Icons.edit_note_rounded, size: 18),
-                  label: const Text(
-                    'Change Status',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-                  ),
+                      onPressed: () => _showOrderStatusDialog(context, order),
+                      icon: const Icon(Icons.edit_note_rounded, size: 18),
+                      label: const Text(
+                        'Change Status',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

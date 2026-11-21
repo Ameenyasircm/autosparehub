@@ -26,6 +26,7 @@ import 'package:auto_spare_hub/screens/user/widgets/contact_us_sheet.dart';
 import 'package:auto_spare_hub/screens/user/widgets/order_placement_sheet.dart';
 import 'package:auto_spare_hub/services/user_session_service.dart';
 import 'package:auto_spare_hub/theme/app_theme.dart';
+import 'package:auto_spare_hub/services/auth_service.dart';
 
 void main() {
   const sampleCompany = CompanyModel(
@@ -187,7 +188,7 @@ void main() {
     categoryProvider = CategoryProvider();
     productProvider = ProductProvider();
     cartProvider = CartProvider();
-    userAuthProvider = UserAuthProvider();
+    userAuthProvider = UserAuthProvider(authService: _SignedInAuthService());
     orderProvider = OrderProvider();
 
     companyProvider.setCompaniesForTesting([sampleCompany, secondCompany]);
@@ -684,4 +685,12 @@ void main() {
       },
     );
   });
+}
+
+/// Pretends a Firebase sign-in exists, so saved sessions are restored in tests.
+class _SignedInAuthService extends AuthService {
+  @override
+  Future<bool> hasSignedInUser() async => true;
+  @override
+  Future<void> signOut() async {}
 }

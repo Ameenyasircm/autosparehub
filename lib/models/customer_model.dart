@@ -2,6 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Customer profile model representing a registered buyer in AutoSpare Hub.
 /// Ordering is gated until an administrator approves the account.
+///
+/// Passwords are never part of this model: sign-in is handled by Firebase
+/// Authentication. [authUid] is the uid of the sign-in account that owns
+/// this record (the Firestore rules check it).
 class CustomerModel {
   final String id;
   final String name;
@@ -10,7 +14,7 @@ class CustomerModel {
   final DateTime? requestedAt;
   final DateTime? approvedAt;
   final String? rejectionReason;
-  final String? password;
+  final String? authUid;
   final String? fcmToken;
 
   const CustomerModel({
@@ -22,7 +26,7 @@ class CustomerModel {
     this.requestedAt,
     this.approvedAt,
     this.rejectionReason,
-    this.password,
+    this.authUid,
     this.fcmToken,
   }) : phoneNumber = phoneNumber ?? phone ?? '';
 
@@ -52,7 +56,7 @@ class CustomerModel {
       requestedAt: parseTimestamp(data['REQUESTED_AT'] ?? data['requestedAt'] ?? data['CREATED_AT']),
       approvedAt: parseTimestamp(data['APPROVED_AT'] ?? data['approvedAt']),
       rejectionReason: data['REJECTION_REASON']?.toString(),
-      password: (data['PASSWORD'] ?? data['password'])?.toString(),
+      authUid: data['AUTH_UID']?.toString(),
       fcmToken: (data['FCM_TOKEN'] ?? data['fcmToken'] ?? data['FCM_ID'] ?? data['fcmId'])?.toString().trim(),
     );
   }
@@ -63,7 +67,7 @@ class CustomerModel {
       'NAME': name,
       'PHONE_NUMBER': phoneNumber,
       'STATUS': status,
-      if (password != null && password!.isNotEmpty) 'PASSWORD': password,
+      if (authUid != null && authUid!.isNotEmpty) 'AUTH_UID': authUid,
       if (fcmToken != null && fcmToken!.isNotEmpty) 'FCM_TOKEN': fcmToken,
       'REQUESTED_AT': requestedAt != null ? Timestamp.fromDate(requestedAt!) : FieldValue.serverTimestamp(),
       'APPROVED_AT': approvedAt != null ? Timestamp.fromDate(approvedAt!) : null,
@@ -80,7 +84,7 @@ class CustomerModel {
     DateTime? requestedAt,
     DateTime? approvedAt,
     String? rejectionReason,
-    String? password,
+    String? authUid,
     String? fcmToken,
   }) {
     return CustomerModel(
@@ -91,7 +95,7 @@ class CustomerModel {
       requestedAt: requestedAt ?? this.requestedAt,
       approvedAt: approvedAt ?? this.approvedAt,
       rejectionReason: rejectionReason ?? this.rejectionReason,
-      password: password ?? this.password,
+      authUid: authUid ?? this.authUid,
       fcmToken: fcmToken ?? this.fcmToken,
     );
   }

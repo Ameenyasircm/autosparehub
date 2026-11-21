@@ -320,6 +320,7 @@ class _ProductDetailContent extends StatelessWidget {
           children: [
             // Price & Total Price label
             Expanded(
+              flex: 2,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -347,14 +348,14 @@ class _ProductDetailContent extends StatelessWidget {
             ),
             const SizedBox(width: 12),
 
-            // "+ Add to Cart" Button
+            // "+ Add to Cart" Button (shrinks on narrow phones)
             Flexible(
-              flex: 0,
+              flex: 3,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.darkButton,
                   foregroundColor: AppColors.warmGold,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

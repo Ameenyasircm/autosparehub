@@ -571,24 +571,11 @@ class OrderProvider extends ChangeNotifier {
 
   /// Notify all active system administrators when a customer places an order
   Future<void> _notifyAdminsOfNewOrder(OrderModel order) async {
+    // Customers cannot read the ADMINS collection (admin-only), so admin
+    // device tokens are not attached. The admin app raises a local alert
+    // from its live ORDERS listener.
     try {
-      // 1. Fetch active admin documents to get their saved FCM IDs
-      final adminSnapshot = await _firestore
-          .collection('ADMINS')
-          .where('IS_ACTIVE', isEqualTo: true)
-          .get()
-          .timeout(const Duration(seconds: 8));
-
-      final List<String> adminTokens = [];
-      for (final doc in adminSnapshot.docs) {
-        final data = doc.data();
-        final token = (data['FCM_TOKEN'] ?? data['fcmToken'])?.toString().trim();
-        if (token != null && token.isNotEmpty) {
-          adminTokens.add(token);
-        }
-      }
-
-      // 2. Persist order notification in NOTIFICATIONS collection for admin alerts / Cloud Functions
+      // Persist order notification in NOTIFICATIONS collection for admin alerts
       await _firestore.collection('NOTIFICATIONS').add({
         'RECIPIENT_TYPE': 'ADMIN',
         'TYPE': 'NEW_ORDER',
@@ -600,12 +587,11 @@ class OrderProvider extends ChangeNotifier {
         'CUSTOMER_PHONE': order.userPhone,
         'TOTAL_AMOUNT': order.totalAmount,
         'ITEM_COUNT': order.quantity,
-        'ADMIN_FCM_TOKENS': adminTokens,
         'IS_READ': false,
         'CREATED_AT': FieldValue.serverTimestamp(),
       }).timeout(const Duration(seconds: 6));
 
-      debugPrint('OrderProvider: Notified admins of new order ${order.orderNumber}. Active admin tokens: ${adminTokens.length}');
+      debugPrint('OrderProvider: Recorded admin alert for order ${order.orderNumber}.');
     } catch (e) {
       debugPrint('OrderProvider._notifyAdminsOfNewOrder error: $e');
     }

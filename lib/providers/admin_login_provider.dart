@@ -32,18 +32,40 @@ class AdminLoginProvider extends ChangeNotifier {
     }
   }
 
-  /// Check whether a persistent session exists in SharedPreferences and restore it
+  /// Restores a saved session at app start. Requires a Firebase sign-in;
+  /// when online, re-checks the role so a deactivated or deleted admin is
+  /// logged out. Offline, the cached admin is used (the server rules still
+  /// block anything the account is no longer allowed to do).
   Future<bool> checkSavedSession() async {
     try {
       final savedAdmin = await _sessionService.getAdminSession();
-      if (savedAdmin != null && savedAdmin.isActive) {
-        _currentAdmin = savedAdmin;
-        _errorMessage = null;
-        notifyListeners();
-        // Sync Admin FCM Token in background
-        _authService.syncAdminFcmToken(savedAdmin.id);
-        return true;
+      if (savedAdmin == null || !savedAdmin.isActive) return false;
+
+      if (!await _authService.hasSignedInUser()) {
+        // Session saved by an older app version (no Firebase sign-in).
+        await _sessionService.clearSession();
+        return false;
       }
+
+      AdminModel admin = savedAdmin;
+      try {
+        final fresh = await _authService.loadSignedInAdmin();
+        if (fresh == null || !fresh.isActive) {
+          await logout();
+          return false;
+        }
+        admin = fresh;
+        await _sessionService.saveAdminSession(fresh);
+      } catch (e) {
+        debugPrint('AdminLoginProvider.checkSavedSession: offline, using cached admin ($e)');
+      }
+
+      _currentAdmin = admin;
+      _errorMessage = null;
+      notifyListeners();
+      // Sync Admin FCM Token in background
+      _authService.syncAdminFcmToken(admin.id);
+      return true;
     } catch (e) {
       debugPrint('AdminLoginProvider.checkSavedSession error: $e');
     }
@@ -106,6 +128,7 @@ class AdminLoginProvider extends ChangeNotifier {
     _errorMessage = null;
     _isLoading = false;
     await _sessionService.clearSession();
+    await _authService.signOut();
     notifyListeners();
   }
 }

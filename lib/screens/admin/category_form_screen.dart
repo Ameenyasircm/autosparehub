@@ -9,6 +9,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_dropdown_field.dart';
 import '../../widgets/app_submit_button.dart';
 import '../../widgets/app_text_field.dart';
+import '../../widgets/responsive_center.dart';
 
 /// Form screen to add or edit a spare parts category under a company with Cloudinary image upload.
 class CategoryFormScreen extends StatefulWidget {
@@ -211,7 +212,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
           ),
         ),
       ),
-      body: SafeArea(
+      body: ResponsiveCenter.form(
+        child: SafeArea(
         top: false,
         child: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -520,6 +522,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
             ],
           ),
         ),
+      ),
       ),
       ),
     );

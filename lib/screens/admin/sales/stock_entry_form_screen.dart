@@ -14,6 +14,7 @@ import '../../../utils/sales_helper.dart';
 import '../../../widgets/app_submit_button.dart';
 import '../../../widgets/app_text_field.dart';
 import 'sales_widgets.dart';
+import '../../../widgets/responsive_center.dart';
 
 enum StockEntryType { sale, purchase }
 
@@ -338,7 +339,8 @@ class _StockEntryFormScreenState extends State<StockEntryFormScreen> {
                 : (_isSale ? 'New Sale' : 'New Purchase'),
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17)),
       ),
-      body: SafeArea(
+      body: ResponsiveCenter.form(
+        child: SafeArea(
         top: false,
         child: Form(
           key: _formKey,
@@ -457,6 +459,7 @@ class _StockEntryFormScreenState extends State<StockEntryFormScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

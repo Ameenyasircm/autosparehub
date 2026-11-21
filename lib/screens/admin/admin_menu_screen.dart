@@ -14,6 +14,7 @@ import 'product_form_screen.dart';
 import 'products_screen.dart';
 import 'sales/sales_hub_screen.dart';
 import 'widgets/edit_contact_numbers_dialog.dart';
+import '../../widgets/responsive_center.dart';
 
 /// Admin Menu Screen hosting all management options, approvals, catalog controls,
 /// contact details settings, and admin session management.
@@ -146,7 +147,8 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: _buildTopAppBar(context),
-      body: SafeArea(
+      body: ResponsiveCenter.list(
+        child: SafeArea(
         top: false,
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -331,6 +333,7 @@ class _AdminMenuScreenState extends State<AdminMenuScreen> {
           ),
           const SizedBox(height: 20),
         ],
+      ),
       ),
       ),
     );

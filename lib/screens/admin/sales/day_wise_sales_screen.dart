@@ -12,6 +12,7 @@ import '../../../utils/phone_helper.dart';
 import '../../../utils/sales_helper.dart';
 import 'sales_report_pdf_screen.dart';
 import 'sales_widgets.dart';
+import '../../../widgets/responsive_center.dart';
 
 /// Day-wise sales with a date-range (calendar), product and customer filter.
 class DayWiseSalesScreen extends StatefulWidget {
@@ -111,7 +112,8 @@ class _DayWiseSalesScreenState extends State<DayWiseSalesScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: ResponsiveCenter.list(
+        child: RefreshIndicator(
         color: AppColors.warmGold,
         onRefresh: _load,
         child: ListView(
@@ -179,6 +181,7 @@ class _DayWiseSalesScreenState extends State<DayWiseSalesScreen> {
               ...days.map(_buildDay),
           ],
         ),
+      ),
       ),
     );
   }

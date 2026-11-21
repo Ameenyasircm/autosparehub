@@ -2,14 +2,20 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/admin_model.dart';
+import '../services/auth_service.dart';
 
 /// Provider managing administration accounts, roles, access status, and queries.
 class AdminManagementProvider extends ChangeNotifier {
   final FirebaseFirestore? _customFirestore;
+  final AuthService _authService;
   FirebaseFirestore get _firestore => _customFirestore ?? FirebaseFirestore.instance;
 
-  AdminManagementProvider({FirebaseFirestore? firestore})
-      : _customFirestore = firestore;
+  AdminManagementProvider({FirebaseFirestore? firestore, AuthService? authService})
+      : _customFirestore = firestore,
+        _authService = authService ?? AuthService(firestore: firestore);
+
+  DocumentReference<Map<String, dynamic>> _roleRef(String uid) =>
+      _firestore.collection(AuthService.rolesCollection).doc(uid);
 
   static const String collectionName = 'ADMINS';
 
@@ -133,8 +139,8 @@ class AdminManagementProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
-    if (password.trim().isEmpty) {
-      _errorMessage = 'Password cannot be empty.';
+    if (password.trim().length < AuthService.minPasswordLength) {
+      _errorMessage = 'Password must be at least ${AuthService.minPasswordLength} characters.';
       notifyListeners();
       return false;
     }
@@ -163,16 +169,37 @@ class AdminManagementProvider extends ChangeNotifier {
       final adminDocId = 'AD${DateTime.now().millisecondsSinceEpoch}';
       final docRef = _firestore.collection(collectionName).doc(adminDocId);
 
-      final data = {
+      final role = type.trim().toUpperCase();
+
+      // Sign-in account (the current admin stays signed in). The password
+      // is held by Firebase Auth only, never written to Firestore.
+      final account = await _authService.createAccountWithFallback(
+        emailFor: (suffix) => AuthService.adminEmail(adminDocId, suffix: suffix),
+        password: password.trim(),
+      );
+
+      final batch = _firestore.batch();
+      batch.set(docRef, {
         'ID': adminDocId,
         'NAME': cleanName,
         'PHONE_NUMBER': cleanPhone,
-        'TYPE': type.trim().toUpperCase(),
-        'PASSWORD': password,
+        'TYPE': role,
         'IS_ACTIVE': isActive,
-      };
-
-      await docRef.set(data).timeout(const Duration(seconds: 10));
+        'AUTH_UID': account.uid,
+        'AUTH_EMAIL': account.email,
+        'CREATED_AT': FieldValue.serverTimestamp(),
+      });
+      batch.set(_roleRef(account.uid), {
+        'ADMIN_ID': adminDocId,
+        'ROLE': role,
+        'IS_ACTIVE': isActive,
+        'UPDATED_AT': FieldValue.serverTimestamp(),
+      });
+      batch.set(
+        _authService.loginIndexRef(AuthService.adminLoginKey(cleanPhone)),
+        AuthService.loginIndexData(account.email),
+      );
+      await batch.commit().timeout(const Duration(seconds: 10));
 
       // Refresh list safely
       try {
@@ -187,6 +214,11 @@ class AdminManagementProvider extends ChangeNotifier {
     } on TimeoutException {
       debugPrint('AdminManagementProvider.addAdmin Timeout');
       _errorMessage = 'Operation timed out. Please check your internet connection and Firestore rules.';
+      _isSaving = false;
+      notifyListeners();
+      return false;
+    } on AuthServiceException catch (e) {
+      _errorMessage = e.message;
       _isSaving = false;
       notifyListeners();
       return false;
@@ -224,7 +256,14 @@ class AdminManagementProvider extends ChangeNotifier {
     required String type,
     required bool currentIsActive,
     required String originalPhoneNumber,
+    String? newPassword,
   }) async {
+    final cleanPassword = newPassword?.trim() ?? '';
+    if (cleanPassword.isNotEmpty && cleanPassword.length < AuthService.minPasswordLength) {
+      _errorMessage = 'Password must be at least ${AuthService.minPasswordLength} characters.';
+      notifyListeners();
+      return false;
+    }
     final cleanPhone = phoneNumber.trim();
     final cleanName = name.trim();
 
@@ -262,13 +301,50 @@ class AdminManagementProvider extends ChangeNotifier {
       }
 
       final docRef = _firestore.collection(collectionName).doc(id);
+      final current = AdminModel.fromFirestore(
+          await docRef.get().timeout(const Duration(seconds: 10)));
+      final role = type.trim().toUpperCase();
 
-      // Update permitted fields only (preserves stored password)
-      await docRef.update({
+      String? uid = current.authUid;
+      String? email = current.authEmail;
+      final oldUid = uid;
+
+      // Password reset: Firebase Auth cannot change another user's password
+      // from the app, so a new sign-in account replaces the old one. The old
+      // one stops working because its ROLES record is removed.
+      if (cleanPassword.isNotEmpty) {
+        email = AuthService.adminEmail(id, suffix: AuthService.resetSuffix());
+        uid = await _authService.createAccountForOther(email: email, password: cleanPassword);
+      }
+
+      final batch = _firestore.batch();
+      batch.update(docRef, {
         'NAME': cleanName,
         'PHONE_NUMBER': cleanPhone,
-        'TYPE': type.trim().toUpperCase(),
-      }).timeout(const Duration(seconds: 10));
+        'TYPE': role,
+        if (uid != null) 'AUTH_UID': uid,
+        if (email != null) 'AUTH_EMAIL': email,
+        'PASSWORD': FieldValue.delete(), // remove any legacy plain-text value
+      });
+      if (uid != null) {
+        if (oldUid != null && oldUid != uid) batch.delete(_roleRef(oldUid));
+        batch.set(_roleRef(uid), {
+          'ADMIN_ID': id,
+          'ROLE': role,
+          'IS_ACTIVE': current.isActive,
+          'UPDATED_AT': FieldValue.serverTimestamp(),
+        });
+      }
+      if (email != null) {
+        if (cleanPhone != originalPhoneNumber.trim()) {
+          batch.delete(_authService.loginIndexRef(AuthService.adminLoginKey(originalPhoneNumber)));
+        }
+        batch.set(
+          _authService.loginIndexRef(AuthService.adminLoginKey(cleanPhone)),
+          AuthService.loginIndexData(email),
+        );
+      }
+      await batch.commit().timeout(const Duration(seconds: 10));
 
       try {
         await fetchAdmins().timeout(const Duration(seconds: 8));
@@ -282,6 +358,11 @@ class AdminManagementProvider extends ChangeNotifier {
     } on TimeoutException {
       debugPrint('AdminManagementProvider.editAdmin Timeout');
       _errorMessage = 'Operation timed out. Please check your internet connection.';
+      _isSaving = false;
+      notifyListeners();
+      return false;
+    } on AuthServiceException catch (e) {
+      _errorMessage = e.message;
       _isSaving = false;
       notifyListeners();
       return false;
@@ -308,9 +389,19 @@ class AdminManagementProvider extends ChangeNotifier {
   /// Toggles an admin's IS_ACTIVE status (Activate / Deactivate)
   Future<bool> toggleAdminActive(String id, bool newStatus) async {
     try {
-      await _firestore.collection(collectionName).doc(id).update({
-        'IS_ACTIVE': newStatus,
-      }).timeout(const Duration(seconds: 10));
+      final docRef = _firestore.collection(collectionName).doc(id);
+      final current = AdminModel.fromFirestore(
+          await docRef.get().timeout(const Duration(seconds: 10)));
+      final batch = _firestore.batch();
+      batch.update(docRef, {'IS_ACTIVE': newStatus});
+      if (current.authUid != null) {
+        // The rules read ROLES, so deactivation takes effect immediately.
+        batch.set(_roleRef(current.authUid!), {
+          'IS_ACTIVE': newStatus,
+          'UPDATED_AT': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+      await batch.commit().timeout(const Duration(seconds: 10));
 
       final index = _admins.indexWhere((a) => a.id == id);
       if (index != -1) {
@@ -340,7 +431,18 @@ class AdminManagementProvider extends ChangeNotifier {
     }
 
     try {
-      await _firestore.collection(collectionName).doc(id).delete().timeout(const Duration(seconds: 10));
+      final docRef = _firestore.collection(collectionName).doc(id);
+      final current = AdminModel.fromFirestore(
+          await docRef.get().timeout(const Duration(seconds: 10)));
+      final batch = _firestore.batch();
+      batch.delete(docRef);
+      // Removing the role revokes all access; the leftover sign-in account
+      // can no longer read or change anything.
+      if (current.authUid != null) batch.delete(_roleRef(current.authUid!));
+      if (current.phoneNumber.isNotEmpty) {
+        batch.delete(_authService.loginIndexRef(AuthService.adminLoginKey(current.phoneNumber)));
+      }
+      await batch.commit().timeout(const Duration(seconds: 10));
       _admins.removeWhere((a) => a.id == id);
       notifyListeners();
       return true;

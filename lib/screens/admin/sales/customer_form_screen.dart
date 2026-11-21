@@ -8,6 +8,7 @@ import '../../../utils/phone_helper.dart';
 import '../../../widgets/app_submit_button.dart';
 import '../../../widgets/app_text_field.dart';
 import 'sales_widgets.dart';
+import '../../../widgets/responsive_center.dart';
 
 /// Admin creates an approved customer. Pops with the created [CustomerModel].
 class CustomerFormScreen extends StatefulWidget {
@@ -73,7 +74,8 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
         title: const Text('Add Customer',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17)),
       ),
-      body: SafeArea(
+      body: ResponsiveCenter.form(
+        child: SafeArea(
         top: false,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -133,6 +135,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

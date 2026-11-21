@@ -7,6 +7,7 @@ import '../../providers/customer_management_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../services/contact_service.dart';
 import '../../utils/phone_helper.dart';
+import '../../widgets/responsive_center.dart';
 
 /// Screen for administrators to review, approve, and reject customer account requests.
 /// Features dedicated tabs for Pending, Approved, and Rejected customer profiles.
@@ -263,7 +264,8 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
           ],
         ),
       ),
-      body: SafeArea(
+      body: ResponsiveCenter.list(
+        child: SafeArea(
         top: false,
         child: provider.isLoading
             ? const Center(
@@ -299,6 +301,7 @@ class _CustomerApprovalsScreenState extends State<CustomerApprovalsScreen>
                   ),
                 ],
               ),
+      ),
       ),
     );
   }
